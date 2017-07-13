@@ -1,0 +1,40 @@
+version: "2.1"
+
+networks:
+    keycloak:
+        ipam:
+            config:
+            - subnet: 10.0.1.0/24
+            
+services:
+    
+    mariadb:
+        build: db/mariadb
+        image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
+        networks:
+            - keycloak
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: keycloak
+            MYSQL_USER: keycloak
+            MYSQL_PASSWORD: keycloak
+        ports:
+            - "3306:3306"
+            
+    keycloak:
+        build: keycloak
+        image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
+        depends_on:
+            mariadb:
+                condition: service_healthy
+        networks:
+            - keycloak
+        environment:
+            MARIADB_HOST: mariadb
+            MARIADB_DATABASE: keycloak
+            MARIADB_USER: keycloak
+            MARIADB_PASSWORD: keycloak
+            KEYCLOAK_USER: admin
+            KEYCLOAK_PASSWORD: admin
+        ports:
+            - "8080:8080"

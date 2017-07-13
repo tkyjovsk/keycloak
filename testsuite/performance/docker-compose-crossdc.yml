@@ -1,0 +1,133 @@
+version: "2.1"
+
+networks:
+    # DC 1
+    dc1_keycloak:
+        ipam:
+            config:
+            - subnet: 10.1.1.0/24
+    # DC 2
+    dc2_keycloak:
+        ipam:
+            config:
+            - subnet: 10.2.1.0/24
+    # cross-DC
+    loadbalancing:
+        ipam:
+            config:
+            - subnet: 10.0.2.0/24
+    db_replication:
+        ipam:
+            config:
+            - subnet: 10.0.3.0/24
+        
+services:
+    
+    mariadb_dc1:
+        build: db/mariadb
+        image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
+        networks:
+            - db_replication
+            - dc1_keycloak
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_INITDB_SKIP_TZINFO: foo
+            MYSQL_DATABASE: keycloak
+            MYSQL_USER: keycloak
+            MYSQL_PASSWORD: keycloak
+        entrypoint: docker-entrypoint-wsrep.sh
+        command: --wsrep-new-cluster
+        ports:
+            - "3306:3306"
+            
+    mariadb_dc2:
+        build: db/mariadb
+        image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
+        depends_on: 
+            mariadb_dc1:
+                condition: service_healthy
+        networks:
+            - db_replication
+            - dc2_keycloak
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_INITDB_SKIP_TZINFO: foo
+        entrypoint: docker-entrypoint-wsrep.sh
+        command: --wsrep_cluster_address=gcomm://mariadb_dc1
+        ports:
+            - "3307:3306"
+            
+            
+            
+            
+    keycloak_dc1:
+        build: keycloak
+        image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
+        depends_on:
+            # wait for the db cluster to be ready before starting keycloak
+            mariadb_dc2:
+                condition: service_healthy
+        networks:
+            - dc1_keycloak
+        environment:
+            CONFIGURATION: standalone-ha.xml
+            PUBLIC_SUBNET: 10.1.1.0/24
+            PRIVATE_SUBNET: 10.1.1.0/24
+            MARIADB_HOST: mariadb_dc1
+            MARIADB_DATABASE: keycloak
+            MARIADB_USER: keycloak
+            MARIADB_PASSWORD: keycloak
+            KEYCLOAK_USER: admin
+            KEYCLOAK_PASSWORD: admin
+        ports:
+            - "8080"
+
+
+    keycloak_dc2:
+        build: keycloak
+        image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
+        depends_on:
+            # wait for first kc instance to be ready before starting another
+            keycloak_dc1:
+                condition: service_healthy
+        networks:
+            - dc2_keycloak
+        environment:
+            CONFIGURATION: standalone-ha.xml
+            PUBLIC_SUBNET: 10.2.1.0/24
+            PRIVATE_SUBNET: 10.2.1.0/24
+            MARIADB_HOST: mariadb_dc2
+            MARIADB_DATABASE: keycloak
+            MARIADB_USER: keycloak
+            MARIADB_PASSWORD: keycloak
+        ports:
+            - "8080"
+
+
+
+
+
+    keycloak_lb_dc1:
+        build: load-balancer/wildfly-modcluster
+        image: keycloak_test_keycloak_lb:${KEYCLOAK_VERSION:-latest}
+        networks:
+            - dc1_keycloak
+            - loadbalancing
+        environment:
+            PRIVATE_SUBNET: 10.1.1.0/24
+#            PUBLIC_SUBNET: 10.0.2.0/24
+        ports:
+            - "8081:8080"
+            
+    keycloak_lb_dc2:
+        build: load-balancer/wildfly-modcluster
+        image: keycloak_test_keycloak_lb:${KEYCLOAK_VERSION:-latest}
+        networks:
+            - dc2_keycloak
+            - loadbalancing
+        environment:
+            PRIVATE_SUBNET: 10.2.1.0/24
+#            PUBLIC_SUBNET: 10.0.2.0/24
+        ports:
+            - "8082:8080"
+            

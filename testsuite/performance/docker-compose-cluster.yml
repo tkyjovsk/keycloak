@@ -1,0 +1,77 @@
+version: "2.1"
+
+networks:
+    keycloak:
+        ipam:
+            config:
+            - subnet: 10.0.1.0/24
+    loadbalancing:
+        ipam:
+            config:
+            - subnet: 10.0.2.0/24
+
+services:
+    
+    mariadb:
+        build: db/mariadb
+        image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
+        networks:
+            - keycloak
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: keycloak
+            MYSQL_USER: keycloak
+            MYSQL_PASSWORD: keycloak
+        ports:
+            - "3306:3306"
+            
+    keycloak:
+        build: keycloak
+        image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
+        depends_on:
+            mariadb:
+                condition: service_healthy
+        networks:
+            - keycloak
+        environment:
+            CONFIGURATION: standalone-ha.xml
+            PUBLIC_SUBNET: 10.0.1.0/24
+            PRIVATE_SUBNET: 10.0.1.0/24
+            MARIADB_HOST: mariadb
+            MARIADB_DATABASE: keycloak
+            MARIADB_USER: keycloak
+            MARIADB_PASSWORD: keycloak
+            KEYCLOAK_USER: admin
+            KEYCLOAK_PASSWORD: admin
+        ports:
+            - "8080"
+
+    keycloak_lb:
+        build: load-balancer/wildfly-modcluster
+        image: keycloak_test_wildfly_modcluster:${KEYCLOAK_VERSION:-latest}
+        networks:
+            - keycloak
+            - loadbalancing
+        environment:
+            PRIVATE_SUBNET: 10.0.1.0/24
+#            PUBLIC_SUBNET: 10.0.2.0/24
+        ports:
+            - "8080:8080"
+        
+#    advertize_server:
+#        build: load-balancer/debug-advertise
+#        image: keycloak_test_modcluster_advertize_server:${KEYCLOAK_VERSION:-latest}
+#        networks:
+#            - keycloak
+#            - loadbalancing
+#        command: 0.0.0.0 224.0.1.105 23365
+#
+#    advertize_client:
+#        build: 
+#            context: load-balancer/debug-advertise
+#            dockerfile: Dockerfile-client
+#        image: keycloak_test_modcluster_advertize_client:${KEYCLOAK_VERSION:-latest}
+#        networks:
+#            - keycloak
+#            - loadbalancing
+#        command: 224.0.1.105 23364

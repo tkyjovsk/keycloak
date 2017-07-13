@@ -1,0 +1,3 @@
+embed-server --server-config=standalone.xml
+/subsystem=io/worker=default:write-attribute(name=io-threads,value=16)
+/subsystem=io/worker=default:write-attribute(name=task-max-threads,value=128)
