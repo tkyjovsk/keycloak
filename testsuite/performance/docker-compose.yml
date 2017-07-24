@@ -18,6 +18,7 @@ services:
             MYSQL_DATABASE: keycloak
             MYSQL_USER: keycloak
             MYSQL_PASSWORD: keycloak
+            MYSQL_INITDB_SKIP_TZINFO: 1
         ports:
             - "3306:3306"
             
