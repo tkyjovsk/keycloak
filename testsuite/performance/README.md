@@ -28,6 +28,38 @@ More details about provisioning: [README-provisioning](README-provisioning.md)
 
 ## Tests
 
+For the impatient - here is an example test run from start to finish:
+
+````
+# build Keycloak distribution
+cd $KEYCLOAK_PROJECT_ROOT
+mvn clean install -DskipTests -Pdistribution
+
+cd testsuite/performance
+
+# make sure your docker daemon is up and running
+. ./provision.sh
+
+# check the running servers
+docker ps | grep "CONTAINER ID\|keycloak"
+
+# make sure we have the Keycloak Server URIs
+echo "KEYCLOAK_SERVER_URIS: $KEYCLOAK_SERVER_URIS"
+
+# specify dataset parameters
+export "DATASET_PROPERTIES=-DnumOfRealms=1 -DusersPerRealm=10 -DclientsPerRealm=5 -DrealmRoles=5 -DrealmRolesPerUser=2 -DclientRolesPerUser=2 -DclientRolesPerClient=2"
+
+# generate and upload test data and execute KeycloakSimulation test with 200 concurrent users
+./run-tests.sh -DrunUsers=200
+````
+
+If you want to repeat the test using the existing test data use:
+````
+SKIP_DATA_CREATION=1 ./run-tests.sh -DrunUsers=200
+````
+
 ### Data creation & import
+
+
 
 ### Gatling Testsuite
