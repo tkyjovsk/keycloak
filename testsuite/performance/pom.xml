@@ -33,6 +33,7 @@
     
     <modules>
         <module>keycloak</module>
+        <module>tests</module>
     </modules>
 
 </project>
