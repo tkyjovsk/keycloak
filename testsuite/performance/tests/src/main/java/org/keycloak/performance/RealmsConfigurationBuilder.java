@@ -60,7 +60,6 @@ public class RealmsConfigurationBuilder {
             // then roles, and client roles
             // create users at the end
             // reason: each next depends on availability of the previous
-
             // each realm 10 clients
             startClients();
             for (int j = 0; j < TestConfig.clientsPerRealm; j++) {
@@ -107,7 +106,6 @@ public class RealmsConfigurationBuilder {
 
             completeRoles();
 
-
             // each realm so many users
             startUsers();
             for (int j = 0; j < TestConfig.usersPerRealm; j++) {
@@ -122,7 +120,6 @@ public class RealmsConfigurationBuilder {
                 creds.setType("password");
                 creds.setValue("passOfUser_" + user.getUsername());
                 user.setCredentials(Arrays.asList(creds));
-
 
                 // add realm roles
                 // each user some random realm roles
@@ -141,7 +138,7 @@ public class RealmsConfigurationBuilder {
                     clientRoles.add("clientrole_" + clientRole + "_ofClient_" + client + "_ofRealm_" + i);
                 }
                 Map<String, List<String>> clientRoleMappings = new HashMap<>();
-                for (String item: clientRoles) {
+                for (String item : clientRoles) {
                     int s = item.indexOf("_ofClient_");
                     int b = s + "_ofClient_".length();
                     int e = item.indexOf("_", b);
@@ -217,7 +214,7 @@ public class RealmsConfigurationBuilder {
             }
             g.writeEndArray();
         }
-        */
+         */
     }
 
     private void completeRealm() throws IOException {
@@ -279,18 +276,20 @@ public class RealmsConfigurationBuilder {
     // addClient
     // addGroup
     // addUserToGroup
-
-
     private String capitalize(String value) {
         return Character.toUpperCase(value.charAt(0)) + value.substring(1);
     }
 
-    public static void main(String [] args) throws IOException {
+    public static void main(String[] args) throws IOException {
 
         TestConfig.validateConfiguration();
 
-        new RealmsConfigurationBuilder("benchmark-realms.json").build();
+        File dataFile = new File(
+                new File(System.getProperty("project.build.directory", "target")),
+                "benchmark-realms.json");
 
-        System.out.println("Created " + new File("benchmark-realms.json").getAbsolutePath());
+        new RealmsConfigurationBuilder(dataFile.getAbsolutePath()).build();
+
+        System.out.println("Created " + dataFile.getAbsolutePath());
     }
 }
