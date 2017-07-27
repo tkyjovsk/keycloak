@@ -37,6 +37,9 @@
         <compose.up.params/>
         <keycloak.server.uris>http://localhost:8080/auth</keycloak.server.uris>
         <db.url>jdbc:mariadb://keycloak:keycloak@localhost:3306/keycloak</db.url>
+        
+        <dataset>default</dataset>
+        <import.workers>1</import.workers>
 
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -214,9 +217,6 @@
         
         <profile>
             <id>provision</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <build>
                 <plugins>
                     <plugin>
@@ -260,11 +260,27 @@
         
         <profile>
             <id>import-data</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <version>1.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>read-dataset-properties</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>read-project-properties</goal>
+                                </goals>
+                                <configuration>
+                                    <files>
+                                        <file>${project.basedir}/datasets/${dataset}.properties</file>
+                                    </files>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>                    
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
@@ -273,33 +289,41 @@
                                 <id>generate-data</id>
                                 <phase>pre-integration-test</phase>
                                 <goals>
-                                    <goal>java</goal>
+                                    <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <mainClass>org.keycloak.performance.RealmsConfigurationBuilder</mainClass>
-                                    <systemProperties>
-                                        <systemProperty>
-                                            <key>project.build.directory</key>
-                                            <value>${project.build.directory}</value>
-                                        </systemProperty>
-                                    </systemProperties>
+                                    <executable>java</executable>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                    <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath/>
+                                        <argument>-DnumOfRealms=${numOfRealms}</argument>
+                                        <argument>-DusersPerRealm=${usersPerRealm}</argument>
+                                        <argument>-DclientsPerRealm=${clientsPerRealm}</argument>
+                                        <argument>-DrealmRoles=${realmRoles}</argument>
+                                        <argument>-DrealmRolesPerUser=${realmRolesPerUser}</argument>
+                                        <argument>-DclientRolesPerUser=${clientRolesPerUser}</argument>
+                                        <argument>-DclientRolesPerClient=${clientRolesPerClient}</argument>
+                                        <argument>org.keycloak.performance.RealmsConfigurationBuilder</argument>
+                                    </arguments>
                                 </configuration>
                             </execution>
                             <execution>
                                 <id>load-data</id>
                                 <phase>pre-integration-test</phase>
                                 <goals>
-                                    <goal>java</goal>
+                                    <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <mainClass>org.keycloak.performance.RealmsConfigurationLoader</mainClass>
-                                    <commandlineArgs>${project.build.directory}/benchmark-realms.json</commandlineArgs>
-                                    <systemProperties>
-                                        <systemProperty>
-                                            <key>numOfWorkers</key>
-                                            <value>1</value>
-                                        </systemProperty>
-                                    </systemProperties>
+                                    <executable>java</executable>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                    <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath/>
+                                        <argument>-DnumOfWorkers=${import.workers}</argument>
+                                        <argument>org.keycloak.performance.RealmsConfigurationLoader</argument>
+                                        <argument>benchmark-realms.json</argument>
+                                    </arguments>
                                 </configuration>
                             </execution>
                         </executions>
@@ -310,9 +334,6 @@
         
         <profile>
             <id>test</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
                 <gatling.skip.run>false</gatling.skip.run>
             </properties>
@@ -320,9 +341,9 @@
         
         <profile>
             <id>teardown</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
+            <properties>
+                <volumes.arg>-v</volumes.arg>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -338,7 +359,7 @@
                                 <configuration>
                                     <workingDirectory>${project.basedir}/..</workingDirectory>
                                     <executable>docker-compose</executable>
-                                    <commandlineArgs>-f ${compose.file} down -v</commandlineArgs>
+                                    <commandlineArgs>-f ${compose.file} down ${volumes.arg}</commandlineArgs>
                                     <environmentVariables>
                                         <KEYCLOAK_VERSION>${project.version}</KEYCLOAK_VERSION>
                                     </environmentVariables>
@@ -349,6 +370,13 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>keep-volumes</id>
+            <properties>
+                <volumes.arg/>
+            </properties>
+        </profile>
+        
     </profiles>
 
 </project>

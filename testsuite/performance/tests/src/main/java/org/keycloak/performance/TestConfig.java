@@ -11,16 +11,6 @@ public class TestConfig {
     public static String authPassword = System.getProperty("authPassword", "admin");
     public static String authClient = System.getProperty("authClient", "admin-cli");
 
-    /*
-    public static int numOfRealms = 1;
-    public static int usersPerRealm = 10000;
-    public static int clientsPerRealm = 10;
-    public static int realmRoles = 10;
-    public static int realmRolesPerUser = 2;
-    public static int clientRolesPerUser = 2;
-    public static int clientRolesPerClient = 5;
-    */
-
     public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
 
     public static final int numOfRealms = Integer.getInteger("numOfRealms", 1);
@@ -46,7 +36,6 @@ public class TestConfig {
         }
     }
 
-
     static void validateConfiguration() {
         if (realmRolesPerUser > realmRoles) {
             throw new RuntimeException("Can't have more realmRolesPerUser than there are realmRoles");
@@ -54,5 +43,10 @@ public class TestConfig {
         if (clientRolesPerUser > clientsPerRealm * clientRolesPerClient) {
             throw new RuntimeException("Can't have more clientRolesPerUser than there are all client roles (clientsPerRealm * clientRolesPerClient)");
         }
+    }
+
+    public static String toStringDatasetProperties() {
+        return String.format("numOfRealms: %s\nusersPerRealm: %s\nclientsPerRealm: %s\nrealmRoles: %s\nrealmRolesPerUser: %s\nclientRolesPerUser: %s\nclientRolesPerClient: %s",
+                numOfRealms, usersPerRealm, clientsPerRealm, realmRoles, realmRolesPerUser, clientRolesPerUser, clientRolesPerClient);
     }
 }
