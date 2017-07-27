@@ -28,8 +28,15 @@ Provisioning/teardown is performed via `docker-compose` tool. More details in [R
 
 ## Import Data
 
-Usage: `mvn verify -Pimport-data[,cluster] -Ddataset=... -Dparam1=... -Dparam2=...`.
+Usage: `mvn verify -Pimport-data[,cluster] [-Ddataset=DATASET] [-Dproperty=value]`.
 
+Dataset properties are loaded from `datasets/${dataset}.properties` file. Individual properties can be overriden by specifying `-D` params.
+
+Examples:
+- `mvn verify -Pimport-data` - import default dataset
+- `mvn verify -Pimport-data -DusersPerRealm=5` - import default dataset, override usersPerRealm property
+- `mvn verify -Pimport-data -Ddataset=100users` - import `100users` dataset
+- `mvn verify -Pimport-data -Ddataset=100realms/default` - import dataset from `datasets/100realms/default.properties`
 
 ## Run Tests
 
@@ -44,13 +51,6 @@ Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N]`.
 - Provision single node of KC + DB, import data, run test, and tear down the provisioned system:
 
     `mvn verify -Pprovision,import-data,test,teardown -DrunUsers=200`
-
-- All the above profiles are active by default so it's enough to run:
-
-    `mvn verify -DrunUsers=200`
-
-    _Note: When you specify `mvn -P` parameter all "activeByDefault" profiles are automatically deactivated by Maven. 
-    In that case it's necessary to specify all profiles you want to activate._
 
 - Provision single node of KC + DB, import data, no test, no teardown:
 

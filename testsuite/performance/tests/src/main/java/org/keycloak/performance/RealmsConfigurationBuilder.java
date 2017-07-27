@@ -32,6 +32,8 @@ public class RealmsConfigurationBuilder {
 
     private String file;
 
+    public static final String EXPORT_FILENAME = "benchmark-realms.json";
+
     public RealmsConfigurationBuilder(String filename) {
         this.file = filename;
 
@@ -282,14 +284,13 @@ public class RealmsConfigurationBuilder {
 
     public static void main(String[] args) throws IOException {
 
+        File exportFile = new File(EXPORT_FILENAME);
+
         TestConfig.validateConfiguration();
+        System.out.println(TestConfig.toStringDatasetProperties());
 
-        File dataFile = new File(
-                new File(System.getProperty("project.build.directory", "target")),
-                "benchmark-realms.json");
+        new RealmsConfigurationBuilder(exportFile.getAbsolutePath()).build();
 
-        new RealmsConfigurationBuilder(dataFile.getAbsolutePath()).build();
-
-        System.out.println("Created " + dataFile.getAbsolutePath());
+        System.out.println("Created " + exportFile.getAbsolutePath());
     }
 }

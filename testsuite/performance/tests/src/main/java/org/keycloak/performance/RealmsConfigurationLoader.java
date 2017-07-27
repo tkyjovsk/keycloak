@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import static org.keycloak.performance.RealmsConfigurationBuilder.EXPORT_FILENAME;
 
 import static org.keycloak.performance.TestConfig.numOfWorkers;
 
@@ -59,8 +60,7 @@ public class RealmsConfigurationLoader {
     public static void main(String [] args) throws IOException {
 
         if (args.length == 0) {
-            args = new String[] {"benchmark-realms.json"};
-            System.out.println("Using " + args[0]);
+            args = new String[] {EXPORT_FILENAME};
         }
 
         if (args.length != 1) {
@@ -69,6 +69,8 @@ public class RealmsConfigurationLoader {
         }
 
         String file = args[0];
+        System.out.println("Using " + args[0]);
+        System.out.println("Workers: " + numOfWorkers);
 
         JsonParser p = initParser(file);
 
