@@ -1,65 +1,72 @@
 # Keycloak Performance Testsuite
 
-## Provisioning
-
-### Docker
-
-#### Requirements:
-- Keycloak server distribution installed in the local Maven repository. To do this run `mvn install -Pdistribution` from the root of the Keycloak project.
+## Requirements:
 - Maven 3.1.1+
+- Keycloak server distribution installed in the local Maven repository. To do this run `mvn install -Pdistribution` from the root of the Keycloak project.
 - docker 1.12+
 - docker-compose 1.14+
 
-#### Provision
 
-Usage: `provision.sh [singlenode|cluster|crossdc]`. Defaults to `singlenode` if no parameter is provided.
+## Provisioning
 
-The script blocks until the whole system is up and running.
+### Provision
 
-Following information is provided in exported variables:
-- `KEYCLOAK_SERVER_URIS` - space-separated list of Keycloak server URIs
-- `DB_URL` - JDBC URL for accessing the DB
+Usage: `mvn verify -Pprovision[,cluster]`.
 
-More details about provisioning: [README-provisioning](README-provisioning.md)
+- Single node deployment: `mvn verify -Pprovision`
+- Cluster deployment: `mvn verify -Pprovision,cluster [-Dkeycloak.scale=N]`. Default `N=1`.
 
-#### Teardown
+### Teardown
 
-`teardown.sh [singlenode|cluster|crossdc]`. Defaults to `singlenode` if no parameter is provided.
+Usage: `mvn verify -Pteardown[,cluster]`
 
-## Tests
+- Single node deployment: `mvn verify -Pteardown`
+- Cluster deployment: `mvn verify -Pteardown,cluster`
 
-For the impatient - here is an example test run from start to finish:
+Provisioning/teardown is performed via `docker-compose` tool. More details in [README-provisioning](README-provisioning.md)
 
-````
-# build Keycloak distribution
-cd $KEYCLOAK_PROJECT_ROOT
-mvn clean install -DskipTests -Pdistribution
 
-cd testsuite/performance
+## Import Data
 
-# make sure your docker daemon is up and running
-. ./provision.sh
+Usage: `mvn verify -Pimport-data[,cluster] -Ddataset=... -Dparam1=... -Dparam2=...`.
 
-# check the running servers
-docker ps | grep "CONTAINER ID\|keycloak"
 
-# make sure we have the Keycloak Server URIs
-echo "KEYCLOAK_SERVER_URIS: $KEYCLOAK_SERVER_URIS"
+## Run Tests
 
-# specify dataset parameters
-export "DATASET_PROPERTIES=-DnumOfRealms=1 -DusersPerRealm=10 -DclientsPerRealm=5 -DrealmRoles=5 -DrealmRolesPerUser=2 -DclientRolesPerUser=2 -DclientRolesPerClient=2"
-
-# generate and upload test data and execute KeycloakSimulation test with 200 concurrent users
-./run-tests.sh -DrunUsers=200
-````
-
-If you want to repeat the test using the existing test data use:
-````
-SKIP_DATA_CREATION=1 ./run-tests.sh -DrunUsers=200
-````
-
-### Data creation & import
+Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N]`.
 
 
 
-### Gatling Testsuite
+## Examples
+
+### Single-node
+
+- Provision single node of KC + DB, import data, run test, and tear down the provisioned system:
+
+    `mvn verify -Pprovision,import-data,test,teardown -DrunUsers=200`
+
+- All the above profiles are active by default so it's enough to run:
+
+    `mvn verify -DrunUsers=200`
+
+    _Note: When you specify `mvn -P` parameter all "activeByDefault" profiles are automatically deactivated by Maven. 
+    In that case it's necessary to specify all profiles you want to activate._
+
+- Provision single node of KC + DB, import data, no test, no teardown:
+
+    `mvn verify -Pprovision,import-data`
+
+- Run test against provisioned system, then tear it down:
+
+    `mvn verify -Ptest,teardown`
+
+### Cluster
+
+- Provision a 1-node KC cluster + DB, import data, run test against the provisioned system, then tear it down:
+
+    `mvn verify -Pprovision,cluster,import-data,test,teardown`
+
+- Provision a 2-node KC cluster + DB, import data, run test against the provisioned system, then tear it down:
+
+    `mvn verify -Pprovision,cluster,import-data,test,teardown -Dkeycloak.scale=2`
+
