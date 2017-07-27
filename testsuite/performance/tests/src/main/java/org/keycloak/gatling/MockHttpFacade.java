@@ -98,7 +98,7 @@ public class MockHttpFacade implements HttpFacade {
 
       @Override
       public List<String> getHeaders(String name) {
-         return Collections.EMPTY_LIST;
+         return Collections.emptyList();
       }
 
       @Override

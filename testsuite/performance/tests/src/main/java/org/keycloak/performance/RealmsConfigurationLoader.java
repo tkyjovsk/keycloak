@@ -69,8 +69,8 @@ public class RealmsConfigurationLoader {
         }
 
         String file = args[0];
-        System.out.println("Using " + args[0]);
-        System.out.println("Workers: " + numOfWorkers);
+        System.out.println("Using file: " + new File(args[0]).getAbsolutePath());
+        System.out.println("Number of workers (numOfWorkers): " + numOfWorkers);
 
         JsonParser p = initParser(file);
 
@@ -99,9 +99,12 @@ public class RealmsConfigurationLoader {
                 w.exit = true;
                 try {
                     w.join(5000);
+                    if (w.isAlive()) {
+                        System.out.println("Worker thread failed to stop: ");
+                        dumpThread(w);
+                    }
                 } catch (InterruptedException e) {
-                    System.out.println("Worker thread failed to stop: ");
-                    dumpThread(w);
+                    throw new RuntimeException("Interrupted");
                 }
             }
         }
@@ -152,13 +155,13 @@ public class RealmsConfigurationLoader {
     private static void readRealm(JsonParser p) throws IOException {
 
         // as soon as we encounter users, roles, clients we create a CreateRealmJob
-        // if after that point in a realm we encounter realm attribute, we report a warning but continue
+        // TODO: if after that point in a realm we encounter realm attribute, we report a warning but continue
 
         RealmRepresentation r = new RealmRepresentation();
         JsonToken t = p.nextToken();
         while (t != JsonToken.END_OBJECT) {
 
-            System.out.println(t + ", name: " + p.getCurrentName() + ", text: '" + p.getText() + "', value: " + p.getValueAsString());
+            //System.out.println(t + ", name: " + p.getCurrentName() + ", text: '" + p.getText() + "', value: " + p.getValueAsString());
 
             switch (p.getCurrentName()) {
                 case "realm":
@@ -300,7 +303,7 @@ public class RealmsConfigurationLoader {
             t = p.nextToken();
             count += 1;
 
-            // every some users check to see pendingJobs
+            // every some users check to see pending errors
             // in order to short-circuit if any errors have occurred
             if (count % ERROR_CHECK_INTERVAL == 0) {
                 checkPendingErrors();
@@ -364,7 +367,7 @@ public class RealmsConfigurationLoader {
                 t = p.nextToken();
                 count += 1;
 
-                // every some roles check to see pendingJobs
+                // every some roles check to see pending errors
                 // in order to short-circuit if any errors have occurred
                 if (count % ERROR_CHECK_INTERVAL == 0) {
                     checkPendingErrors();
@@ -390,7 +393,7 @@ public class RealmsConfigurationLoader {
             t = p.nextToken();
             count += 1;
 
-            // every some roles check to see pendingJobs
+            // every some roles check to see pending errors
             // in order to short-circuit if any errors have occurred
             if (count % ERROR_CHECK_INTERVAL == 0) {
                 checkPendingErrors();
@@ -411,7 +414,7 @@ public class RealmsConfigurationLoader {
             t = p.nextToken();
             count += 1;
 
-            // every some users check to see pendingJobs
+            // every some users check to see pending errors
             if (count % ERROR_CHECK_INTERVAL == 0) {
                 checkPendingErrors();
             }
@@ -666,7 +669,7 @@ public class RealmsConfigurationLoader {
             // we need the id but it's not returned by REST API - we have to perform a get on the created role and save the returned id
             RoleRepresentation rr = admin().realms().realm(realm.getRealm()).clients().get(id).roles().get(role.getName()).toRepresentation();
 
-            Map roleIdMap = clientRoleIdMap.get(clientId);
+            Map<String, String> roleIdMap = clientRoleIdMap.get(clientId);
             if (roleIdMap == null) {
                 roleIdMap = clientRoleIdMap.computeIfAbsent(clientId, (k) -> new ConcurrentHashMap<>());
             }
@@ -719,7 +722,7 @@ public class RealmsConfigurationLoader {
     static abstract class AdminJob extends Job {
 
         static ThreadLocal<Keycloak> adminTL = ThreadLocal.withInitial(
-                () -> Keycloak.getInstance(TestConfig.serverUrl, TestConfig.authRealm, TestConfig.authUser, TestConfig.authPassword, TestConfig.authClient)
+                () -> Keycloak.getInstance(TestConfig.serverUrisList.get(0), TestConfig.authRealm, TestConfig.authUser, TestConfig.authPassword, TestConfig.authClient)
         );
 
         static Keycloak admin() {

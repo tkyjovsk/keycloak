@@ -25,19 +25,31 @@ case class AuthorizeAttributes(
   uri: Expression[String],
   cookies: Expression[List[Cookie]],
   sslRequired: SslRequired = SslRequired.EXTERNAL,
-  resource: String = null,
-  password: String = null,
-  realm: String = null,
-  realmKey: String = null,
+  resource: Option[Expression[String]] = None,
+  password: Option[Expression[String]] = None,
+  realm: Option[String] = None,
+  realmKey: Option[String] = None,
   authServerUrl: Expression[String] = _ => Failure("no server url")
 ) {
   def toAdapterConfig(session: Session) = {
     val adapterConfig = new AdapterConfig
     adapterConfig.setSslRequired(sslRequired.toString)
-    adapterConfig.setResource(resource)
-    adapterConfig.setCredentials(Collections.singletonMap("secret", password))
-    adapterConfig.setRealm(realm)
-    adapterConfig.setRealmKey(realmKey)
+    adapterConfig.setResource( resource match {
+        case Some(expr) => expr(session).get
+        case None => null
+    })
+    adapterConfig.setCredentials( password match {
+      case Some(expr) => Collections.singletonMap("secret", expr(session).get)
+      case None => null
+    })
+    adapterConfig.setRealm(realm match {
+      case Some(name) => name
+      case None => null
+    })
+    adapterConfig.setRealmKey(realmKey match {
+      case Some(key) => key
+      case None => null
+    })
     adapterConfig.setAuthServerUrl(authServerUrl(session).get)
     adapterConfig
   }
@@ -47,10 +59,10 @@ class AuthorizeActionBuilder(attributes: AuthorizeAttributes) extends ActionBuil
   def newInstance(attributes: AuthorizeAttributes) = new AuthorizeActionBuilder(attributes)
 
   def sslRequired(sslRequired: SslRequired) = newInstance(attributes.copy(sslRequired = sslRequired))
-  def resource(resource: String) = newInstance(attributes.copy(resource = resource))
-  def clientCredentials(password: String) = newInstance(attributes.copy(password = password))
-  def realm(realm: String) = newInstance(attributes.copy(realm = realm))
-  def realmKey(realmKey: String) = newInstance(attributes.copy(realmKey = realmKey))
+  def resource(resource: Expression[String]) = newInstance(attributes.copy(resource = Option(resource)))
+  def clientCredentials(password: Expression[String]) = newInstance(attributes.copy(password = Option(password)))
+  def realm(realm: String) = newInstance(attributes.copy(realm = Option(realm)))
+  def realmKey(realmKey: String) = newInstance(attributes.copy(realmKey = Option(realmKey)))
   def authServerUrl(authServerUrl: Expression[String]) = newInstance(attributes.copy(authServerUrl = authServerUrl))
 
   override def build(next: ActorRef, protocols: Protocols): ActorRef = {
