@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import io.gatling.core.Predef._
 import io.gatling.core.pause.Normal
 import io.gatling.core.session._
+import io.gatling.core.validation.Validation
 import io.gatling.http.Predef._
 import io.gatling.http.request.builder.HttpRequestBuilder
 import org.jboss.perf.util.Util
@@ -18,17 +19,19 @@ import org.keycloak.performance.TestConfig
   */
 class KeycloakSimulation extends Simulation {
 
-  val SERVER_URI = TestConfig.serverUrl;
-
   val REALM: String = "realm_0"
   val BASE_URL: String = "/realms/" + REALM
   val LOGIN_ENDPOINT: String = BASE_URL + "/protocol/openid-connect/auth"
   val LOGOUT_ENDPOINT: String = BASE_URL + "/protocol/openid-connect/logout"
 
-  // Client needs to have the following url in redirectUrls
-  val CLIENT_ID: String = "client_0_ofRealm_0"
-  val CLIENT_SECRET: String = "secretFor_" + CLIENT_ID
-  val APP_URL: String = "http://keycloak-test-" + CLIENT_ID.toLowerCase;
+
+
+  println("Using test parameters:")
+  println("  runUsers: " + TestConfig.runUsers);
+  println("  userThinkTime: " + TestConfig.userThinkTime)
+  println("  refreshTokenPeriod: " + TestConfig.refreshTokenPeriod)
+  println()
+  println("Using dataset properties:\n" + TestConfig.toStringDatasetProperties)
 
 
   val httpDefault = http
@@ -52,33 +55,35 @@ class KeycloakSimulation extends Simulation {
   val users = scenario("users")
     // initialize session with host, user, client app, login failure ratio ...
     .exec(s => {
-      s.setAll("keycloak-server" -> SERVER_URI,
+      val userInfo = TestConfig.getUsersIterator(REALM).next()
+      val clientInfo = TestConfig.getConfidentialClientsIterator(REALM).next()
+
+      s.setAll("keycloak-server" -> TestConfig.serverUrisIterator.next(),
         "state" -> Util.randomUUID(),
         "wrongPasswordCount" -> new AtomicInteger(3),
-        "username" -> "user_0_ofRealm_0",
-        "password" -> "passOfUser_user_0_ofRealm_0"
+        "username" -> userInfo.username,
+        "password" -> userInfo.password,
+        "clientId" -> clientInfo.clientId,
+        "secret" -> clientInfo.secret,
+        "appUrl" -> clientInfo.appUrl
       )
     })
     .exitHereIfFailed
     .exec(browserGet("Browser to Log In Endpoint", "${keycloak-server}" + LOGIN_ENDPOINT)
       .queryParam("login", "true")
       .queryParam("response_type", "code")
-      .queryParam("client_id", CLIENT_ID)
+      .queryParam("client_id", "${clientId}")
       .queryParam("state", "${state}")
-      .queryParam("redirect_uri", APP_URL)
+      .queryParam("redirect_uri", "${appUrl}")
       .check(status.is(200), regex("action=\"([^\"]*)\"").saveAs("login-form-uri")))
     .exitHereIfFailed
     .pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
-    .asLongAs(s => {
-        val missCounter = s.attributes.get("wrongPasswordCount") match {
-          case Some(result) => result.asInstanceOf[AtomicInteger]
-          case None => new AtomicInteger(0)
-        }
-        missCounter.getAndDecrement() > 0
-      }) {
+
+    .asLongAs(s => downCounterAboveZero(s, "wrongPasswordCount")) {
       exec(browserPost("Browser posts wrong credentials", "${login-form-uri}")
         .formParam("username", "${username}")
-        .formParam("password", _ => Util.randomString(10)).formParam("login", "Log in")
+        .formParam("password", _ => Util.randomString(10))
+        .formParam("login", "Log in")
         .check(status.is(200), regex("action=\"([^\"]*)\"").saveAs("login-form-uri")))
       .exitHereIfFailed
       .pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
@@ -98,8 +103,8 @@ class KeycloakSimulation extends Simulation {
       .authorize("${login-redirect}",
         session => List(new Cookie("OAuth_Token_Request_State", session("state").as[String], 0, null, null)))
       .authServerUrl("${keycloak-server}")
-      .resource(CLIENT_ID)
-      .clientCredentials(CLIENT_SECRET)
+      .resource("${clientId}")
+      .clientCredentials("${secret}")
       .realm(REALM)
       //.realmKey(Loader.realmRepresentation.getPublicKey)
     )
@@ -111,9 +116,18 @@ class KeycloakSimulation extends Simulation {
     // Logout
     .pause(TestConfig.refreshTokenPeriod, Normal(TestConfig.refreshTokenPeriod * 0.2))
     .exec(browserGet("Browser logout", "${keycloak-server}" + LOGOUT_ENDPOINT)
-      .queryParam("redirect_uri", APP_URL)
-      .check(status.is(302), header("Location").is(APP_URL)))
+      .queryParam("redirect_uri", "${appUrl}")
+      .check(status.is(302), header("Location").is("${appUrl}")))
 
+
+  setUp(users.inject(atOnceUsers(TestConfig.runUsers)).protocols(httpDefault))
+
+
+
+
+  //
+  // Function definitions
+  //
 
   def browserGet(requestName: Expression[String], url: Expression[String]): HttpRequestBuilder = {
     addBrowserHeaders(http(requestName).get(url))
@@ -132,7 +146,13 @@ class KeycloakSimulation extends Simulation {
     req
   }
 
-  setUp(users.inject(atOnceUsers(TestConfig.runUsers)).protocols(httpDefault))
+  def downCounterAboveZero(session: Session, attrName: String): Validation[Boolean] = {
+    val missCounter = session.attributes.get(attrName) match {
+      case Some(result) => result.asInstanceOf[AtomicInteger]
+      case None => new AtomicInteger(0)
+    }
+    missCounter.getAndDecrement() > 0
+  }
 }
 
 /*
@@ -259,4 +279,3 @@ class KeycloakSimulation extends Simulation {
     run(adminsList, Options.adminsPerSecond * Options.listUsersProbability)
   ).maxDuration(Options.rampUp + Options.duration + Options.rampDown)
 */
-

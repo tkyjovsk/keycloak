@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import static org.keycloak.common.util.ObjectUtil.capitalize;
+
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
@@ -52,34 +54,38 @@ public class RealmsConfigurationBuilder {
     }
 
     public void build() throws IOException {
-        // 10 realms
+        // There are several realms
         startRealms();
         for (int i = 0; i < TestConfig.numOfRealms; i++) {
             RealmConfig realm = new RealmConfig();
-            startRealm("_" + i, realm);
+
+            String realmName = "realm_" + i;
+            startRealm(realmName, realm);
 
             // first create clients,
             // then roles, and client roles
             // create users at the end
             // reason: each next depends on availability of the previous
-            // each realm 10 clients
+
+            // each realm has some clients
             startClients();
             for (int j = 0; j < TestConfig.clientsPerRealm; j++) {
                 ClientRepresentation client = new ClientRepresentation();
-                String clientId = "client_" + j + "_ofRealm_" + i;
+
+                String clientId = computeClientId(realmName, j);
                 client.setClientId(clientId);
                 client.setEnabled(true);
-                //client.setAdminUrl("http://keycloak-test-app-" + j);
-                String baseDir = "http://keycloak-test-" + clientId.toLowerCase();
+
+                String baseDir = computeAppUrl(clientId);
                 client.setBaseUrl(baseDir);
 
                 List<String> uris = new ArrayList<>();
                 uris.add(baseDir + "/*");
 
-                if (j == 0) {
+                if (isClientConfidential(j)) {
                     client.setRedirectUris(uris);
-                    client.setSecret("secretFor_" + clientId);
-                } else if (j == 1) {
+                    client.setSecret(computeSecret(clientId));
+                } else if (isClientBearerOnly(j)) {
                     client.setBearerOnly(true);
                 } else {
                     client.setPublicClient(true);
@@ -91,7 +97,7 @@ public class RealmsConfigurationBuilder {
 
             completeClients();
 
-            // each realm 10 realm roles
+            // each realm has some realm roles
             startRoles();
             startRealmRoles();
             for (int j = 0; j < TestConfig.realmRoles; j++) {
@@ -99,7 +105,7 @@ public class RealmsConfigurationBuilder {
             }
             completeRealmRoles();
 
-            // each client 2 client roles
+            // each client has some client roles
             startClientRoles();
             for (int j = 0; j < TestConfig.clientsPerRealm; j++) {
                 addClientRoles("client_" + j + "_ofRealm_" + i);
@@ -112,7 +118,7 @@ public class RealmsConfigurationBuilder {
             startUsers();
             for (int j = 0; j < TestConfig.usersPerRealm; j++) {
                 UserRepresentation user = new UserRepresentation();
-                user.setUsername("user_" + j + "_ofRealm_" + i);
+                user.setUsername(computeUsername(realmName, j));
                 user.setEnabled(true);
                 user.setEmail(user.getUsername() + "@example.com");
                 user.setFirstName("User" + j);
@@ -120,7 +126,7 @@ public class RealmsConfigurationBuilder {
 
                 CredentialRepresentation creds = new CredentialRepresentation();
                 creds.setType("password");
-                creds.setValue("passOfUser_" + user.getUsername());
+                creds.setValue(computePassword(user.getUsername()));
                 user.setCredentials(Arrays.asList(creds));
 
                 // add realm roles
@@ -129,7 +135,7 @@ public class RealmsConfigurationBuilder {
                 while (realmRoles.size() < TestConfig.realmRolesPerUser) {
                     realmRoles.add("role_" + random(TestConfig.realmRoles) + "_ofRealm_" + i);
                 }
-                user.setRealmRoles(new ArrayList(realmRoles));
+                user.setRealmRoles(new ArrayList<>(realmRoles));
 
                 // add client roles
                 // each user some random client roles (random client + random role on that client)
@@ -181,7 +187,6 @@ public class RealmsConfigurationBuilder {
 
     private void startClients() throws IOException {
         g.writeArrayFieldStart("clients");
-        //g.writeStartArray();
     }
 
     private void completeClients() throws IOException {
@@ -200,10 +205,9 @@ public class RealmsConfigurationBuilder {
         return RANDOM.nextInt(max);
     }
 
-    // addRealm
-    private void startRealm(String ext, RealmConfig conf) throws IOException {
+    private void startRealm(String realmName, RealmConfig conf) throws IOException {
         g.writeStartObject();
-        g.writeStringField("realm", "realm" + ext);
+        g.writeStringField("realm", realmName);
         g.writeBooleanField("enabled", true);
         g.writeNumberField("accessTokenLifespan", conf.accessTokenLifeSpan);
         g.writeBooleanField("registrationAllowed", conf.registrationAllowed);
@@ -225,26 +229,22 @@ public class RealmsConfigurationBuilder {
 
     private void startUsers() throws IOException {
         g.writeArrayFieldStart("users");
-        //g.writeStartArray();
     }
 
     private void completeUsers() throws IOException {
         g.writeEndArray();
     }
 
-    // addUser
     private void addUser(UserRepresentation user) throws IOException {
         g.writeObject(user);
     }
 
     private void startRoles() throws IOException {
         g.writeObjectFieldStart("roles");
-        //g.writeStartObject();
     }
 
     private void startRealmRoles() throws IOException {
         g.writeArrayFieldStart("realm");
-        //g.writeStartArray();
     }
 
     private void startClientRoles() throws IOException {
@@ -270,24 +270,51 @@ public class RealmsConfigurationBuilder {
         g.writeEndObject();
     }
 
-    // addRoleToUser
-    // addRoleToRole
-    // addCompositeRoleToUser
-    // addClientRoleToUser
-    // addCompositeClientRoleToUser
-    // addClient
-    // addGroup
-    // addUserToGroup
-    private String capitalize(String value) {
-        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+
+    static boolean isClientConfidential(int index) {
+        // every third client starting with 0
+        return index % 3 == 0;
     }
+
+    static boolean isClientBearerOnly(int index) {
+        // every third client starting with 1
+        return index % 3 == 1;
+    }
+
+    static boolean isClientPublic(int index) {
+        // every third client starting with 2
+        return index % 3 == 2;
+    }
+
+    static String computeClientId(String realm, int idx) {
+        return "client_" + idx + "_of" + capitalize(realm);
+    }
+
+    static String computeAppUrl(String clientId) {
+        return "http://keycloak-test-" + clientId.toLowerCase();
+    }
+
+    static String computeSecret(String clientId) {
+        return "secretFor_" + clientId;
+    }
+
+    static String computeUsername(String realm, int idx) {
+        return "user_" + idx + "_of" + capitalize(realm);
+    }
+
+    static String computePassword(String username) {
+        return "passOfUser_" + username;
+    }
+
+    
+
 
     public static void main(String[] args) throws IOException {
 
         File exportFile = new File(EXPORT_FILENAME);
 
         TestConfig.validateConfiguration();
-        System.out.println(TestConfig.toStringDatasetProperties());
+        System.out.println("Generating test dataset with the following parameters: \n" + TestConfig.toStringDatasetProperties());
 
         new RealmsConfigurationBuilder(exportFile.getAbsolutePath()).build();
 
