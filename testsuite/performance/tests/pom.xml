@@ -113,6 +113,12 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
@@ -163,6 +169,7 @@
                 <version>${gatling-plugin.version}</version>
 
                 <configuration>
+                    <configFolder>${project.build.testOutputDirectory}</configFolder>
                     <skip>${gatling.skip.run}</skip>
                     <disableCompiler>true</disableCompiler>
                     <runMultipleSimulations>true</runMultipleSimulations>
