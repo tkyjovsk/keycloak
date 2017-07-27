@@ -15,4 +15,9 @@ fi
 
 # run gatling test here
 export GATLING_HOME
-mvn gatling:execute -f $GATLING_HOME/pom.xml -Dgatling.simulationClass=keycloak.KeycloakSimulation $@
+if [ -z "$DATASET" ]; then
+    if [ -z "$DATASET_PROPERTIES" ]; then echo "Please specify either DATASET or DATASET_PROPERTIES env variables."; exit 1; fi
+    mvn gatling:execute -f $GATLING_HOME/pom.xml -Dgatling.simulationClass=keycloak.KeycloakSimulation $DATASET_PROPERTIES $@
+else
+    mvn gatling:execute -f $GATLING_HOME/pom.xml -Dgatling.simulationClass=keycloak.KeycloakSimulation  $DATASET_PROPERTIES -Ddataset.propertyfile=$DIRNAME/datasets/$DATASET.properties $@
+fi
