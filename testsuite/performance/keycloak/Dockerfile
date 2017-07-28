@@ -27,7 +27,7 @@ ADD module.xml modules/system/layers/base/org/mariadb/jdbc/main/
 # apply configurations
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=set-keycloak-ds.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=io-worker-threads.cli
-RUN $JBOSS_HOME/bin/jboss-cli.sh --file=proxy-address-forwarding.cli
+RUN $JBOSS_HOME/bin/jboss-cli.sh --file=undertow.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=distributed-cache-owners.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=modcluster-simple-load-provider.cli; \
     cd $JBOSS_HOME/standalone; rm -rf configuration/standalone_xml_history log data tmp
