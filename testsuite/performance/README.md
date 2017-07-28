@@ -3,7 +3,7 @@
 ## Requirements:
 - Maven 3.1.1+
 - Keycloak server distribution installed in the local Maven repository. To do this run `mvn install -Pdistribution` from the root of the Keycloak project.
-- docker 1.12+
+- docker 1.13+
 - docker-compose 1.14+
 
 
