@@ -8,7 +8,7 @@ function isKeycloakHealthy {
 
 function waitUntilSystemHealthy {
     echo Waiting until all Keycloak instances are healthy...
-    if [ -z $1 ]; then ITERATIONS=30; else ITERATIONS=$1; fi
+    if [ -z $1 ]; then ITERATIONS=60; else ITERATIONS=$1; fi
     C=0
     SYSTEM_HEALTHY=false
     while ! $SYSTEM_HEALTHY; do 
