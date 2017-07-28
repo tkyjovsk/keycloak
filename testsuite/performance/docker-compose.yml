@@ -45,5 +45,6 @@ services:
             DS_PS_CACHE_SIZE: 100
             WORKER_IO_THREADS: 2
             WORKER_TASK_MAX_THREADS: 16
+            HTTP_MAX_CONNECTIONS: 500
         ports:
             - "8080:8080"
