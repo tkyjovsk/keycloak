@@ -40,7 +40,7 @@ public class TestConfig {
     public static final int runUsers = Integer.getInteger("runUsers", 1);
     public static final int userThinkTime = Integer.getInteger("userThinkTime", 5);
     public static final int refreshTokenPeriod = Integer.getInteger("refreshTokenPeriod", 10);
-
+    public static final int rampUpPeriod = Integer.getInteger("rampUpPeriod", 0);
 
     public static List<String> serverUrisList;
 
