@@ -14,7 +14,7 @@ To install it run `mvn install -DskipTests -Pdistribution` from the project root
 ## Docker
 
 ### Requirements:
-- docker 1.12+
+- docker 1.13+
 - docker-compose 1.14+
 
 ### Deployments
