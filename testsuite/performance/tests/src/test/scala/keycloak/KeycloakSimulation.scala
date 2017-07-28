@@ -28,6 +28,7 @@ class KeycloakSimulation extends Simulation {
 
   println("Using test parameters:")
   println("  runUsers: " + TestConfig.runUsers);
+  println("  rampUpPeriod: " + TestConfig.rampUpPeriod);
   println("  userThinkTime: " + TestConfig.userThinkTime)
   println("  refreshTokenPeriod: " + TestConfig.refreshTokenPeriod)
   println()
@@ -119,8 +120,13 @@ class KeycloakSimulation extends Simulation {
       .queryParam("redirect_uri", "${appUrl}")
       .check(status.is(302), header("Location").is("${appUrl}")))
 
-
-  setUp(users.inject(atOnceUsers(TestConfig.runUsers)).protocols(httpDefault))
+  setUp(users.inject( {
+    if (TestConfig.rampUpPeriod > 0) {
+      rampUsers(TestConfig.runUsers) over TestConfig.rampUpPeriod
+    } else {
+      atOnceUsers(TestConfig.runUsers)
+    }
+  }).protocols(httpDefault))
 
 
 
