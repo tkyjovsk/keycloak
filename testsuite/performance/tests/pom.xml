@@ -179,6 +179,15 @@
                     <!--includes>
                         <include>keycloak.DemoSimulation2</include>
                     </includes-->
+                    <jvmArgs>
+                        <param>-DnumOfRealms=${numOfRealms}</param>
+                        <param>-DusersPerRealm=${usersPerRealm}</param>
+                        <param>-DclientsPerRealm=${clientsPerRealm}</param>
+                        <param>-DrealmRoles=${realmRoles}</param>
+                        <param>-DrealmRolesPerUser=${realmRolesPerUser}</param>
+                        <param>-DclientRolesPerUser=${clientRolesPerUser}</param>
+                        <param>-DclientRolesPerClient=${clientRolesPerClient}</param>
+                    </jvmArgs>
                 </configuration>
 
                 <executions>

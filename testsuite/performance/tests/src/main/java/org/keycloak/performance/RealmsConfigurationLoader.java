@@ -721,12 +721,10 @@ public class RealmsConfigurationLoader {
 
     static abstract class AdminJob extends Job {
 
-        static ThreadLocal<Keycloak> adminTL = ThreadLocal.withInitial(
-                () -> Keycloak.getInstance(TestConfig.serverUrisList.get(0), TestConfig.authRealm, TestConfig.authUser, TestConfig.authPassword, TestConfig.authClient)
-        );
+        static Keycloak admin = Keycloak.getInstance(TestConfig.serverUrisList.get(0), TestConfig.authRealm, TestConfig.authUser, TestConfig.authPassword, TestConfig.authClient);
 
         static Keycloak admin() {
-            return adminTL.get();
+            return admin;
         }
     }
 
