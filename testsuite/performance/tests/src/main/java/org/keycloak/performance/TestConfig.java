@@ -22,10 +22,10 @@ import static org.keycloak.performance.RealmsConfigurationBuilder.computeUsernam
 public class TestConfig {
 
     public static String serverUris = System.getProperty("serverUris", "http://localhost:8080/auth");
-    public static String authRealm = System.getProperty("authRealm", "master");
-    public static String authUser = System.getProperty("authUser", "admin");
-    public static String authPassword = System.getProperty("authPassword", "admin");
-    public static String authClient = System.getProperty("authClient", "admin-cli");
+    public static final String authRealm = System.getProperty("authRealm", "master");
+    public static final String authUser = System.getProperty("authUser", "admin");
+    public static final String authPassword = System.getProperty("authPassword", "admin");
+    public static final String authClient = System.getProperty("authClient", "admin-cli");
 
     public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
 
