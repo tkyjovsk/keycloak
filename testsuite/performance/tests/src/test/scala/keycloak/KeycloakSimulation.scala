@@ -19,10 +19,9 @@ import org.keycloak.performance.TestConfig
   */
 class KeycloakSimulation extends Simulation {
 
-  val REALM: String = "realm_0"
-  val BASE_URL: String = "/realms/" + REALM
-  val LOGIN_ENDPOINT: String = BASE_URL + "/protocol/openid-connect/auth"
-  val LOGOUT_ENDPOINT: String = BASE_URL + "/protocol/openid-connect/logout"
+  val BASE_URL = "${keycloak-server}/realms/${realm}"
+  val LOGIN_ENDPOINT = BASE_URL + "/protocol/openid-connect/auth"
+  val LOGOUT_ENDPOINT = BASE_URL + "/protocol/openid-connect/logout"
 
 
 
@@ -56,12 +55,14 @@ class KeycloakSimulation extends Simulation {
   val users = scenario("users")
     // initialize session with host, user, client app, login failure ratio ...
     .exec(s => {
-      val userInfo = TestConfig.getUsersIterator(REALM).next()
-      val clientInfo = TestConfig.getConfidentialClientsIterator(REALM).next()
+      val realm = TestConfig.randomRealmsIterator().next()
+      val userInfo = TestConfig.getUsersIterator(realm).next()
+      val clientInfo = TestConfig.getConfidentialClientsIterator(realm).next()
 
       s.setAll("keycloak-server" -> TestConfig.serverUrisIterator.next(),
         "state" -> Util.randomUUID(),
         "wrongPasswordCount" -> new AtomicInteger(3),
+        "realm" -> realm,
         "username" -> userInfo.username,
         "password" -> userInfo.password,
         "clientId" -> clientInfo.clientId,
@@ -70,7 +71,7 @@ class KeycloakSimulation extends Simulation {
       )
     })
     .exitHereIfFailed
-    .exec(browserGet("Browser to Log In Endpoint", "${keycloak-server}" + LOGIN_ENDPOINT)
+    .exec(browserGet("Browser to Log In Endpoint", LOGIN_ENDPOINT)
       .queryParam("login", "true")
       .queryParam("response_type", "code")
       .queryParam("client_id", "${clientId}")
@@ -106,7 +107,7 @@ class KeycloakSimulation extends Simulation {
       .authServerUrl("${keycloak-server}")
       .resource("${clientId}")
       .clientCredentials("${secret}")
-      .realm(REALM)
+      .realm("${realm}")
       //.realmKey(Loader.realmRepresentation.getPublicKey)
     )
 
@@ -116,7 +117,7 @@ class KeycloakSimulation extends Simulation {
 
     // Logout
     .pause(TestConfig.refreshTokenPeriod, Normal(TestConfig.refreshTokenPeriod * 0.2))
-    .exec(browserGet("Browser logout", "${keycloak-server}" + LOGOUT_ENDPOINT)
+    .exec(browserGet("Browser logout", LOGOUT_ENDPOINT)
       .queryParam("redirect_uri", "${appUrl}")
       .check(status.is(302), header("Location").is("${appUrl}")))
 
