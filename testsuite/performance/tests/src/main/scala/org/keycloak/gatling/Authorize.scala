@@ -27,7 +27,7 @@ case class AuthorizeAttributes(
   sslRequired: SslRequired = SslRequired.EXTERNAL,
   resource: Option[Expression[String]] = None,
   password: Option[Expression[String]] = None,
-  realm: Option[String] = None,
+  realm: Option[Expression[String]] = None,
   realmKey: Option[String] = None,
   authServerUrl: Expression[String] = _ => Failure("no server url")
 ) {
@@ -43,7 +43,7 @@ case class AuthorizeAttributes(
       case None => null
     })
     adapterConfig.setRealm(realm match {
-      case Some(name) => name
+      case Some(expr) => expr(session).get
       case None => null
     })
     adapterConfig.setRealmKey(realmKey match {
@@ -61,7 +61,7 @@ class AuthorizeActionBuilder(attributes: AuthorizeAttributes) extends ActionBuil
   def sslRequired(sslRequired: SslRequired) = newInstance(attributes.copy(sslRequired = sslRequired))
   def resource(resource: Expression[String]) = newInstance(attributes.copy(resource = Option(resource)))
   def clientCredentials(password: Expression[String]) = newInstance(attributes.copy(password = Option(password)))
-  def realm(realm: String) = newInstance(attributes.copy(realm = Option(realm)))
+  def realm(realm: Expression[String]) = newInstance(attributes.copy(realm = Option(realm)))
   def realmKey(realmKey: String) = newInstance(attributes.copy(realmKey = Option(realmKey)))
   def authServerUrl(authServerUrl: Expression[String]) = newInstance(attributes.copy(authServerUrl = authServerUrl))
 
