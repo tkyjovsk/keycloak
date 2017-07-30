@@ -374,7 +374,36 @@
                 </plugins>
             </build>
         </profile>
-        
+
+        <profile>
+            <id>import-dump</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>load-dump</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.basedir}/..</workingDirectory>
+                                    <executable>./load-dump.sh</executable>
+
+                                    <environmentVariables>
+                                        <DATASET>${dataset}</DATASET>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>test</id>
             <properties>

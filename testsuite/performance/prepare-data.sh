@@ -11,5 +11,9 @@ else
     ./generate-data.sh $DATASET_PROPERTIES -Ddataset.propertyfile=$DIRNAME/datasets/$DATASET.properties
 fi
 
-echo "Loading benchmark-realms.json into Keycloak Server (log file: $GATLING_HOME/target/load-data-output.txt)"
-./load-data.sh -DnumOfWorkers=1 -Dexec.args=benchmark-realms.json > $GATLING_HOME/target/load-data-output.txt
+if [ -z "$SKIPLOAD" ]; then
+    echo "Loading benchmark-realms.json into Keycloak Server (log file: $GATLING_HOME/target/load-data-output.txt)"
+    ./load-data.sh -DnumOfWorkers=1 -Dexec.args=benchmark-realms.json > $GATLING_HOME/target/load-data-output.txt
+else
+    echo "Skipped loading the data."
+fi

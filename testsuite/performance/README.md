@@ -34,15 +34,29 @@ Usage: `mvn verify -Pimport-data[,cluster] [-Ddataset=DATASET] [-D<dataset.prope
 
 Dataset properties are loaded from `datasets/${dataset}.properties` file. Individual properties can be overriden by specifying `-D` params.
 
+Dataset data is first generated as a .json file, and then imported into Keycloak via Admin Client REST API.
+
 #### Examples:
 - `mvn verify -Pimport-data` - import default dataset
 - `mvn verify -Pimport-data -DusersPerRealm=5` - import default dataset, override the `usersPerRealm` property
 - `mvn verify -Pimport-data -Ddataset=100users` - import `100users` dataset
 - `mvn verify -Pimport-data -Ddataset=100realms/default` - import dataset from `datasets/100realms/default.properties`
 
+The data can also be exported from the database, and stored locally as `datasets/${dataset}.sql.gz`
+`DATASET=100users ./prepare-dump.sh`
+
+If there is a data dump file available then -Pimport-dump can be used to import the data directly into the database, 
+by-passing Keycloak server completely.
+
+Usage: `mvn verify -Pimport-dump [-Ddataset=DATASET]`
+
+#### Example:
+- `mvn verify -Pimport-dump -Ddataset=100users` - import `datasets/100users.sql.gz` dump file created using `prepare-dump.sh`.
+
+
 ### Run Tests
 
-Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N] [-Ddataset=DATASET] [-D<dataset.property>=<value>]`.
+Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N] [-DrampUpPeriod=SECONDS] [-Ddataset=DATASET] [-D<dataset.property>=<value>]`.
 
 _*Note:* The same dataset properties which were used for data import should be supplied to the `test` phase._
 
@@ -59,9 +73,9 @@ _*Note:* The same dataset properties which were used for data import should be s
 
     `mvn verify -Pprovision,import-data -Ddataset=100users`
 
-- Run test against provisioned system, then tear it down:
+- Run test against provisioned system using 100 concurrent users ramped up over 10 seconds, then tear it down:
 
-    `mvn verify -Ptest,teardown -Ddataset=100users -DrunUsers=100`
+    `mvn verify -Ptest,teardown -Ddataset=100users -DrunUsers=100 -DrampUpPeriod=10`
 
 ### Cluster
 
