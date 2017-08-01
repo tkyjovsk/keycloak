@@ -10,7 +10,7 @@
 
 Here's how to perform a simple tests run:
 
-````
+```
 # Clone keycloak repository if you don't have it yet
 # git clone https://github.com/keycloak/keycloak.git
 
@@ -33,9 +33,20 @@ mvn verify -Pprovision
 mvn verify -Pimport-data -Ddataset=100users -Dimport.workers=10
 mvn verify -Ptest -Ddataset=100users -DrunUsers=200 -DrampUpPeriod=10
 
-````
+```
 
-Now open the generated report in a browser - link to .html file is displayed at the end of the test.
+Now open the generated report in a browser - the link to .html file is displayed at the end of the test.
+
+After the test run you may want to tear down the docker instances for the next run to be able to import data:
+```
+mvn verify -Pteardown
+```
+
+You can perform all phases in a single run:
+```
+mvn verify -Pprovision,import-data,test,teardown -Ddataset=100users -Dimport.workers=10 -DrunUsers=200 -DrampUpPeriod=10
+```
+Note: The order in which maven profiles are listed does not determine the order in which profile related plugins are executed. `teardown` profile always executes last.
 
 Keep reading for more information.
 
