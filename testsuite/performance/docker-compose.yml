@@ -11,7 +11,7 @@ services:
     mariadb:
         build: db/mariadb
         image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
-        cpu_count: 1
+        cpus: 1
         networks:
             - keycloak
         environment:
@@ -29,7 +29,7 @@ services:
         depends_on:
             mariadb:
                 condition: service_healthy
-        cpu_count: 1
+        cpus: 1
         networks:
             - keycloak
         environment:
