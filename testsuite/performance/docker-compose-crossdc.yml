@@ -26,7 +26,7 @@ services:
     mariadb_dc1:
         build: db/mariadb
         image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
-        cpu_count: 1
+        cpus: 1
         networks:
             - db_replication
             - dc1_keycloak
@@ -47,7 +47,7 @@ services:
         depends_on: 
             mariadb_dc1:
                 condition: service_healthy
-        cpu_count: 1
+        cpus: 1
         networks:
             - db_replication
             - dc2_keycloak
@@ -69,7 +69,7 @@ services:
             # wait for the db cluster to be ready before starting keycloak
             mariadb_dc2:
                 condition: service_healthy
-        cpu_count: 1
+        cpus: 1
         networks:
             - dc1_keycloak
         environment:
@@ -101,7 +101,7 @@ services:
             # wait for first kc instance to be ready before starting another
             keycloak_dc1:
                 condition: service_healthy
-        cpu_count: 1
+        cpus: 1
         networks:
             - dc2_keycloak
         environment:
@@ -130,7 +130,7 @@ services:
     keycloak_lb_dc1:
         build: load-balancer/wildfly-modcluster
         image: keycloak_test_keycloak_lb:${KEYCLOAK_VERSION:-latest}
-        cpu_count: 1
+        cpus: 1
         networks:
             - dc1_keycloak
             - loadbalancing
@@ -143,7 +143,7 @@ services:
     keycloak_lb_dc2:
         build: load-balancer/wildfly-modcluster
         image: keycloak_test_keycloak_lb:${KEYCLOAK_VERSION:-latest}
-        cpu_count: 1
+        cpus: 1
         networks:
             - dc2_keycloak
             - loadbalancing
