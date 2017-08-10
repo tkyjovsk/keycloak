@@ -28,7 +28,7 @@ public class TestConfig {
 
     public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
 
-    public static final int numOfRealms = Integer.getInteger("numOfRealms", 2);
+    public static final int numOfRealms = Integer.getInteger("numOfRealms", 1);
     public static final int usersPerRealm = Integer.getInteger("usersPerRealm", 2);
     public static final int clientsPerRealm = Integer.getInteger("clientsPerRealm", 2);
     public static final int realmRoles = Integer.getInteger("realmRoles", 2);
@@ -37,9 +37,12 @@ public class TestConfig {
     public static final int clientRolesPerClient = Integer.getInteger("clientRolesPerClient", 2);
 
     public static final int runUsers = Integer.getInteger("runUsers", 1);
-    public static final int userThinkTime = Integer.getInteger("userThinkTime", 5);
-    public static final int refreshTokenPeriod = Integer.getInteger("refreshTokenPeriod", 10);
+    public static final int numOfIterations = Integer.getInteger("numOfIterations", 1);
     public static final int rampUpPeriod = Integer.getInteger("rampUpPeriod", 0);
+    public static final int userThinkTime = Integer.getInteger("userThinkTime", 5);
+    public static final int badLoginAttempts = Integer.getInteger("badLoginAttempts", 0);
+    public static final int refreshTokenCount = Integer.getInteger("refreshTokenCount", 0);
+    public static final int refreshTokenPeriod = Integer.getInteger("refreshTokenPeriod", 10);
 
     public static final String serverUris;
     public static final List<String> serverUrisList;
