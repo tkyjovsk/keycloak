@@ -26,7 +26,8 @@ case class AuthorizeAttributes(
   cookies: Expression[List[Cookie]],
   sslRequired: SslRequired = SslRequired.EXTERNAL,
   resource: Option[Expression[String]] = None,
-  password: Option[Expression[String]] = None,
+  secret: Option[Expression[String]] = None,
+  isPublic: Option[Expression[Boolean]] = None,
   realm: Option[Expression[String]] = None,
   realmKey: Option[String] = None,
   authServerUrl: Expression[String] = _ => Failure("no server url")
@@ -34,11 +35,16 @@ case class AuthorizeAttributes(
   def toAdapterConfig(session: Session) = {
     val adapterConfig = new AdapterConfig
     adapterConfig.setSslRequired(sslRequired.toString)
+
     adapterConfig.setResource( resource match {
-        case Some(expr) => expr(session).get
-        case None => null
+      case Some(expr) => expr(session).get
+      case None => null
     })
-    adapterConfig.setCredentials( password match {
+    adapterConfig.setPublicClient( isPublic match {
+      case Some(expr) => expr(session).get
+      case None => false
+    })
+    adapterConfig.setCredentials( secret match {
       case Some(expr) => Collections.singletonMap("secret", expr(session).get)
       case None => null
     })
@@ -51,6 +57,7 @@ case class AuthorizeAttributes(
       case None => null
     })
     adapterConfig.setAuthServerUrl(authServerUrl(session).get)
+
     adapterConfig
   }
 }
@@ -60,7 +67,8 @@ class AuthorizeActionBuilder(attributes: AuthorizeAttributes) extends ActionBuil
 
   def sslRequired(sslRequired: SslRequired) = newInstance(attributes.copy(sslRequired = sslRequired))
   def resource(resource: Expression[String]) = newInstance(attributes.copy(resource = Option(resource)))
-  def clientCredentials(password: Expression[String]) = newInstance(attributes.copy(password = Option(password)))
+  def clientCredentials(secret: Expression[String]) = newInstance(attributes.copy(secret = Option(secret)))
+  def publicClient(isPublic: Expression[Boolean]) = newInstance(attributes.copy(isPublic = Option(isPublic)))
   def realm(realm: Expression[String]) = newInstance(attributes.copy(realm = Option(realm)))
   def realmKey(realmKey: String) = newInstance(attributes.copy(realmKey = Option(realmKey)))
   def authServerUrl(authServerUrl: Expression[String]) = newInstance(attributes.copy(authServerUrl = authServerUrl))
@@ -72,6 +80,10 @@ class AuthorizeActionBuilder(attributes: AuthorizeAttributes) extends ActionBuil
 
 object AuthorizeAction {
   val logger = Logger.getLogger(classOf[AuthorizeAction])
+
+  def init(session: Session) : Session = {
+    session.remove(MockRequestAuthenticator.KEY)
+  }
 }
 
 class AuthorizeAction(
@@ -81,7 +93,8 @@ class AuthorizeAction(
   override def executeOrFail(session: Session): Validation[_] = {
     val facade = new MockHttpFacade()
     val deployment = KeycloakDeploymentBuilder.build(attributes.toAdapterConfig(session));
-    facade.request.setURI(attributes.uri(session).get);
+    val url = attributes.uri(session).get
+    facade.request.setURI(if (attributes.isPublic.isDefined && attributes.isPublic.get(session).get) rewriteFragmentToQuery(url) else url)
     facade.request.setCookies(attributes.cookies(session).get.map(c => (c.getName, c)).toMap.asJava)
     var nextSession = session
     val requestAuth: MockRequestAuthenticator = session(MockRequestAuthenticator.KEY).asOption[MockRequestAuthenticator] match {
@@ -101,6 +114,10 @@ class AuthorizeAction(
         })
         .recordAndContinue(AuthorizeAction.this, nextSession, attributes.requestName(session).get)
     })
+  }
+
+  def rewriteFragmentToQuery(str: String): String = {
+    str.replaceFirst("#", "?")
   }
 }
 
