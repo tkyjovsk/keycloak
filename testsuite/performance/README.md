@@ -31,7 +31,7 @@ mvn clean install
 # make sure your Docker daemon is running THEN
 mvn verify -Pprovision
 mvn verify -Pimport-data -Ddataset=100users -Dimport.workers=10
-mvn verify -Ptest -Ddataset=100users -DrunUsers=200 -DrampUpPeriod=10
+mvn verify -Ptest -Ddataset=100users -DrunUsers=200 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DnumOfIterations=3
 
 ```
 
@@ -100,9 +100,15 @@ Usage: `mvn verify -Pimport-dump [-Ddataset=DATASET]`
 
 ### Run Tests
 
-Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N] [-DrampUpPeriod=SECONDS] [-Ddataset=DATASET] [-D<dataset.property>=<value>]`.
+Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N] [-DrampUpPeriod=SECONDS] [-DnumOfIterations=N] [-Ddataset=DATASET] [-D<dataset.property>=<value>]* [-D<test.property>=<value>]* `.
 
 _*Note:* The same dataset properties which were used for data import should be supplied to the `test` phase._
+
+The default test `keycloak.KeycloakSimulation` takes the following additional properties:
+
+`[-DuserThinkTime=SECONDS] [-DbadLoginAttempts=N] [-DrefreshTokenCount=N] [-DrefreshTokenPeriod=SECONDS]`
+
+
 
 
 ## Examples
