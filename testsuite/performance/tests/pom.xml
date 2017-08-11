@@ -449,6 +449,61 @@
             </properties>
         </profile>
         
+
+        <profile>
+            <id>monitoring-on</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>monitoring-docker-compose-up</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.basedir}/..</workingDirectory>
+                                    <executable>docker-compose</executable>
+                                    <commandlineArgs>-f docker-compose-monitoring.yml up -d --build</commandlineArgs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>monitoring-off</id>
+            <properties>
+                <volumes.arg>-v</volumes.arg>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>monitoring-docker-compose-down</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.basedir}/..</workingDirectory>
+                                    <executable>docker-compose</executable>
+                                    <commandlineArgs>-f docker-compose-monitoring.yml down ${volumes.arg}</commandlineArgs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 
 </project>
