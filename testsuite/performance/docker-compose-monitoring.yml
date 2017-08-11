@@ -3,7 +3,7 @@ version: '2.2'
 
 services:
     influx:
-        image: influxdb
+        image: monitoring_influxdb
         volumes:
         - influx:/var/lib/influxdb
         ports:
