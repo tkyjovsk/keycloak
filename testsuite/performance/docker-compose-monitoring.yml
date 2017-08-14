@@ -38,6 +38,9 @@ services:
             INFLUX_DATABASE: cadvisor
         depends_on:
         - influx
+        command: --storage_driver_buffer_duration="5s"
+        ports:
+        - "8087:8080"
 #        deploy:
 #            mode: global
 
