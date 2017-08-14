@@ -197,6 +197,7 @@
                         <param>-DrealmRolesPerUser=${realmRolesPerUser}</param>
                         <param>-DclientRolesPerUser=${clientRolesPerUser}</param>
                         <param>-DclientRolesPerClient=${clientRolesPerClient}</param>
+                        <param>-DhashIterations=${hashIterations}</param>
                     </jvmArgs>
                 </configuration>
 
@@ -367,6 +368,7 @@
                                         <argument>-DrealmRolesPerUser=${realmRolesPerUser}</argument>
                                         <argument>-DclientRolesPerUser=${clientRolesPerUser}</argument>
                                         <argument>-DclientRolesPerClient=${clientRolesPerClient}</argument>
+                                        <argument>-DhashIterations=${hashIterations}</argument>
                                         <argument>org.keycloak.performance.RealmsConfigurationBuilder</argument>
                                     </arguments>
                                 </configuration>
