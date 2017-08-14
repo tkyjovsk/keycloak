@@ -38,6 +38,16 @@
         <keycloak.server.uris>http://localhost:8080/auth</keycloak.server.uris>
         <db.url>jdbc:mariadb://keycloak:keycloak@localhost:3306/keycloak</db.url>
         
+        <keycloak.worker.io.threads>2</keycloak.worker.io.threads>
+        <keycloak.worker.task.max.threads>16</keycloak.worker.task.max.threads>
+        <keycloak.http.max.connections>500</keycloak.http.max.connections>
+        <keycloak.memory.settings>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</keycloak.memory.settings>
+        
+        <keycloak-lb.worker.io.threads>2</keycloak-lb.worker.io.threads>
+        <keycloak-lb.worker.task.max.threads>16</keycloak-lb.worker.task.max.threads>
+        <keycloak-lb.http.max.connections>500</keycloak-lb.http.max.connections>
+        <keycloak-lb.memory.settings>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</keycloak-lb.memory.settings>
+        
         <dataset>default</dataset>
         <import.workers>1</import.workers>
 
@@ -297,6 +307,16 @@
                                     <commandlineArgs>-f ${compose.file} up -d --build ${compose.up.params}</commandlineArgs>
                                     <environmentVariables>
                                         <KEYCLOAK_VERSION>${project.version}</KEYCLOAK_VERSION>
+                                        
+                                        <KEYCLOAK_WORKER_IO_THREADS>${keycloak.worker.io.threads}</KEYCLOAK_WORKER_IO_THREADS>
+                                        <KEYCLOAK_WORKER_TASK_MAX_THREADS>${keycloak.worker.task.max.threads}</KEYCLOAK_WORKER_TASK_MAX_THREADS>
+                                        <KEYCLOAK_HTTP_MAX_CONNECTIONS>${keycloak.http.max.connections}</KEYCLOAK_HTTP_MAX_CONNECTIONS>
+                                        <KEYCLOAK_MEMORY_SETTINGS>${keycloak.memory.settings}</KEYCLOAK_MEMORY_SETTINGS>
+                                        
+                                        <KEYCLOAK_LB_WORKER_IO_THREADS>${keycloak-lb.worker.io.threads}</KEYCLOAK_LB_WORKER_IO_THREADS>
+                                        <KEYCLOAK_LB_WORKER_TASK_MAX_THREADS>${keycloak-lb.worker.task.max.threads}</KEYCLOAK_LB_WORKER_TASK_MAX_THREADS>
+                                        <KEYCLOAK_LB_HTTP_MAX_CONNECTIONS>${keycloak-lb.http.max.connections}</KEYCLOAK_LB_HTTP_MAX_CONNECTIONS>
+                                        <KEYCLOAK_LB_MEMORY_SETTINGS>${keycloak-lb.memory.settings}</KEYCLOAK_LB_MEMORY_SETTINGS>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
