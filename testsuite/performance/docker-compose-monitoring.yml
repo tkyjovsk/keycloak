@@ -36,6 +36,7 @@ services:
         environment:
             INFLUX_HOST: influx
             INFLUX_DATABASE: cadvisor
+        privileged: true
         depends_on:
         - influx
         command: --storage_driver_buffer_duration="5s"
