@@ -176,6 +176,9 @@ public class RealmsConfigurationLoader {
                 case "registrationAllowed":
                     r.setRegistrationAllowed(getBooleanValue(p));
                     break;
+                case "passwordPolicy":
+                    r.setPasswordPolicy(getStringValue(p));
+                    break;
                 case "users":
                     ensureRealm(r);
                     readUsers(r, p);
