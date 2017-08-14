@@ -9,6 +9,7 @@ RUN yum -y install iproute
 USER jboss
 
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=mod-cluster-balancer.cli
+RUN $JBOSS_HOME/bin/jboss-cli.sh --file=undertow.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=set-worker-threads.cli; \
     cd $JBOSS_HOME/standalone; rm -rf configuration/standalone_xml_history log data tmp
 
