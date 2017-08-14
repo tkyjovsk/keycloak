@@ -49,23 +49,31 @@ services:
             DS_MAX_POOL_SIZE: 100
             DS_POOL_PREFILL: "true"
             DS_PS_CACHE_SIZE: 100
-            WORKER_IO_THREADS: 2
-            WORKER_TASK_MAX_THREADS: 16
-            HTTP_MAX_CONNECTIONS: 500
-            AJP_MAX_CONNECTIONS: 500
+            WORKER_IO_THREADS: ${KEYCLOAK_WORKER_IO_THREADS:-2}
+            WORKER_TASK_MAX_THREADS: ${KEYCLOAK_WORKER_TASK_MAX_THREADS:-16}
+            HTTP_MAX_CONNECTIONS: ${KEYCLOAK_HTTP_MAX_CONNECTIONS:-500}
+            AJP_MAX_CONNECTIONS: ${KEYCLOAK_AJP_MAX_CONNECTIONS:-500}
+            JAVA_OPTS: ${KEYCLOAK_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
         ports:
             - "8080"
 
     keycloak_lb:
         build: load-balancer/wildfly-modcluster
         image: keycloak_test_wildfly_modcluster:${KEYCLOAK_VERSION:-latest}
+        depends_on:
+            keycloak:
+                condition: service_healthy
         cpus: 1
         networks:
             - keycloak
-            - loadbalancing
+#            - loadbalancing
         environment:
             PRIVATE_SUBNET: 10.0.1.0/24
 #            PUBLIC_SUBNET: 10.0.2.0/24
+            WORKER_IO_THREADS: ${KEYCLOAK_LB_WORKER_IO_THREADS:-2}
+            WORKER_TASK_MAX_THREADS: ${KEYCLOAK_LB_WORKER_TASK_MAX_THREADS:-16}
+            HTTP_MAX_CONNECTIONS: ${KEYCLOAK_LB_HTTP_MAX_CONNECTIONS:-500}
+            JAVA_OPTS: ${KEYCLOAK_LB_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
         ports:
             - "8080:8080"
         
