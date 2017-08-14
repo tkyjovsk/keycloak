@@ -29,6 +29,7 @@ public class TestConfig {
     public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
 
     public static final int numOfRealms = Integer.getInteger("numOfRealms", 1);
+    public static final int hashIterations = Integer.getInteger("hashIterations", 25000);
     public static final int usersPerRealm = Integer.getInteger("usersPerRealm", 2);
     public static final int clientsPerRealm = Integer.getInteger("clientsPerRealm", 2);
     public static final int realmRoles = Integer.getInteger("realmRoles", 2);
@@ -90,8 +91,8 @@ public class TestConfig {
     }
 
     public static String toStringDatasetProperties() {
-        return String.format("  numOfRealms: %s\n  usersPerRealm: %s\n  clientsPerRealm: %s\n  realmRoles: %s\n  realmRolesPerUser: %s\n  clientRolesPerUser: %s\n  clientRolesPerClient: %s",
-                numOfRealms, usersPerRealm, clientsPerRealm, realmRoles, realmRolesPerUser, clientRolesPerUser, clientRolesPerClient);
+        return String.format("  numOfRealms: %s\n  usersPerRealm: %s\n  clientsPerRealm: %s\n  realmRoles: %s\n  realmRolesPerUser: %s\n  clientRolesPerUser: %s\n  clientRolesPerClient: %s\n  hashIterations: %s",
+                numOfRealms, usersPerRealm, clientsPerRealm, realmRoles, realmRolesPerUser, clientRolesPerUser, clientRolesPerClient, hashIterations);
     }
 
     public static Iterator<UserInfo> sequentialUsersIterator(final String realm) {
