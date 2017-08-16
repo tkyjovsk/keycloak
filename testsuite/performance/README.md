@@ -30,7 +30,7 @@ mvn clean install
 
 # make sure your Docker daemon is running THEN
 mvn verify -Pprovision
-mvn verify -Pimport-data -Ddataset=100users -Dimport.workers=10 -DhashIterations=100
+mvn verify -Pimport-data -Ddataset=100users -DnumOfWorkers=10 -DhashIterations=100
 mvn verify -Ptest -Ddataset=100users -DrunUsers=200 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DnumOfIterations=3
 
 ```
@@ -44,7 +44,7 @@ mvn verify -Pteardown
 
 You can perform all phases in a single run:
 ```
-mvn verify -Pprovision,import-data,test,teardown -Ddataset=100users -Dimport.workers=10 -DhashIterations=100 -DrunUsers=200 -DrampUpPeriod=10
+mvn verify -Pprovision,import-data,test,teardown -Ddataset=100users -DnumOfWorkers=10 -DhashIterations=100 -DrunUsers=200 -DrampUpPeriod=10
 ```
 Note: The order in which maven profiles are listed does not determine the order in which profile related plugins are executed. `teardown` profile always executes last.
 
