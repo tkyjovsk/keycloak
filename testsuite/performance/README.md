@@ -116,6 +116,22 @@ For example:
 `mvn verify -Ptest -DrunUsers=1 -DnumOfIterations=10 -DuserThinkTime=0 -Ddataset=100users -DrefreshTokenPeriod=10 -Dgatling.simulationClass=keycloak.AdminSimulation`
 
 
+## Debugging & Profiling
+
+Keycloak docker container exposes JMX management interface on port `9990`.
+
+### JVisualVM
+
+- Start JVisualVM with `jboss-client.jar` on classpath: `./jvisualvm --cp:a $JBOSS_HOME/bin/client/jboss-client.jar`.
+- Add a local JMX connection: `service:jmx:remote+http://localhost:9990`.
+- Check "Use security credentials" and set `admin:admin`. (The default credentials can be overriden by providing env. variables `DEBUG_USER` and `DEBUG_USER_PASSWORD` to the container.)
+- Open the added connection.
+
+_Note: The above applies for the singlenode deployment.
+In cluster/crossdc deployments there are multiple KC containers running at the same time so their exposed ports are mapped to random available ports on `0.0.0.0`.
+To find the actual mapped ports run command: `docker ps | grep performance_keycloak`._
+
+
 ## Examples
 
 ### Single-node
