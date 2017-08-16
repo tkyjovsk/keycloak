@@ -14,7 +14,7 @@ if [ ! -f $GATLING_HOME/datasets/$DATASET.sql ]; then
         exit 1;
     else
         FILE=$GATLING_HOME/datasets/$DATASET.sql.gz
-        CMD="gzcat $FILE"
+        CMD="zcat $FILE"
     fi
 else
     FILE=$GATLING_HOME/datasets/$DATASET.sql
