@@ -49,7 +49,7 @@
         <keycloak-lb.memory.settings>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</keycloak-lb.memory.settings>
         
         <dataset>default</dataset>
-        <import.workers>1</import.workers>
+        <numOfWorkers>1</numOfWorkers>
 
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -385,7 +385,7 @@
                                     <arguments>
                                         <argument>-classpath</argument>
                                         <classpath/>
-                                        <argument>-DnumOfWorkers=${import.workers}</argument>
+                                        <argument>-DnumOfWorkers=${numOfWorkers}</argument>
                                         <argument>org.keycloak.performance.RealmsConfigurationLoader</argument>
                                         <argument>benchmark-realms.json</argument>
                                     </arguments>
