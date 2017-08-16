@@ -109,6 +109,11 @@ The default test `keycloak.KeycloakSimulation` takes the following additional pr
 `[-DuserThinkTime=SECONDS] [-DbadLoginAttempts=N] [-DrefreshTokenCount=N] [-DrefreshTokenPeriod=SECONDS]`
 
 
+If you want to run a different test you need to specify the test class name using `[-Dgatling.simulationClass=CLASSNAME]`.
+
+For example:
+
+`mvn verify -Ptest -DrunUsers=1 -DnumOfIterations=10 -DuserThinkTime=0 -Ddataset=100users -DrefreshTokenPeriod=10 -Dgatling.simulationClass=keycloak.AdminSimulation`
 
 
 ## Examples
