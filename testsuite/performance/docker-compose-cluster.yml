@@ -56,6 +56,7 @@ services:
             JAVA_OPTS: ${KEYCLOAK_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
         ports:
             - "8080"
+            - "9990"
 
     keycloak_lb:
         build: load-balancer/wildfly-modcluster
