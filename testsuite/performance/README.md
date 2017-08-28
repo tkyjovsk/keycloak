@@ -132,6 +132,19 @@ In cluster/crossdc deployments there are multiple KC containers running at the s
 To find the actual mapped ports run command: `docker ps | grep performance_keycloak`._
 
 
+## Monitoring
+
+There is a docker-based solution for monitoring of CPU, memory and network usage per container. 
+(It uses CAdvisor service to export container metrics into InfluxDB time series database, and Grafana web app to query the DB and present results as graphs.)
+
+- To enable run: `mvn verify -Pmonitoring-on`
+- To disable run: `mvn verify -Pmonitoring-off[,delete-monitoring-volumes]`.
+By default the monitoring history is preserved. If you wish to delete it enable the `delete-monitoring-volumes` profile when turning monitoring off.
+
+To view monitoring dashboard open Grafana UI at: `http://localhost:3000/`.
+
+
+
 ## Examples
 
 ### Single-node

@@ -545,7 +545,7 @@
         <profile>
             <id>monitoring-off</id>
             <properties>
-                <volumes.arg>-v</volumes.arg>
+                <monitoring.volumes.arg/>
             </properties>
             <build>
                 <plugins>
@@ -562,13 +562,19 @@
                                 <configuration>
                                     <workingDirectory>${project.basedir}/..</workingDirectory>
                                     <executable>docker-compose</executable>
-                                    <commandlineArgs>-f docker-compose-monitoring.yml down ${volumes.arg}</commandlineArgs>
+                                    <commandlineArgs>-f docker-compose-monitoring.yml down ${monitoring.volumes.arg}</commandlineArgs>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>delete-monitoring-volumes</id>
+            <properties>
+                <monitoring.volumes.arg>-v</monitoring.volumes.arg>
+            </properties>
         </profile>
 
     </profiles>
