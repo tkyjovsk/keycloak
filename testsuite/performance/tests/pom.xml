@@ -510,7 +510,7 @@
             </build>
         </profile>
         <profile>
-            <id>keep-volumes</id>
+            <id>keep-data</id>
             <properties>
                 <volumes.arg/>
             </properties>
@@ -518,7 +518,7 @@
         
 
         <profile>
-            <id>monitoring-on</id>
+            <id>monitoring</id>
             <build>
                 <plugins>
                     <plugin>
@@ -571,7 +571,7 @@
             </build>
         </profile>
         <profile>
-            <id>delete-monitoring-volumes</id>
+            <id>delete-monitoring-data</id>
             <properties>
                 <monitoring.volumes.arg>-v</monitoring.volumes.arg>
             </properties>
