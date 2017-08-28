@@ -283,7 +283,7 @@
                 <keycloak.dc1.scale>1</keycloak.dc1.scale>
                 <keycloak.dc2.scale>1</keycloak.dc2.scale>
                 <compose.up.params>--scale keycloak_dc1=${keycloak.dc1.scale} --scale keycloak_dc2=${keycloak.dc2.scale}</compose.up.params>
-                <keycloak.server.uris>http://localhost:8080/auth http://localhost:8081/auth</keycloak.server.uris>
+                <keycloak.server.uris>http://localhost:8081/auth http://localhost:8082/auth</keycloak.server.uris>
             </properties>
         </profile>
         
@@ -333,6 +333,25 @@
                                     <environmentVariables>
                                         <KEYCLOAK_SERVER_URIS>${keycloak.server.uris}</KEYCLOAK_SERVER_URIS>
                                     </environmentVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>write-provisioned-system-properties</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <propertyfile file="${project.build.directory}/provisioned-system.properties">
+                                            <entry key="keycloak.server.uris" value="${keycloak.server.uris}"/>
+                                        </propertyfile>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
@@ -389,6 +408,32 @@
                                         <argument>org.keycloak.performance.RealmsConfigurationLoader</argument>
                                         <argument>benchmark-realms.json</argument>
                                     </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>write-imported-dataset-properties</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <propertyfile file="${project.build.directory}/imported-dataset.properties">
+                                            <entry key="numOfRealms" value="${numOfRealms}"/>
+                                            <entry key="usersPerRealm" value="${usersPerRealm}"/>
+                                            <entry key="clientsPerRealm" value="${clientsPerRealm}"/>
+                                            <entry key="realmRoles" value="${realmRoles}"/>
+                                            <entry key="realmRolesPerUser" value="${realmRolesPerUser}"/>
+                                            <entry key="clientRolesPerUser" value="${clientRolesPerUser}"/>
+                                            <entry key="clientRolesPerClient" value="${clientRolesPerClient}"/>
+                                            <entry key="hashIterations" value="${hashIterations}"/>
+                                        </propertyfile>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
