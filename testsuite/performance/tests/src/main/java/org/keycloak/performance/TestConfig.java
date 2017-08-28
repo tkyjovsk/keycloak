@@ -29,7 +29,7 @@ public class TestConfig {
     public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
 
     public static final int numOfRealms = Integer.getInteger("numOfRealms", 1);
-    public static final int hashIterations = Integer.getInteger("hashIterations", 25000);
+    public static final int hashIterations = Integer.getInteger("hashIterations", 27500);
     public static final int usersPerRealm = Integer.getInteger("usersPerRealm", 2);
     public static final int clientsPerRealm = Integer.getInteger("clientsPerRealm", 2);
     public static final int realmRoles = Integer.getInteger("realmRoles", 2);
