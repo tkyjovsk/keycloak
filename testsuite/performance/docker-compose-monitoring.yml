@@ -8,7 +8,8 @@ networks:
             - subnet: 10.0.5.0/24
             
 services:
-    influx:
+    
+    monitoring_influxdb:
         image: influxdb
         volumes:
         - influx:/var/lib/influxdb
@@ -22,7 +23,7 @@ services:
 #                constraints:
 #                - node.role == manager
 
-    cadvisor:
+    monitoring_cadvisor:
         build: monitoring/cadvisor
         image: monitoring_cadvisor
         hostname: '{{.Node.ID}}'
@@ -34,11 +35,11 @@ services:
         networks:
             - monitoring
         environment:
-            INFLUX_HOST: influx
+            INFLUX_HOST: monitoring_influxdb
             INFLUX_DATABASE: cadvisor
         privileged: true
         depends_on:
-        - influx
+        - monitoring_influxdb
         command: --storage_driver_buffer_duration="5s"
         ports:
         - "8087:8080"
@@ -46,18 +47,18 @@ services:
 #            mode: global
 
   
-    grafana:
+    monitoring_grafana:
         build: monitoring/grafana
         image: monitoring_grafana
         depends_on:
-        - influx
+        - monitoring_influxdb
         volumes:
         - grafana:/var/lib/grafana
         networks:
             - monitoring
         environment:
             INFLUX_DATASOURCE_NAME: influxdb_cadvisor
-            INFLUX_HOST: influx
+            INFLUX_HOST: monitoring_influxdb
             INFLUX_DATABASE: cadvisor
         ports:
         - "3000:3000"
