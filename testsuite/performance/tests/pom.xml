@@ -35,6 +35,7 @@
     <properties>
         <compose.file>docker-compose.yml</compose.file>
         <compose.up.params/>
+        <compose.restart.params>keycloak</compose.restart.params>
         <keycloak.server.uris>http://localhost:8080/auth</keycloak.server.uris>
         <db.url>jdbc:mariadb://keycloak:keycloak@localhost:3306/keycloak</db.url>
         
@@ -287,6 +288,7 @@
                 <keycloak.dc1.scale>1</keycloak.dc1.scale>
                 <keycloak.dc2.scale>1</keycloak.dc2.scale>
                 <compose.up.params>--scale keycloak_dc1=${keycloak.dc1.scale} --scale keycloak_dc2=${keycloak.dc2.scale}</compose.up.params>
+                <compose.restart.params>keycloak_dc1 keycloak_dc2</compose.restart.params>
                 <keycloak.server.uris>http://localhost:8081/auth http://localhost:8082/auth</keycloak.server.uris>
             </properties>
         </profile>
@@ -466,6 +468,32 @@
 
                                     <environmentVariables>
                                         <DATASET>${dataset}</DATASET>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>restart-keycloak</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <workingDirectory>${project.basedir}/..</workingDirectory>
+                                    <executable>docker-compose</executable>
+                                    <commandlineArgs>-f ${compose.file} restart ${compose.restart.params}</commandlineArgs>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>healthcheck</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>./healthcheck.sh</executable>
+                                    <workingDirectory>${project.basedir}/..</workingDirectory>
+                                    <environmentVariables>
+                                        <KEYCLOAK_SERVER_URIS>${keycloak.server.uris}</KEYCLOAK_SERVER_URIS>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
