@@ -30,8 +30,8 @@ mvn clean install
 
 # make sure your Docker daemon is running THEN
 mvn verify -Pprovision
-mvn verify -Pimport-data -Ddataset=100users -DnumOfWorkers=10 -DhashIterations=100
-mvn verify -Ptest -Ddataset=100users -DrunUsers=200 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DnumOfIterations=3
+mvn verify -Pimport-data -Ddataset=100u -DnumOfWorkers=10 -DhashIterations=100
+mvn verify -Ptest -Ddataset=100u -DrunUsers=200 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DnumOfIterations=3
 
 ```
 
@@ -44,7 +44,7 @@ mvn verify -Pteardown
 
 You can perform all phases in a single run:
 ```
-mvn verify -Pprovision,import-data,test,teardown -Ddataset=100users -DnumOfWorkers=10 -DhashIterations=100 -DrunUsers=200 -DrampUpPeriod=10
+mvn verify -Pprovision,import-data,test,teardown -Ddataset=100u -DnumOfWorkers=10 -DhashIterations=100 -DrunUsers=200 -DrampUpPeriod=10
 ```
 Note: The order in which maven profiles are listed does not determine the order in which profile related plugins are executed. `teardown` profile always executes last.
 
@@ -83,11 +83,11 @@ Dataset data is first generated as a .json file, and then imported into Keycloak
 #### Examples:
 - `mvn verify -Pimport-data` - import default dataset
 - `mvn verify -Pimport-data -DusersPerRealm=5` - import default dataset, override the `usersPerRealm` property
-- `mvn verify -Pimport-data -Ddataset=100users` - import `100users` dataset
-- `mvn verify -Pimport-data -Ddataset=100realms/default` - import dataset from `datasets/100realms/default.properties`
+- `mvn verify -Pimport-data -Ddataset=100u` - import `100u` dataset
+- `mvn verify -Pimport-data -Ddataset=100r/default` - import dataset from `datasets/100r/default.properties`
 
 The data can also be exported from the database, and stored locally as `datasets/${dataset}.sql.gz`
-`DATASET=100users ./prepare-dump.sh`
+`DATASET=100u ./prepare-dump.sh`
 
 If there is a data dump file available then -Pimport-dump can be used to import the data directly into the database, 
 by-passing Keycloak server completely.
@@ -95,7 +95,7 @@ by-passing Keycloak server completely.
 Usage: `mvn verify -Pimport-dump [-Ddataset=DATASET]`
 
 #### Example:
-- `mvn verify -Pimport-dump -Ddataset=100users` - import `datasets/100users.sql.gz` dump file created using `prepare-dump.sh`.
+- `mvn verify -Pimport-dump -Ddataset=100u` - import `datasets/100u.sql.gz` dump file created using `prepare-dump.sh`.
 
 
 ### Run Tests
@@ -113,7 +113,7 @@ If you want to run a different test you need to specify the test class name usin
 
 For example:
 
-`mvn verify -Ptest -DrunUsers=1 -DnumOfIterations=10 -DuserThinkTime=0 -Ddataset=100users -DrefreshTokenPeriod=10 -Dgatling.simulationClass=keycloak.AdminSimulation`
+`mvn verify -Ptest -DrunUsers=1 -DnumOfIterations=10 -DuserThinkTime=0 -Ddataset=100u -DrefreshTokenPeriod=10 -Dgatling.simulationClass=keycloak.AdminSimulation`
 
 
 ## Debugging & Profiling
@@ -151,22 +151,49 @@ To view monitoring dashboard open Grafana UI at: `http://localhost:3000/dashboar
 
 - Provision single node of KC + DB, import data, run test, and tear down the provisioned system:
 
-    `mvn verify -Pprovision,import-data,test,teardown -Ddataset=100users -DrunUsers=100`
+    `mvn verify -Pprovision,import-data,test,teardown -Ddataset=100u -DrunUsers=100`
 
 - Provision single node of KC + DB, import data, no test, no teardown:
 
-    `mvn verify -Pprovision,import-data -Ddataset=100users`
+    `mvn verify -Pprovision,import-data -Ddataset=100u`
 
 - Run test against provisioned system using 100 concurrent users ramped up over 10 seconds, then tear it down:
 
-    `mvn verify -Ptest,teardown -Ddataset=100users -DrunUsers=100 -DrampUpPeriod=10`
+    `mvn verify -Ptest,teardown -Ddataset=100u -DrunUsers=100 -DrampUpPeriod=10`
 
 ### Cluster
 
 - Provision a 1-node KC cluster + DB, import data, run test against the provisioned system, then tear it down:
 
-    `mvn verify -Pprovision,cluster,import-data,test,teardown -Ddataset=100users -DrunUsers=100`
+    `mvn verify -Pprovision,cluster,import-data,test,teardown -Ddataset=100u -DrunUsers=100`
 
 - Provision a 2-node KC cluster + DB, import data, run test against the provisioned system, then tear it down:
 
     `mvn verify -Pprovision,cluster,import-data,test,teardown -Dkeycloak.scale=2 -DusersPerRealm=200 -DrunUsers=200`
+
+
+## Developing tests in IntelliJ IDEA
+
+### Add scala support to IDEA
+
+#### Install the correct Scala SDK
+
+First you need to install Scala SDK. In Scala land it's very important that all libraries used are compatible with specific version of Scala.
+Gatling version that we use uses Scala version 2.11.7. In order to avoid conflicts between Scala used by IDEA, and Scala dependencies in pom.xml
+it's very important to use that same version of Scala SDK for development.
+
+Thus, it's best to download and install [this SDK version](http://scala-lang.org/download/2.11.7.html)
+
+#### Install IntelliJ's official Scala plugin
+
+Open Preferences in IntelliJ. Type 'plugins' in the search box. In the right pane click on 'Install JetBrains plugin'.
+Type 'scala' in the search box, and click Install button of the Scala plugin.
+
+#### Run KeycloakSimulation from IntelliJ
+
+In ProjectExplorer find Engine object (you can use ctrl-N / cmd-O). Right click on class name and select Run or Debug like for
+JUnit tests.
+
+You can create a test profile, and set JVM parameters with -Dkey=value to override default configuration values in TestConfig class. 
+
+When tests are executed via maven, the Engine object is not used. It exists only for running tests in IDE.
