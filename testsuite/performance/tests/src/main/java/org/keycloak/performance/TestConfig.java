@@ -21,15 +21,29 @@ import static org.keycloak.performance.RealmsConfigurationBuilder.computeUsernam
  */
 public class TestConfig {
 
+    //
+    // Settings used by RealmsConfigurationBuilder only - when generating the dataset
+    //
+    public static final int hashIterations = Integer.getInteger("hashIterations", 27500);
+
+    //
+    // Settings used by RealmsConfigurationLoader only - when loading data into Keycloak
+    //
+    public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
+
+    //
+    // Settings used by RealmConfigurationLoader to connect to Admin REST API
+    //
     public static final String authRealm = System.getProperty("authRealm", "master");
     public static final String authUser = System.getProperty("authUser", "admin");
     public static final String authPassword = System.getProperty("authPassword", "admin");
     public static final String authClient = System.getProperty("authClient", "admin-cli");
 
-    public static final int numOfWorkers = Integer.getInteger("numOfWorkers", 1);
 
+    //
+    // Settings used by RealmsConfigurationBuilder to generate the dataset and by tests to work within constraints of the dataset
+    //
     public static final int numOfRealms = Integer.getInteger("numOfRealms", 1);
-    public static final int hashIterations = Integer.getInteger("hashIterations", 27500);
     public static final int usersPerRealm = Integer.getInteger("usersPerRealm", 2);
     public static final int clientsPerRealm = Integer.getInteger("clientsPerRealm", 2);
     public static final int realmRoles = Integer.getInteger("realmRoles", 2);
@@ -37,13 +51,23 @@ public class TestConfig {
     public static final int clientRolesPerUser = Integer.getInteger("clientRolesPerUser", 2);
     public static final int clientRolesPerClient = Integer.getInteger("clientRolesPerClient", 2);
 
+
+    //
+    // Settings used by tests to control common test parameters
+    //
     public static final int runUsers = Integer.getInteger("runUsers", 1);
-    public static final int numOfIterations = Integer.getInteger("numOfIterations", 1);
     public static final int rampUpPeriod = Integer.getInteger("rampUpPeriod", 0);
     public static final int userThinkTime = Integer.getInteger("userThinkTime", 5);
+    public static final int refreshTokenPeriod = Integer.getInteger("refreshTokenPeriod", 10);
+
+
+    //
+    // Settings used by KeycloakSimulation to control behavior specific to KeycloakSimulation
+    //
+    public static final int numOfIterations = Integer.getInteger("numOfIterations", 1);
     public static final int badLoginAttempts = Integer.getInteger("badLoginAttempts", 0);
     public static final int refreshTokenCount = Integer.getInteger("refreshTokenCount", 0);
-    public static final int refreshTokenPeriod = Integer.getInteger("refreshTokenPeriod", 10);
+
 
     public static final String serverUris;
     public static final List<String> serverUrisList;
