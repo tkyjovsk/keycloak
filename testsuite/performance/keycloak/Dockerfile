@@ -1,6 +1,7 @@
 FROM jboss/base-jdk:8
 
 ENV JBOSS_HOME /opt/jboss/keycloak
+ARG REMOTE_CACHES=false
 WORKDIR $JBOSS_HOME
 
 ENV CONFIGURATION standalone.xml
@@ -31,8 +32,9 @@ RUN $JBOSS_HOME/bin/jboss-cli.sh --file=set-keycloak-ds.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=io-worker-threads.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=undertow.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=distributed-cache-owners.cli
-RUN $JBOSS_HOME/bin/jboss-cli.sh --file=modcluster-simple-load-provider.cli; \
-    cd $JBOSS_HOME/standalone; rm -rf configuration/standalone_xml_history log data tmp
+RUN $JBOSS_HOME/bin/jboss-cli.sh --file=modcluster-simple-load-provider.cli
+RUN if [ "$REMOTE_CACHES" == "true" ]; then $JBOSS_HOME/bin/jboss-cli.sh --file=add-remote-cache-stores.cli; fi
+RUN cd $JBOSS_HOME/standalone; rm -rf configuration/standalone_xml_history log data tmp
 
 RUN $JBOSS_HOME/bin/add-user.sh -u $DEBUG_USER -p $DEBUG_USER_PASSWORD
 

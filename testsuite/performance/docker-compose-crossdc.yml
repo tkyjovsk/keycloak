@@ -16,12 +16,62 @@ networks:
         ipam:
             config:
             - subnet: 10.0.2.0/24
+    # cross-DC
     db_replication:
         ipam:
             config:
             - subnet: 10.0.3.0/24
+    # cross-DC
+    ispn_replication:
+        ipam:
+            config:
+            - subnet: 10.0.4.0/24
         
 services:
+
+    infinispan_dc1:
+        build: infinispan
+        image: keycloak_test_infinispan:${KEYCLOAK_VERSION:-latest}
+        cpus: 1
+        networks:
+            - ispn_replication
+            - dc1_keycloak
+        environment:
+            PUBLIC_SUBNET: 10.1.1.0/24
+            PRIVATE_SUBNET: 10.0.4.0/24
+            MGMT_USER: admin
+            MGMT_USER_PASSWORD: admin
+#            APP_USER: keycloak
+#            APP_USER_PASSWORD: keycloak
+#            APP_USER_GROUPS: keycloak
+            JAVA_OPTS: ${INFINISPAN_SERVER_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} ${INFINISPAN_SERVER_GC_SETTINGS:--XX:+DisableExplicitGC} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+            SITE: dc1
+        ports:
+            - "9991:9990"
+
+    infinispan_dc2:
+        build: infinispan
+        image: keycloak_test_infinispan:${KEYCLOAK_VERSION:-latest}
+        depends_on:
+            infinispan_dc1:
+                condition: service_healthy
+        cpus: 1
+        networks:
+            - ispn_replication
+            - dc2_keycloak
+        environment:
+            PUBLIC_SUBNET: 10.2.1.0/24
+            PRIVATE_SUBNET: 10.0.4.0/24
+            MGMT_USER: admin
+            MGMT_USER_PASSWORD: admin
+#            APP_USER: keycloak
+#            APP_USER_PASSWORD: keycloak
+#            APP_USER_GROUPS: keycloak
+            JAVA_OPTS: ${INFINISPAN_SERVER_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} ${INFINISPAN_SERVER_GC_SETTINGS:--XX:+DisableExplicitGC} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+            SITE: dc2
+        ports:
+            - "9992:9990"
+    
     
     mariadb_dc1:
         build: db/mariadb
@@ -58,16 +108,21 @@ services:
         command: --wsrep_cluster_address=gcomm://mariadb_dc1
         ports:
             - "3307:3306"
-            
-            
-            
-            
+
+
+
     keycloak_dc1:
-        build: keycloak
+        build: 
+            context: ./keycloak
+            args:
+                REMOTE_CACHES: "true"
         image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
         depends_on:
             # wait for the db cluster to be ready before starting keycloak
             mariadb_dc2:
+                condition: service_healthy
+            # wait for the ispn cluster to be ready before starting keycloak
+            infinispan_dc2:
                 condition: service_healthy
         cpus: 1
         networks:
@@ -91,13 +146,18 @@ services:
             HTTP_MAX_CONNECTIONS: ${KEYCLOAK_HTTP_MAX_CONNECTIONS:-500}
             AJP_MAX_CONNECTIONS: ${KEYCLOAK_AJP_MAX_CONNECTIONS:-500}
             JAVA_OPTS: ${KEYCLOAK_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+            INFINISPAN_HOST: infinispan_dc1
+            SITE: dc1
         ports:
             - "8080"
             - "9990"
 
 
     keycloak_dc2:
-        build: keycloak
+        build: 
+            context: ./keycloak
+            args:
+                REMOTE_CACHES: "true"
         image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
         depends_on:
             # wait for first kc instance to be ready before starting another
@@ -123,6 +183,8 @@ services:
             HTTP_MAX_CONNECTIONS: ${KEYCLOAK_HTTP_MAX_CONNECTIONS:-500}
             AJP_MAX_CONNECTIONS: ${KEYCLOAK_AJP_MAX_CONNECTIONS:-500}
             JAVA_OPTS: ${KEYCLOAK_MEMORY_SETTINGS:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+            INFINISPAN_HOST: infinispan_dc2
+            SITE: dc2
         ports:
             - "8080"
             - "9990"
