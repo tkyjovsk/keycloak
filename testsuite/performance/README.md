@@ -14,21 +14,14 @@ Here's how to perform a simple tests run:
 # Clone keycloak repository if you don't have it yet
 # git clone https://github.com/keycloak/keycloak.git
 
-# add keycloak-performance branch to existing cloned Keycloak repository
-cd keycloak
-git remote add tkyjovsk https://github.com/tkyjovsk/keycloak.git
-git fetch tkyjovsk
-git checkout remotes/tkyjovsk/performance-testing
-git checkout -b performance-testing
-
-# build keycloak distribution - needed to build docker image with latest Keycloak server
+# Build Keycloak distribution - needed to build docker image with latest Keycloak server
 mvn clean install -DskipTests -Pdistribution
 
-# now build, provision and run the test
+# Now build, provision and run the test
 cd testsuite/performance
 mvn clean install
 
-# make sure your Docker daemon is running THEN
+# Make sure your Docker daemon is running THEN
 mvn verify -Pprovision
 mvn verify -Pimport-data -Ddataset=100u -DnumOfWorkers=10 -DhashIterations=100
 mvn verify -Ptest -Ddataset=100u -DrunUsers=200 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DnumOfIterations=3
@@ -104,7 +97,7 @@ Usage: `mvn verify -Ptest[,cluster] [-DrunUsers=N] [-DrampUpPeriod=SECONDS] [-Dn
 
 _*Note:* The same dataset properties which were used for data import should be supplied to the `test` phase._
 
-The default test `keycloak.KeycloakSimulation` takes the following additional properties:
+The default test `keycloak.DefaultSimulation` takes the following additional properties:
 
 `[-DuserThinkTime=SECONDS] [-DbadLoginAttempts=N] [-DrefreshTokenCount=N] [-DrefreshTokenPeriod=SECONDS]`
 
@@ -189,11 +182,15 @@ Thus, it's best to download and install [this SDK version](http://scala-lang.org
 Open Preferences in IntelliJ. Type 'plugins' in the search box. In the right pane click on 'Install JetBrains plugin'.
 Type 'scala' in the search box, and click Install button of the Scala plugin.
 
-#### Run KeycloakSimulation from IntelliJ
+#### Run DefaultSimulation from IntelliJ
 
 In ProjectExplorer find Engine object (you can use ctrl-N / cmd-O). Right click on class name and select Run or Debug like for
 JUnit tests.
 
-You can create a test profile, and set JVM parameters with -Dkey=value to override default configuration values in TestConfig class. 
+You'll have to create a test profile, and set 'VM options' with -Dkey=value to override default configuration values in TestConfig class.
+
+Make sure to set 'Use classpath of module' to 'performance-test'. 
 
 When tests are executed via maven, the Engine object is not used. It exists only for running tests in IDE.
+
+If test startup fails due to not being able to find the test classes try reimporting the 'performance' module from pom.xml (right click on 'performance' directory, select 'Maven' at the bottom of context menu, then 'Reimport')

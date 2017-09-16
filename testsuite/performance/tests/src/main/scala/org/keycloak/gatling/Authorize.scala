@@ -92,7 +92,7 @@ class AuthorizeAction(
                      ) extends Interruptable with ExitOnFailure with DataWriterClient {
   override def executeOrFail(session: Session): Validation[_] = {
     val facade = new MockHttpFacade()
-    val deployment = KeycloakDeploymentBuilder.build(attributes.toAdapterConfig(session));
+    val deployment = KeycloakDeploymentBuilder.build(attributes.toAdapterConfig(session))
     val url = attributes.uri(session).get
     facade.request.setURI(if (attributes.isPublic.isDefined && attributes.isPublic.get(session).get) rewriteFragmentToQuery(url) else url)
     facade.request.setCookies(attributes.cookies(session).get.map(c => (c.getName, c)).toMap.asJava)
@@ -110,9 +110,9 @@ class AuthorizeAction(
       Stopwatch(() => requestAuth.authenticate())
         .check(result => result == AuthOutcome.AUTHENTICATED, result => {
           AuthorizeAction.logger.warnf("%s: Failed auth %s%n", new SimpleDateFormat("HH:mm:ss,SSS").format(new Date()).asInstanceOf[Any], session("username").as[Any], Unit)
-          result.toString
+          "AuthorizeAction: authenticate() failed with status: " + result.toString
         })
-        .recordAndContinue(AuthorizeAction.this, nextSession, attributes.requestName(session).get)
+        .recordAndContinue(this, nextSession, attributes.requestName(session).get)
     })
   }
 

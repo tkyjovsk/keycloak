@@ -1,50 +1,25 @@
-package org.keycloak.gatling
+package keycloak
 
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 import io.gatling.core.Predef._
+import io.gatling.http.Predef._
+
 import io.gatling.core.pause.Normal
 import io.gatling.core.structure.ChainBuilder
-import io.gatling.http.Predef._
-import org.jboss.perf.util.Util
+import keycloak.AdminConsoleSimulationHelper._
+
 import org.keycloak.performance.TestConfig
+
 
 /**
   * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
   */
-object AdminConsoleUtils {
+object SimulationsHelper {
 
-  val UI_HEADERS = Map(
-    "Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Upgrade-Insecure-Requests" -> "1")
+  implicit class SimulationsChainBuilderExtras(val builder: ChainBuilder) {
 
-  val ACCEPT_JSON = Map("Accept" -> "application/json")
-  val ACCEPT_ALL = Map("Accept" -> "*/*")
-  val AUTHORIZATION = Map("Authorization" -> "Bearer ${accessToken}")
-
-  val APP_URL = "${keycloakServer}/admin/master/console/"
-  val DATE_FMT = DateTimeFormatter.RFC_1123_DATE_TIME
-
-
-  def getRandomUser() : String = {
-    "user_" + (Util.random.nextDouble() * TestConfig.usersPerRealm).toInt
-  }
-
-  def needTokenRefresh(sess: Session): Boolean = {
-    val lastRefresh = sess("accessTokenRefreshTime").as[Long]
-
-    // 5 seconds before expiry is time to refresh
-    lastRefresh + sess("expiresIn").as[String].toInt * 1000 - 5000 < System.currentTimeMillis() ||
-      // or if refreshTokenPeriod is set force refresh even if not necessary
-      (TestConfig.refreshTokenPeriod > 0 &&
-        lastRefresh + TestConfig.refreshTokenPeriod * 1000 < System.currentTimeMillis())
-  }
-
-
-  implicit class AdminConsoleChainBuilder(val builder: ChainBuilder) {
-
-    def refreshTokenIfExpired() : ChainBuilder = {
+    def acsim_refreshTokenIfExpired() : ChainBuilder = {
       builder
         .doIf(s => needTokenRefresh(s)) {
           exec(http("JS Adapter Token - Refresh tokens")
@@ -84,7 +59,7 @@ object AdminConsoleUtils {
         )
     }
 
-    def loginThroughLoginForm() : ChainBuilder = {
+    def acsim_loginThroughLoginForm() : ChainBuilder = {
       builder
         .exec(http("JS Adapter Auth - Login Form Redirect")
           .get("/auth/realms/master/protocol/openid-connect/auth?client_id=security-admin-console&redirect_uri=${keycloakServerUrlEncoded}%2Fadmin%2Fmaster%2Fconsole%2F&state=${state}&nonce=${nonce}&response_mode=fragment&response_type=code&scope=openid")
@@ -174,12 +149,12 @@ object AdminConsoleUtils {
           .check(status.is(200)))
 
         // DO NOT forget the leading dot, or the wrong ScenarioBuilder will be returned
-        .openRealmSettings()
+        .acsim_openRealmSettings()
     }
 
-    def openRealmSettings() : ChainBuilder = {
+    def acsim_openRealmSettings() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console Realm Settings")
         .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/realm-detail.html")
         .headers(UI_HEADERS)
@@ -231,9 +206,9 @@ object AdminConsoleUtils {
       )
     }
 
-    def openClients() : ChainBuilder = {
+    def acsim_openClients() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console - client-list.html")
           .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/client-list.html")
           .headers(UI_HEADERS)
@@ -259,9 +234,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def openCreateNewClient() : ChainBuilder = {
+    def acsim_openCreateNewClient() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console - create-client.html")
           .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/create-client.html")
           .headers(UI_HEADERS)
@@ -275,9 +250,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def submitNewClient() : ChainBuilder = {
+    def acsim_submitNewClient() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console REST - ${realm}/clients POST")
           .post("/auth/admin/realms/${realm}/clients")
           .headers(AUTHORIZATION)
@@ -315,9 +290,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def updateClient() : ChainBuilder = {
+    def acsim_updateClient() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(s => {
           s.set("updateClientJson", s("clientJson").as[String].replace("\"publicClient\":false", "\"publicClient\":true"))
         })
@@ -356,9 +331,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def openClientDetails() : ChainBuilder = {
+    def acsim_openClientDetails() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console - client-detail.html")
           .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/client-detail.html")
           .headers(UI_HEADERS)
@@ -397,9 +372,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def openUsers() : ChainBuilder = {
+    def acsim_openUsers() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console - user-list.html")
           .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/user-list.html")
           .headers(UI_HEADERS)
@@ -421,9 +396,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def viewAllUsers() : ChainBuilder = {
+    def acsim_viewAllUsers() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console REST - ${realm}/users")
           .get("/auth/admin/realms/${realm}/users?first=0&max=20")
           .headers(AUTHORIZATION)
@@ -431,9 +406,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def viewTenPagesOfUsers() : ChainBuilder = {
+    def acsim_viewTenPagesOfUsers() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .repeat(10, "i") {
           exec(s => s.set("offset", s("i").as[Int]*20))
             .pause(1)
@@ -445,9 +420,9 @@ object AdminConsoleUtils {
         }
     }
 
-    def find20Users() : ChainBuilder = {
+    def acsim_find20Users() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console REST - ${realm}/users?first=0&max=20&search=user")
           .get("/auth/admin/realms/${realm}/users?first=0&max=20&search=user")
           .headers(AUTHORIZATION)
@@ -455,9 +430,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def findUnlimitedUsers() : ChainBuilder = {
+    def acsim_findUnlimitedUsers() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console REST - ${realm}/users?search=user")
           .get("/auth/admin/realms/${realm}/users?search=user")
           .headers(AUTHORIZATION)
@@ -465,10 +440,10 @@ object AdminConsoleUtils {
         )
     }
 
-    def findRandomUser() : ChainBuilder = {
+    def acsim_findRandomUser() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
-        .exec(s => s.set("randomUsername", getRandomUser()))
+        .acsim_refreshTokenIfExpired()
+        .exec(s => s.set("randomUsername", AdminConsoleSimulationHelper.getRandomUser()))
         .exec(http("Console REST - ${realm}/users?first=0&max=20&search=USERNAME")
           .get("/auth/admin/realms/${realm}/users?first=0&max=20&search=${randomUsername}")
           .headers(AUTHORIZATION)
@@ -476,9 +451,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def openUser() : ChainBuilder = {
+    def acsim_openUser() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console - user-detail.html")
           .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/user-detail.html")
           .headers(UI_HEADERS)
@@ -518,9 +493,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def openUserCredentials() : ChainBuilder = {
+    def acsim_openUserCredentials() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console - user-credentials.html")
           .get("/auth/resources/${resourceVersion}/admin/keycloak/partials/user-credentials.html")
           .headers(UI_HEADERS)
@@ -550,9 +525,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def setTemporaryPassword() : ChainBuilder = {
+    def acsim_setTemporaryPassword() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Console REST - ${realm}/users/ID/reset-password PUT")
           .put("/auth/admin/realms/${realm}/users/${userId}/reset-password")
           .headers(AUTHORIZATION)
@@ -563,13 +538,9 @@ object AdminConsoleUtils {
         )
     }
 
-    def thinkPause() : ChainBuilder = {
-      builder.pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
-    }
-
-    def logOut() : ChainBuilder = {
+    def acsim_logOut() : ChainBuilder = {
       builder
-        .refreshTokenIfExpired()
+        .acsim_refreshTokenIfExpired()
         .exec(http("Browser logout")
           .get("/auth/realms/master/protocol/openid-connect/logout")
           .headers(UI_HEADERS)
@@ -577,6 +548,10 @@ object AdminConsoleUtils {
           .check(status.is(302), header("Location").is(APP_URL)
           )
         )
+    }
+
+    def thinkPause() : ChainBuilder = {
+      builder.pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
     }
   }
 }

@@ -62,7 +62,11 @@ case class Result[T](
 
   private def record(client: DataWriterClient, session: Session, name: String): Validation[T] = {
     if (!interrupted && Stopwatch.recording) {
-      client.writeRequestData(session, name, startTime, startTime, endTime, endTime, status)
+      var msg = value match {
+        case Failure(m) => Some(m)
+        case _ => None
+      }
+      client.writeRequestData(session, name, startTime, startTime, endTime, endTime, status, msg)
     }
     value
   }

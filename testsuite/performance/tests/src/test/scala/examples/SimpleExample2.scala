@@ -1,4 +1,4 @@
-package keycloak
+package examples
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._

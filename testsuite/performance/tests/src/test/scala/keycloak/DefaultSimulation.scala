@@ -17,7 +17,7 @@ import org.keycloak.performance.TestConfig
   * @author Radim Vansa &lt;rvansa@redhat.com&gt;
   * @author Marko Strukelj &lt;mstrukel@redhat.com&gt;
   */
-class KeycloakSimulation extends Simulation {
+class DefaultSimulation extends Simulation {
 
   val BASE_URL = "${keycloakServer}/realms/${realm}"
   val LOGIN_ENDPOINT = BASE_URL + "/protocol/openid-connect/auth"
@@ -40,6 +40,7 @@ class KeycloakSimulation extends Simulation {
   val httpDefault = http
     .acceptHeader("application/json")
     .disableFollowRedirect
+    .inferHtmlResources
     //.baseURL(SERVER_URI)
 
   // Specify defaults for http requests

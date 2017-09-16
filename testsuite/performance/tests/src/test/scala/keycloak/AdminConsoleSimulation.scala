@@ -5,13 +5,13 @@ import io.gatling.http.Predef._
 import org.jboss.perf.util.Util
 import org.keycloak.performance.TestConfig
 import org.keycloak.gatling.Utils._
-import org.keycloak.gatling.AdminConsoleUtils._
+import SimulationsHelper._
 
 
 /**
   * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
   */
-class AdminSimulation extends Simulation {
+class AdminConsoleSimulation extends Simulation {
 
   println()
   println("Using server: " + TestConfig.serverUrisList.get(0))
@@ -58,55 +58,55 @@ class AdminSimulation extends Simulation {
     .openAdminConsoleHome()
 
     .thinkPause()
-    .loginThroughLoginForm()
+    .acsim_loginThroughLoginForm()
     .exitHereIfFailed
 
     .thinkPause()
-    .openClients()
+    .acsim_openClients()
 
     .thinkPause()
-    .openCreateNewClient()
+    .acsim_openCreateNewClient()
 
     .thinkPause()
-    .submitNewClient()
+    .acsim_submitNewClient()
 
     .thinkPause()
-    .updateClient()
+    .acsim_updateClient()
 
     .thinkPause()
-    .openClients()
+    .acsim_openClients()
 
     .thinkPause()
-    .openClientDetails()
+    .acsim_openClientDetails()
 
     .thinkPause()
-    .openUsers()
+    .acsim_openUsers()
 
     .thinkPause()
-    .viewAllUsers()
+    .acsim_viewAllUsers()
 
     .thinkPause()
-    .viewTenPagesOfUsers()
+    .acsim_viewTenPagesOfUsers()
 
     .thinkPause()
-    .find20Users()
+    .acsim_find20Users()
 
     .thinkPause()
-    .findUnlimitedUsers()
+    .acsim_findUnlimitedUsers()
 
     .thinkPause()
-    .findRandomUser()
+    .acsim_findRandomUser()
 
-    .openUser()
-
-    .thinkPause()
-    .openUserCredentials()
+    .acsim_openUser()
 
     .thinkPause()
-    .setTemporaryPassword()
+    .acsim_openUserCredentials()
 
     .thinkPause()
-    .logOut()
+    .acsim_setTemporaryPassword()
+
+    .thinkPause()
+    .acsim_logOut()
 
 
   val adminScenario = scenario("AdminConsole")

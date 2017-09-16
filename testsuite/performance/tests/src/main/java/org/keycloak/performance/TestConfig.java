@@ -62,7 +62,7 @@ public class TestConfig {
 
 
     //
-    // Settings used by KeycloakSimulation to control behavior specific to KeycloakSimulation
+    // Settings used by DefaultSimulation to control behavior specific to DefaultSimulation
     //
     public static final int numOfIterations = Integer.getInteger("numOfIterations", 1);
     public static final int badLoginAttempts = Integer.getInteger("badLoginAttempts", 0);
