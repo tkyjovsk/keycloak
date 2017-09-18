@@ -1,0 +1,5 @@
+- name: install mariadb
+  package: name=mariadb-server state=present
+
+#- name: start mariadb
+  

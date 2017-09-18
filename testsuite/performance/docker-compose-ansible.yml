@@ -1,0 +1,8 @@
+version: "2.2"
+
+services:
+    
+    ansible:
+        build: ansible
+        image: keycloak_test_ansible:${KEYCLOAK_VERSION:-latest}
+        command: ansible-playbook -i hosts/test.ini install.yml 

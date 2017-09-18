@@ -1,0 +1,550 @@
+heat_template_version: 2013-05-23
+
+parameters:
+  key_name:
+    type: string
+  image:
+    type: string
+  flavor:
+    type: string
+  public_net:
+    type: string
+
+resources:
+
+  management_net:
+    type: OS::Neutron::Net
+  management_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: management_net }
+      cidr: 172.20.0.0/24
+      gateway_ip: 172.20.0.1
+      allocation_pools:
+        - start: 172.20.0.10
+          end: 172.20.0.250
+
+  dc1_net:
+    type: OS::Neutron::Net
+  dc1_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: dc1_net }
+      cidr: 172.21.1.0/24
+      gateway_ip: 172.21.1.1
+      allocation_pools:
+        - start: 172.21.1.10
+          end: 172.21.1.250
+
+  dc2_net:
+    type: OS::Neutron::Net
+  dc2_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: dc2_net }
+      cidr: 172.22.1.0/24
+      gateway_ip: 172.22.1.1
+      allocation_pools:
+        - start: 172.22.1.10
+          end: 172.22.1.250
+
+  load_balancing_net:
+    type: OS::Neutron::Net
+  load_balancing_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: load_balancing_net }
+      cidr: 172.20.2.0/24
+      gateway_ip: 172.20.2.1
+      allocation_pools:
+        - start: 172.20.2.10
+          end: 172.20.2.250
+
+  db_net:
+    type: OS::Neutron::Net
+  db_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: db_net }
+      cidr: 172.20.3.0/24
+      gateway_ip: 172.20.3.1
+      allocation_pools:
+        - start: 172.20.3.10
+          end: 172.20.3.250
+
+  ispn_net:
+    type: OS::Neutron::Net
+  ispn_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: ispn_net }
+      cidr: 172.20.4.0/24
+      gateway_ip: 172.20.4.1
+      allocation_pools:
+        - start: 172.20.4.10
+          end: 172.20.4.250
+
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: { get_param: public_net }
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: management_subnet }
+
+
+### DC 1 nodes
+
+  dc1_keycloak_1:
+    type: OS::Nova::Server
+    properties:
+      name: dc1_keycloak_1
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc1_keycloak_1_public_port }
+        - port: { get_resource: dc1_keycloak_1_management_port }
+  dc1_keycloak_1_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc1_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc1_subnet }
+  dc1_keycloak_1_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc1_keycloak_1_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc1_keycloak_1_management_port }
+
+  dc1_keycloak_2:
+    type: OS::Nova::Server
+    properties:
+      name: dc1_keycloak_2
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc1_keycloak_2_public_port }
+        - port: { get_resource: dc1_keycloak_2_management_port }
+  dc1_keycloak_2_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc1_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc1_subnet }
+  dc1_keycloak_2_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc1_keycloak_2_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc1_keycloak_2_management_port }
+
+
+
+  dc1_loadbalancer:
+    type: OS::Nova::Server
+    properties:
+      name: dc1_loadbalancer
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc1_loadbalancer_public_port }
+        - port: { get_resource: dc1_loadbalancer_private_port }
+        - port: { get_resource: dc1_loadbalancer_management_port }
+  dc1_loadbalancer_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: load_balancing_net }
+      fixed_ips:
+        - subnet_id: { get_resource: load_balancing_subnet }
+  dc1_loadbalancer_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc1_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc1_subnet }
+  dc1_loadbalancer_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc1_loadbalancer_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc1_loadbalancer_management_port }
+
+
+  dc1_db:
+    type: OS::Nova::Server
+    properties:
+      name: dc1_db
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc1_db_public_port }
+        - port: { get_resource: dc1_db_private_port }
+        - port: { get_resource: dc1_db_management_port }
+  dc1_db_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc1_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc1_subnet }
+  dc1_db_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: db_net }
+      fixed_ips:
+        - subnet_id: { get_resource: db_subnet }
+  dc1_db_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc1_db_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc1_db_management_port }
+
+
+  dc1_infinispan:
+    type: OS::Nova::Server
+    properties:
+      name: dc1_infinispan
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc1_infinispan_public_port }
+        - port: { get_resource: dc1_infinispan_private_port }
+        - port: { get_resource: dc1_infinispan_management_port }
+  dc1_infinispan_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc1_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc1_subnet }
+  dc1_infinispan_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: ispn_net }
+      fixed_ips:
+        - subnet_id: { get_resource: ispn_subnet }
+  dc1_infinispan_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc1_infinispan_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc1_infinispan_management_port }
+
+
+
+### DC 2 nodes
+
+  dc2_keycloak_1:
+    type: OS::Nova::Server
+    properties:
+      name: dc2_keycloak_1
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc2_keycloak_1_public_port }
+        - port: { get_resource: dc2_keycloak_1_management_port }
+  dc2_keycloak_1_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc2_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc2_subnet }
+  dc2_keycloak_1_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc2_keycloak_1_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc2_keycloak_1_management_port }
+
+  dc2_keycloak_2:
+    type: OS::Nova::Server
+    properties:
+      name: dc2_keycloak_2
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc2_keycloak_2_public_port }
+        - port: { get_resource: dc2_keycloak_2_management_port }
+  dc2_keycloak_2_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc2_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc2_subnet }
+  dc2_keycloak_2_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc2_keycloak_2_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc2_keycloak_2_management_port }
+
+
+
+  dc2_loadbalancer:
+    type: OS::Nova::Server
+    properties:
+      name: dc2_loadbalancer
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc2_loadbalancer_public_port }
+        - port: { get_resource: dc2_loadbalancer_private_port }
+        - port: { get_resource: dc2_loadbalancer_management_port }
+  dc2_loadbalancer_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: load_balancing_net }
+      fixed_ips:
+        - subnet_id: { get_resource: load_balancing_subnet }
+  dc2_loadbalancer_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc2_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc2_subnet }
+  dc2_loadbalancer_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc2_loadbalancer_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc2_loadbalancer_management_port }
+
+
+  dc2_db:
+    type: OS::Nova::Server
+    properties:
+      name: dc2_db
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc2_db_public_port }
+        - port: { get_resource: dc2_db_private_port }
+        - port: { get_resource: dc2_db_management_port }
+  dc2_db_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc2_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc2_subnet }
+  dc2_db_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: db_net }
+      fixed_ips:
+        - subnet_id: { get_resource: db_subnet }
+  dc2_db_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc2_db_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc2_db_management_port }
+
+
+  dc2_infinispan:
+    type: OS::Nova::Server
+    properties:
+      name: dc2_infinispan
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: dc2_infinispan_public_port }
+        - port: { get_resource: dc2_infinispan_private_port }
+        - port: { get_resource: dc2_infinispan_management_port }
+  dc2_infinispan_public_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: dc2_net }
+      fixed_ips:
+        - subnet_id: { get_resource: dc2_subnet }
+  dc2_infinispan_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: ispn_net }
+      fixed_ips:
+        - subnet_id: { get_resource: ispn_subnet }
+  dc2_infinispan_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  dc2_infinispan_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: dc2_infinispan_management_port }
+
+
+
+### Cross DC nodes
+
+  test_controller:
+    type: OS::Nova::Server
+    properties:
+      name: test_controller
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: test_controller_management_port }
+  test_controller_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  test_controller_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: test_controller_management_port }
+
+
+  load_driver_1:
+    type: OS::Nova::Server
+    properties:
+      name: load_driver_1
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: load_driver_1_private_port }
+        - port: { get_resource: load_driver_1_management_port }
+  load_driver_1_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: load_balancing_net }
+      fixed_ips:
+        - subnet_id: { get_resource: load_balancing_subnet }
+  load_driver_1_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  load_driver_1_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: load_driver_1_management_port }
+
+
+  load_driver_2:
+    type: OS::Nova::Server
+    properties:
+      name: load_driver_2
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: load_driver_2_private_port }
+        - port: { get_resource: load_driver_2_management_port }
+  load_driver_2_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: load_balancing_net }
+      fixed_ips:
+        - subnet_id: { get_resource: load_balancing_subnet }
+  load_driver_2_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      fixed_ips:
+        - subnet_id: { get_resource: management_subnet }
+  load_driver_2_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: load_driver_2_management_port }
+
+
+
+
+outputs:
+  dc1_keycloak_1_public_ip:
+    value: { get_attr: [ dc1_keycloak_1_floating_ip, floating_ip_address ] }
+  dc1_keycloak_2_public_ip:
+    value: { get_attr: [ dc1_keycloak_2_floating_ip, floating_ip_address ] }
+  dc1_loadbalancer_floating_ip:
+    value: { get_attr: [ dc1_loadbalancer_floating_ip, floating_ip_address ] }
+  dc1_db_floating_ip:
+    value: { get_attr: [ dc1_db_floating_ip, floating_ip_address ] }
+  dc1_infinispan_floating_ip:
+    value: { get_attr: [ dc1_infinispan_floating_ip, floating_ip_address ] }
+  dc2_keycloak_1_public_ip:
+    value: { get_attr: [ dc2_keycloak_1_floating_ip, floating_ip_address ] }
+  dc2_keycloak_2_public_ip:
+    value: { get_attr: [ dc2_keycloak_2_floating_ip, floating_ip_address ] }
+  dc2_loadbalancer_floating_ip:
+    value: { get_attr: [ dc2_loadbalancer_floating_ip, floating_ip_address ] }
+  dc2_db_floating_ip:
+    value: { get_attr: [ dc2_db_floating_ip, floating_ip_address ] }
+  dc2_infinispan_floating_ip:
+    value: { get_attr: [ dc2_infinispan_floating_ip, floating_ip_address ] }
+  test_controller_floating_ip:
+    value: { get_attr: [ test_controller_floating_ip, floating_ip_address ] }
+  load_driver_1_floating_ip:
+    value: { get_attr: [ load_driver_1_floating_ip, floating_ip_address ] }
+  load_driver_2_floating_ip:
+    value: { get_attr: [ load_driver_2_floating_ip, floating_ip_address ] }
+      
+      

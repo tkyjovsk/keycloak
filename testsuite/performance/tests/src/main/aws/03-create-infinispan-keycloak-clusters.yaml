@@ -1,0 +1,388 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Spawns Infinispan and Keycloak nodes in two data centers, each containing single Infinispan node and a given number of Keycloak nodes, hidden in private subnets of the data centers behind an elastic load balancer'
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - 
+        Label: 
+          default: "Parent stack"
+        Parameters: 
+          - AMICloudFormationStack
+      - 
+        Label: 
+          default: "EC2 parameters"
+        Parameters: 
+          - KeycloakInstancesPerDc
+          - KeycloakInstanceType
+          - InfinispanInstanceType
+          - KeyName
+          - LBScheme
+      
+    ParameterLabels:
+      AMICloudFormationStack:
+        default: AMI stack name
+      KeycloakInstancesPerDc:
+        default: Keycloak instances per data centre
+      KeycloakInstanceType:
+        default: Instance type for Keycloak servers
+      InfinispanInstanceType:
+        default: Instance type for Infinispan servers
+      KeyName:
+        default: SSH key name
+      LBScheme:
+        default: Load balancer scheme
+      DatabaseBackup:
+        default: Database backup URL
+
+Parameters:
+  KeycloakInstancesPerDc:
+    Type: Number
+    Default: 2
+    MinValue: 2
+  AMICloudFormationStack:
+    Description: Name of the CloudFormation stack that created the AMI
+    Type: String
+    Default: kc-ami
+    MinLength: 1
+  KeycloakInstanceType:
+    Description: Instance type of Keycloak EC2 resources
+    Default: c4.xlarge
+    Type: String
+  KeyName:
+    Description: Key Name
+    Type: AWS::EC2::KeyPair::KeyName
+  InfinispanInstanceType:
+    Description: Instance type of Infinispan EC2 resources
+    Default: t2.large
+    Type: String
+  LBScheme:
+    Description: Load balancer scheme
+    Default: internet-facing
+    Type: String
+    AllowedValues: [ 'internet-facing', 'internal' ]
+  DatabaseBackup:
+    Description: URL with database backup (optional). Special value "DONT_RESTORE" means there will be a fresh database initialized.
+    Type: String
+    Default: DONT_RESTORE
+
+Conditions:
+  PublicFacingLb: !Equals [!Ref LBScheme, 'internet-facing']
+  RestoreFromBackup: !Not [!Equals [!Ref DatabaseBackup, '']]
+  
+Resources:
+  CleanupS3:
+    Type: Custom::CleanupS3
+    Properties:
+      ServiceToken: 
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-CleanupS3Function'
+
+  DatabaseInitialized:
+    Type: AWS::CloudFormation::WaitCondition
+    Condition: RestoreFromBackup
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+
+  DoRestoreFromBackup:
+    Type: Custom::InitializeMysqlDb
+    Condition: RestoreFromBackup
+    Properties:
+      DbBackupUrl: !Ref DatabaseBackup
+      SignalResource: "DatabaseInitialized"
+      KeyName: !Ref KeyName
+      SubnetId: 
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-SubnetDc1Public'
+      SecurityGroupIds:
+      - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SecurityGroup'
+      InstanceType: !Ref InfinispanInstanceType
+      ServiceToken: 
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-InitializeMysqlDbFunction'
+
+  TerminateDbInitialized:
+    Type: Custom::InitializeMysqlDb
+    Condition: RestoreFromBackup
+    DependsOn: DatabaseInitialized
+    Properties:
+      InstanceIds:
+      - !Ref DoRestoreFromBackup  # Physical ID of the DoRestoreFromBackup is instance ID (see InitializeMysqlDbFunction definition)
+      ServiceToken: 
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-TerminateInstancesFunction'
+
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: keycloak
+      Scheme: !Ref LBScheme
+      Subnets:
+      - Fn::ImportValue: !If [PublicFacingLb, !Sub '${AMICloudFormationStack}-SubnetDc1Public', !Sub '${AMICloudFormationStack}-SubnetDc1Private']
+      - Fn::ImportValue: !If [PublicFacingLb, !Sub '${AMICloudFormationStack}-SubnetDc2Public', !Sub '${AMICloudFormationStack}-SubnetDc2Private']
+      SecurityGroups:
+      - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SecurityGroup'
+      Type: application
+      IpAddressType: ipv4
+
+  InfinispanServersReady:
+    Type: AWS::CloudFormation::WaitCondition
+    CreationPolicy:
+      ResourceSignal:
+        Count: 2
+        Timeout: PT10M
+
+  InfinispanServerDc1:
+    Type: AWS::EC2::Instance
+    DependsOn: CleanupS3
+    Properties:
+      ImageId:
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-AMI'
+      InstanceType: !Ref InfinispanInstanceType
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+      - DeviceName: /dev/sda1
+        Ebs:
+          VolumeSize: 10
+          DeleteOnTermination: true
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true    # Necessary for CFM signalling to work
+        DeleteOnTermination: true
+        DeviceIndex: 0
+        SubnetId:
+          Fn::ImportValue: !Sub '${AMICloudFormationStack}-SubnetDc1Public'
+        GroupSet: 
+        - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SecurityGroup'
+      UserData: |
+        "Fn::Base64": !Sub |
+          #!/bin/bash
+          
+          IP=$(ip addr show eth0 | grep 'inet\b' | awk '{print $2}' | cut -d/ -f1)
+          /opt/tests/cache-*/bin/standalone.sh \
+            -c clustered-1.xml \
+            -Djboss.default.jgroups.stack=s3 \
+            -Djboss.bind.address=$IP &>/dev/null &
+
+          disown $!
+            
+          # Wait for port 11222 to become available
+          TIMEOUT=360
+          PORT=11222
+          CFN_SIGNAL=1
+          while [ $TIMEOUT -gt 0 ]; do
+            # Ignore ss header
+            if [ $(ss -ln4 "( sport = $PORT )" | wc -l) -gt "1" ]; then
+              CFN_SIGNAL=0
+              break
+            fi
+            TIMEOUT=$[ $TIMEOUT - 1 ]
+            sleep 1
+          done
+
+          cfn-signal \
+            -e $CFN_SIGNAL \
+            --stack ${AWS::StackName} \
+            --region ${AWS::Region} \
+            --resource InfinispanServersReady
+          
+      Tags:
+        - Key: Name
+          Value: DC1 Infinispan
+        - Key: DC
+          Value: DC1
+
+  InfinispanServerDc2:
+    Type: AWS::EC2::Instance
+    DependsOn: CleanupS3
+    Properties:
+      ImageId:
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-AMI'
+      InstanceType: !Ref InfinispanInstanceType
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+      - DeviceName: /dev/sda1
+        Ebs:
+          VolumeSize: 10
+          DeleteOnTermination: true
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true    # Necessary for CFM signalling to work
+        DeleteOnTermination: true
+        DeviceIndex: 0
+        SubnetId:
+          Fn::ImportValue: !Sub '${AMICloudFormationStack}-SubnetDc2Public'
+        GroupSet: 
+        - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SecurityGroup'
+      UserData: |
+        "Fn::Base64": !Sub |
+          #!/bin/bash
+          
+          IP=$(ip addr show eth0 | grep 'inet\b' | awk '{print $2}' | cut -d/ -f1)
+          /opt/tests/cache-*/bin/standalone.sh \
+            -c clustered-2.xml \
+            -Djboss.default.jgroups.stack=s3 \
+            -Djboss.bind.address=$IP &>/dev/null &
+
+          disown $!
+            
+          # Wait for port 11222 to become available
+          TIMEOUT=360
+          PORT=11222
+          CFN_SIGNAL=1
+          while [ $TIMEOUT -gt 0 ]; do
+            # Ignore ss header
+            if [ $(ss -ln4 "( sport = $PORT )" | wc -l) -gt "1" ]; then
+              CFN_SIGNAL=0
+              break
+            fi
+            TIMEOUT=$[ $TIMEOUT - 1 ]
+            sleep 1
+          done
+
+          cfn-signal \
+            -e $CFN_SIGNAL \
+            --stack ${AWS::StackName} \
+            --region ${AWS::Region} \
+            --resource InfinispanServersReady
+      Tags:
+        - Key: Name
+          Value: DC2 Infinispan
+        - Key: DC
+          Value: DC2
+
+  KeycloakTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 15
+      HealthCheckPort: 8080
+      HealthCheckPath: '/auth/'
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200-399'
+      Port: 8080
+      Protocol: HTTP
+      VpcId:
+        'Fn::ImportValue': !Sub '${AMICloudFormationStack}-VPC'
+      TargetGroupAttributes:
+      - Key: 'deregistration_delay.timeout_seconds'
+        Value: 0
+      - Key: 'stickiness.enabled'
+        Value: true
+  HttpListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+      - TargetGroupArn: !Ref KeycloakTargetGroup
+        Type: forward
+      LoadBalancerArn: !Ref ElasticLoadBalancer
+      Port: 80
+      Protocol: HTTP
+          
+  KeycloakServerConfigDc1:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId:
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-AMI'
+      SecurityGroups:
+      - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SecurityGroup'
+      InstanceType: !Ref KeycloakInstanceType
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+      - DeviceName: /dev/sda1
+        Ebs:
+          VolumeSize: 10
+          DeleteOnTermination: true
+      UserData: |
+        "Fn::Base64": !Sub |
+          #!/bin/bash
+          
+          ulimit -n 1024000
+          
+          /opt/tests/auth-*/bin/standalone.sh -c standalone-ha-1.xml \
+            -Djboss.site.name=dc1 -Dremote.cache.host=${InfinispanServerDc1.PrivateIp} \
+            -Djboss.bind.address.private=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1) \
+            -Djboss.bind.address=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+
+  KeycloakServerConfigDc2:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId:
+        Fn::ImportValue: !Sub '${AMICloudFormationStack}-AMI'
+      SecurityGroups:
+      - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SecurityGroup'
+      InstanceType: !Ref KeycloakInstanceType
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+      - DeviceName: /dev/sda1
+        Ebs:
+          VolumeSize: 10
+          DeleteOnTermination: true
+      UserData: |
+        "Fn::Base64": !Sub |
+          #!/bin/bash
+          
+          ulimit -n 1024000
+          
+          /opt/tests/auth-*/bin/standalone.sh -c standalone-ha-2.xml \
+            -Djboss.site.name=dc2 -Dremote.cache.host=${InfinispanServerDc2.PrivateIp} \
+            -Djboss.bind.address.private=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1) \
+            -Djboss.bind.address=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1)
+
+  KeycloakServerGroupDc1: 
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    DependsOn:
+    - InfinispanServersReady
+    - DatabaseInitialized
+    Properties:
+      AvailabilityZones: 
+      - Fn::ImportValue: !Sub '${AMICloudFormationStack}-AZ-Dc1'
+      LaunchConfigurationName: 
+        Ref: KeycloakServerConfigDc1
+      MinSize: !Ref KeycloakInstancesPerDc
+      MaxSize: !Ref KeycloakInstancesPerDc
+      TargetGroupARNs: 
+        - Ref: KeycloakTargetGroup
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SubnetDc1Private'
+      Tags:
+        - Key: Name
+          Value: DC1 Keycloak
+          PropagateAtLaunch: true
+        - Key: DC
+          Value: DC1
+          PropagateAtLaunch: true
+
+  KeycloakServerGroupDc2: 
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    DependsOn:
+    - InfinispanServersReady
+    - DatabaseInitialized
+    Properties:
+      AvailabilityZones: 
+      - Fn::ImportValue: !Sub '${AMICloudFormationStack}-AZ-Dc2'
+      LaunchConfigurationName: 
+        Ref: KeycloakServerConfigDc2
+      MinSize: !Ref KeycloakInstancesPerDc
+      MaxSize: !Ref KeycloakInstancesPerDc
+      TargetGroupARNs: 
+        - Ref: KeycloakTargetGroup
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub '${AMICloudFormationStack}-SubnetDc2Private'
+      Tags:
+        - Key: Name
+          Value: DC2 Keycloak
+          PropagateAtLaunch: true
+        - Key: DC
+          Value: DC2
+          PropagateAtLaunch: true
+
+Outputs:
+  LoadBalancerUrl:
+    Description: 'URL to Keycloak at load balancer'
+    Value: !Sub 'http://${ElasticLoadBalancer.DNSName}/auth'
+
+  SshToInfinispanDc1:
+    Description: 'SSH to Infinispan server in DC1'
+    Value: !Sub 'ssh -L 19990:127.0.0.1:9990 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oForwardAgent=yes ec2-user@${InfinispanServerDc1.PublicDnsName}'
+
+  SshToInfinispanDc2:
+    Description: 'SSH to Infinispan server in DC2'
+    Value: !Sub 'ssh -L 19990:127.0.0.1:9990 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oForwardAgent=yes ec2-user@${InfinispanServerDc2.PublicDnsName}'

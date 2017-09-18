@@ -1,0 +1,11 @@
+- hosts: localhost
+  tasks:
+  - debug: msg="Hello"
+
+- hosts: test
+  tasks:
+    - debug: msg="Hello from {{ ansible_host }}"
+
+- hosts: mariadb
+  roles:
+    - mariadb

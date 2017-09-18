@@ -1,0 +1,869 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Based on a RHEL 7 image, create AMI containing Keycloak and Infinispan together with necessary setup.
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: 'AWS Parameters'
+      Parameters:
+      - VPCCloudFormationStack
+      - InstanceType
+      - DbInstanceType
+
+    - Label:
+        default: 'Build and Installation'
+      Parameters:
+      - InstallDiagnostics
+      - GitRepo
+      - GitTag
+      - M2Repository
+
+    ParameterLabels:
+      VPCCloudFormationStack:
+        default: VPC stack name
+      InstanceType:
+        default: Instance type for building image
+      DbInstanceType:
+        default: Database instance type
+      InstallDiagnostics:
+        default: Install diagnostic tools?
+      M2Repository:
+        default: URL to Maven repository for build (optional)
+      GitRepo:
+        default: Keycloak Git repository
+      GitTag:
+        default: Git tag/branch/commit
+
+Parameters:
+  VPCCloudFormationStack:
+    Description: Name of the CloudFormation stack defining the network layout
+    Type: String
+    Default: kc-vpc
+    MinLength: 1
+  InstanceType:
+    Description: EC2 instance type used for building the base image (has to provide at least 4G of memory).
+    Type: String
+    Default: c5.large
+  DbInstanceType:
+    Description: RDS database instance type
+    Type: String
+    Default:  db.t2.medium
+  InstallDiagnostics:
+    Description: Install extra diagnostics packages, e.g. htop, lnav. For those EPEL is needed, thus tainting RHEL repositories with generally unsupported packages.
+    Type: String
+    AllowedValues: [ "true", "false" ]
+    Default: true
+  GitRepo:
+    Description: Keycloak Git repository URL
+    Type: String
+    Default: https://github.com/keycloak/keycloak.git
+  GitTag:
+    Description: Git tag/branch/commit ID from keycloak repo
+    Type: String
+    Default: master
+  M2Repository:
+    Description: URL to ZIP file with cached M2 repository
+    Type: String
+    Default: https://s3-eu-west-1.amazonaws.com/keycloak-aws/m2repository.zip
+
+Mappings:
+# RhelImageId is RHEL-7.4_HVM_GA-20170808-x86_64-2-Hourly2-GP2
+  Region2RhelImageId:
+    ap-south-1:
+      RhelImageId: ami-e41b618b
+    eu-west-3:
+      RhelImageId: ami-39902744
+    eu-west-2:
+      RhelImageId: ami-a1f5e4c5
+    eu-west-1:
+      RhelImageId: ami-bb9a6bc2
+    ap-northeast-2:
+      RhelImageId: ami-0f5a8361
+    ap-northeast-1:
+      RhelImageId: ami-30ef0556
+    sa-east-1:
+      RhelImageId: ami-a789ffcb
+    ca-central-1:
+      RhelImageId: ami-dad866be
+    ap-southeast-1:
+      RhelImageId: ami-10bb2373
+    ap-southeast-2:
+      RhelImageId: ami-ccecf5af
+    eu-central-1:
+      RhelImageId: ami-d74be5b8
+    us-east-1:
+      RhelImageId: ami-c998b6b2
+    us-east-2:
+      RhelImageId: ami-cfdafaaa
+    us-west-1:
+      RhelImageId: ami-66eec506
+    us-west-2:                                                                                                                                                                
+      RhelImageId: ami-9fa343e7                                                                                                                                                      
+    
+Resources:
+  # Completes when the instance is fully provisioned and ready for AMI creation.
+  AMICreate:
+    Type: AWS::CloudFormation::WaitCondition
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT160M
+  InfinispanXsiteBucket:
+    Type: AWS::S3::Bucket
+  InfinispanDc1Bucket:
+    Type: AWS::S3::Bucket
+  InfinispanDc2Bucket:
+    Type: AWS::S3::Bucket
+  KeycloakDc1Bucket:
+    Type: AWS::S3::Bucket
+  KeycloakDc2Bucket:
+    Type: AWS::S3::Bucket
+
+  KeycloakDbClusterSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "Keycloak test database"
+      SubnetIds:
+      - 'Fn::ImportValue':
+          !Sub '${VPCCloudFormationStack}-SubnetDc1Private'
+      - 'Fn::ImportValue':
+          !Sub '${VPCCloudFormationStack}-SubnetDc2Private'
+    
+  KeycloakDbCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora
+      MasterUsername: keycloak
+      MasterUserPassword: keycloak1
+      BackupRetentionPeriod: 1
+      DatabaseName: keycloak
+      DBSubnetGroupName: !Ref KeycloakDbClusterSubnetGroup
+      VpcSecurityGroupIds:
+      - 'Fn::ImportValue':
+          !Sub '${VPCCloudFormationStack}-SecurityGroupRds'
+    DeletionPolicy: Delete
+
+  KeycloakPrimaryDbInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: aurora
+      DBClusterIdentifier: !Ref KeycloakDbCluster
+      DBInstanceClass: !Ref DbInstanceType
+      DBSubnetGroupName: !Ref KeycloakDbClusterSubnetGroup
+    DeletionPolicy: Delete
+    
+  S3PingUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        -
+          PolicyName: AccessToS3PingBuckets
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                  - s3:HeadBucket
+                Resource: "*"
+              -
+                Effect: Allow
+                Action: "s3:*"
+                Resource:
+                  - !Sub "arn:aws:s3:::${InfinispanXsiteBucket}/*"
+                  - !Sub "arn:aws:s3:::${InfinispanDc1Bucket}/*"
+                  - !Sub "arn:aws:s3:::${InfinispanDc2Bucket}/*"
+                  - !Sub "arn:aws:s3:::${KeycloakDc1Bucket}/*"
+                  - !Sub "arn:aws:s3:::${KeycloakDc2Bucket}/*"
+                  - !Sub "arn:aws:s3:::${InfinispanXsiteBucket}"
+                  - !Sub "arn:aws:s3:::${InfinispanDc1Bucket}"
+                  - !Sub "arn:aws:s3:::${InfinispanDc2Bucket}"
+                  - !Sub "arn:aws:s3:::${KeycloakDc1Bucket}"
+                  - !Sub "arn:aws:s3:::${KeycloakDc2Bucket}"
+
+  S3PingUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName:
+        !Ref S3PingUser
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [Region2RhelImageId, !Ref "AWS::Region", RhelImageId]
+      InstanceType: !Ref InstanceType
+      UserData: |
+        "Fn::Base64": !Sub |
+          #!/bin/bash -ex
+
+          function send_cfn_signal() {
+            if [ "$SIGNAL_SENT" != "true" ]; then
+              cfn-signal \
+                -e 1 \
+                --stack ${AWS::StackName} \
+                --region ${AWS::Region} \
+                --resource AMICreate
+            fi
+          }
+          trap send_cfn_signal INT TERM EXIT
+          
+          yum install -y screen git unzip wget mc java-1.8.0-openjdk-devel
+          
+          # Optional:
+          if [ "${InstallDiagnostics}" = "true" ]; then
+            yum install -y http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+            yum --enablerepo=epel install -y lnav htop
+          fi
+
+          curl "https://bootstrap.pypa.io/get-pip.py" | python
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          
+          DB_HOST="${KeycloakDbCluster.Endpoint.Address}:${KeycloakDbCluster.Endpoint.Port}"
+          M2_REPO_URL="${M2Repository}"
+          
+          ### Install maven
+          cd /opt
+          wget http://www-eu.apache.org/dist/maven/maven-3/3.5.2/binaries/apache-maven-3.5.2-bin.tar.gz -O mvn.tar.gz
+          tar xzf mvn.tar.gz
+          ln -s apache-maven-* maven
+          ln -s /opt/maven/bin/mvn /usr/local/bin
+          
+          # Update sysctl
+          cat > /etc/sysctl.d/999-performance.conf << EOT
+          net.ipv4.tcp_rmem=8192 873800 8388608
+          net.ipv4.tcp_wmem=4096 655360 8388608
+          net.ipv4.tcp_mem=8388608 8388608 8388608
+          net.ipv4.tcp_max_syn_backlog=65536
+          net.ipv4.tcp_max_orphans=262144
+          net.core.somaxconn=16384
+          net.ipv4.tcp_fin_timeout=20
+          net.ipv4.ip_local_port_range=10000 65530
+          fs.file-max=1048576
+          EOT
+          
+          ### Compile Keycloak
+          
+          if [ -n "$M2_REPO_URL" ]; then
+              wget "$M2_REPO_URL" -O /tmp/m2.zip && unzip -q /tmp/m2.zip -d ~
+          fi
+          git clone "${GitRepo}"
+          cd keycloak
+          git checkout "${GitTag}"
+          
+          /usr/local/bin/mvn clean install -nsu -DskipTests
+          /usr/local/bin/mvn clean install -nsu -DskipTests -Pdistribution
+          /usr/local/bin/mvn -nsu -Pcache-server-infinispan,jpa,auth-servers-crossdc-jboss,auth-server-wildfly \
+              -Djdbc.mvn.groupId=mysql \
+              -Djdbc.mvn.version=5.1.44 \
+              -Djdbc.mvn.artifactId=mysql-connector-java \
+              "-Dkeycloak.connectionsJpa.url=jdbc:mysql://$DB_HOST/keycloak" \
+              -Dkeycloak.connectionsJpa.user=keycloak \
+              -Dkeycloak.connectionsJpa.password=keycloak1 \
+              -f testsuite/integration-arquillian/pom.xml -DskipTests install
+          
+          mkdir -p /opt/tests
+          cd /opt/tests
+          for I in ~/.m2/repository/org/keycloak/testsuite/integration-arquillian-servers-*/*/*.zip ; do unzip $I; done
+          
+          AUTH_SERVER=$(find -maxdepth 1 -name 'auth*')
+
+          function updateKeycloakServer() {
+            local CONF="$1"
+            local BUCKET="$2"
+
+            cp $AUTH_SERVER/standalone/configuration/standalone-ha.xml $AUTH_SERVER/standalone/configuration/$CONF
+            $AUTH_SERVER/bin/jboss-cli.sh <<EOT
+            embed-server --server-config=$CONF
+            
+            /subsystem=logging/logger=org.keycloak.cluster.infinispan:remove
+            /subsystem=logging/logger=org.keycloak.connections.infinispan:remove
+            /subsystem=logging/logger=org.keycloak.models.cache.infinispan:remove
+            /subsystem=logging/logger=org.keycloak.models.sessions.infinispan:remove
+            
+            /subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=proxy-address-forwarding, value=\${!env.PROXY_ADDRESS_FORWARDING:true})
+            /subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=max-connections,value=\${!env.HTTP_MAX_CONNECTIONS:50000})
+            
+            /subsystem=io/worker=default:write-attribute(name=io-threads,value=\${!env.WORKER_IO_THREADS:2})
+            /subsystem=io/worker=default:write-attribute(name=task-max-threads,value=\${!env.WORKER_TASK_MAX_THREADS:16})
+
+            /subsystem=jgroups/stack=s3:add(transport={type=TCP, socket-binding=jgroups-tcp})
+            /subsystem=jgroups/stack=s3/protocol=S3_PING:add(properties={location=$BUCKET,access_key=${S3PingUserAccessKey},secret_access_key=${S3PingUserAccessKey.SecretAccessKey},host=\${!jgroups.s3.host:s3-${AWS::Region}.amazonaws.com}})
+            /subsystem=jgroups/stack=s3/protocol=MERGE3:add
+            /subsystem=jgroups/stack=s3/protocol=FD_SOCK:add
+            /subsystem=jgroups/stack=s3/protocol=FD_ALL:add
+            /subsystem=jgroups/stack=s3/protocol=VERIFY_SUSPECT:add
+            /subsystem=jgroups/stack=s3/protocol=pbcast.NAKACK2:add(properties={use_mcast_xmit=false})
+            /subsystem=jgroups/stack=s3/protocol=UNICAST3:add
+            /subsystem=jgroups/stack=s3/protocol=pbcast.STABLE:add
+            /subsystem=jgroups/stack=s3/protocol=pbcast.GMS:add
+            /subsystem=jgroups/stack=s3/protocol=MFC:add
+            /subsystem=jgroups/stack=s3/protocol=FRAG2:add
+
+            /subsystem=jgroups/channel=ee:write-attribute(name=stack,value=s3)
+            
+            /subsystem=keycloak-server/spi=stickySessionEncoder:add
+            /subsystem=keycloak-server/spi=stickySessionEncoder/provider=infinispan:add(enabled=true,properties={[shouldAttachRoute=false]})
+          EOT
+          }
+          
+          perl -i -pe 's/-Xmx(\S+)/-Xmx3g/' auth-*/bin/standalone.conf
+          updateKeycloakServer standalone-ha-1.xml "${KeycloakDc1Bucket}"
+          updateKeycloakServer standalone-ha-2.xml "${KeycloakDc2Bucket}"
+          
+          function updateInfinispanServer() {
+            local CONF="$1"
+            local BUCKET="$2"
+            local THIS_DC="$3"
+            local OTHER_DC="$4"
+
+            # Update DC names to match those from this example
+            sed -i \
+              -e 's/\(backup.*\b\)site="[^"]*"/\1site="'$OTHER_DC'"/' \
+              -e 's/\(relay.*\b\)site="[^"]*"/\1site="'$THIS_DC'"/' \
+              -e 's/\(remote-site.*\b\)name="[^"]*"/\1name="'$OTHER_DC'"/' \
+              cache-*/standalone/configuration/$CONF
+
+            cache-*/bin/ispn-cli.sh <<EOT
+            embed-server --server-config=$CONF
+            
+            /subsystem=datagrid-jgroups/channel=xsite:write-attribute(name=stack,value=s3-relay)
+
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING/property=pre_signed_delete_url:remove
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING/property=pre_signed_put_url:remove
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING/property=prefix:remove
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING:map-put(name=properties,key=host,value=\${!jgroups.s3.host:s3-${AWS::Region}.amazonaws.com})
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING:map-put(name=properties,key=location,value=$BUCKET)
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING:map-put(name=properties,key=access_key,value=${S3PingUserAccessKey})
+            /subsystem=datagrid-jgroups/stack=s3/protocol=S3_PING:map-put(name=properties,key=secret_access_key,value=${S3PingUserAccessKey.SecretAccessKey})
+            
+            /subsystem=datagrid-jgroups/stack=s3/relay=RELAY:add(site=$THIS_DC)
+            /subsystem=datagrid-jgroups/stack=s3/relay=RELAY/remote-site="$OTHER_DC":add(channel=xsite)
+            
+            /subsystem=datagrid-jgroups/stack=s3-relay:add(transport={type=TCP, socket-binding=jgroups-tcp-relay})
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=S3_PING,properties={location=${InfinispanXsiteBucket},access_key=${S3PingUserAccessKey},secret_access_key=${S3PingUserAccessKey.SecretAccessKey},host=\${!jgroups.s3.host:s3-${AWS::Region}.amazonaws.com}})
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=MERGE3)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=FD_SOCK, socket-binding="jgroups-tcp-relay-fd")
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=FD_ALL)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=VERIFY_SUSPECT)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=pbcast.NAKACK2, properties={use_mcast_xmit=false})
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=UNICAST3)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=pbcast.STABLE)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=pbcast.GMS)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=MFC)
+            /subsystem=datagrid-jgroups/stack=s3-relay:add-protocol(type=FRAG2)
+            
+            /socket-binding-group=standard-sockets/socket-binding=jgroups-tcp-relay:add(port=7601)
+            /socket-binding-group=standard-sockets/socket-binding=jgroups-tcp-relay-fd:add(port=57601)
+          EOT
+          }
+          
+          perl -i -pe 's/-Xmx(\S+)/-Xmx2g/' cache-*/bin/standalone.conf
+
+          updateInfinispanServer clustered-1.xml "${InfinispanDc1Bucket}" "dc-1" "dc-2"
+          updateInfinispanServer clustered-2.xml "${InfinispanDc2Bucket}" "dc-2" "dc-1"
+
+          chown -R ec2-user *
+
+          cfn-signal \
+            -e 0 \
+            --stack ${AWS::StackName} \
+            --region ${AWS::Region} \
+            --resource AMICreate
+
+          SIGNAL_SENT=true
+
+          shutdown -h now
+
+  AMI:
+    Type: Custom::AMI
+    DependsOn: AMICreate
+    Properties:
+      ServiceToken: !GetAtt AMIFunction.Arn
+      InstanceId: !Ref Instance
+
+  AMIFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code: |
+        ZipFile: !Sub |
+          import logging
+          import cfnresponse
+          import json
+          import boto3
+          from threading import Timer
+          from botocore.exceptions import WaiterError
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+
+            ec2 = boto3.resource('ec2')
+            physicalId = event['PhysicalResourceId'] if 'PhysicalResourceId' in event else None
+
+            def success(data={}):
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data, physicalId)
+
+            def failed(e):
+              cfnresponse.send(event, context, cfnresponse.FAILED, str(e), physicalId)
+
+            logger.info('Request received: %s\n' % json.dumps(event))
+
+            try:
+              instanceId = event['ResourceProperties']['InstanceId']
+              if (not instanceId):
+                raise 'InstanceID required'
+
+              if not 'RequestType' in event:
+                success({'Data': 'Unhandled request type'})
+                return
+                
+              if event['RequestType'] == 'Delete':
+                if (not physicalId.startswith('ami-')):
+                  raise 'Unknown PhysicalId: %s' % physicalId
+                
+                ec2client = boto3.client('ec2')
+                images = ec2client.describe_images(ImageIds=[physicalId])
+                for image in images['Images']:
+                  ec2.Image(image['ImageId']).deregister()
+                  snapshots = ([bdm['Ebs']['SnapshotId'] 
+                                for bdm in image['BlockDeviceMappings'] 
+                                if 'Ebs' in bdm and 'SnapshotId' in bdm['Ebs']])
+                  for snapshot in snapshots:
+                    ec2.Snapshot(snapshot).delete()
+
+                success({'Data': 'OK'})
+              elif event['RequestType'] in set(['Create', 'Update']):
+                boto3.client('logs').put_retention_policy(logGroupName=context.log_group_name, retentionInDays=1)
+
+                if not physicalId:  # AMI creation has not been requested yet
+                  instance = ec2.Instance(instanceId)
+                  instance.wait_until_stopped()
+
+                  image = instance.create_image(Name="Keycloak from CloudFormation stack ${AWS::StackName}")
+
+                  physicalId = image.image_id
+                else:
+                  logger.info('Continuing in awaiting image available: %s\n' % physicalId)
+
+                ec2client = boto3.client('ec2')
+                waiter = ec2client.get_waiter('image_available')
+
+                try:
+                  waiter.wait(ImageIds=[physicalId], WaiterConfig={'Delay': 30, 'MaxAttempts': 6})
+                except WaiterError as e:
+                  # Request the same event but set PhysicalResourceId so that the AMI is not created again
+                  event['PhysicalResourceId'] = physicalId
+                  logger.info('Timeout reached, continuing function: %s\n' % json.dumps(event))
+                  lambda_client = boto3.client('lambda')
+                  lambda_client.invoke(FunctionName=context.invoked_function_arn, 
+                                        InvocationType='Event',
+                                        Payload=json.dumps(event))
+                  return
+
+                ec2client.terminate_instances(InstanceIds=[instanceId])
+
+                success({'Data': 'OK'})
+              else:
+                success({'Data': 'OK'})
+            except Exception as e:
+              failed(e)
+      Runtime: python2.7
+      Timeout: 300
+
+  CleanupS3:
+    Type: Custom::CleanupS3
+    DependsOn: 
+      - InfinispanXsiteBucket
+      - InfinispanDc1Bucket
+      - InfinispanDc2Bucket
+      - KeycloakDc1Bucket
+      - KeycloakDc2Bucket
+    Properties:
+      ServiceToken: !GetAtt CleanupS3Function.Arn
+
+  CleanupS3Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python2.7
+      Code: |
+        ZipFile: !Sub |
+          import logging
+          import cfnresponse
+          import json
+          import boto3
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          s3 = boto3.client('s3')
+          s3_buckets = [
+            '${InfinispanXsiteBucket}',
+            '${InfinispanDc1Bucket}',
+            '${InfinispanDc2Bucket}',
+            '${KeycloakDc1Bucket}',
+            '${KeycloakDc2Bucket}'
+          ]
+
+          def handler(event, context):
+            logger.info('Request received: %s\n' % json.dumps(event))
+
+            if 'RequestType' in event and event['RequestType'] == 'Delete':
+              for bucketName in s3_buckets:
+                logger.info("Emptying bucket: %s" % bucketName)
+                while True:
+                  ob = s3.list_objects(Bucket=bucketName)
+                  if 'Contents' in ob:
+                    s3.delete_objects(
+                      Bucket=bucketName, 
+                      Delete={ 'Objects': [ {'Key': item['Key'] } for item in ob['Contents'] ] }
+                    )
+                  else:
+                    break
+
+                  if ('IsTruncated' not in ob or not ob['IsTruncated']):
+                    break
+            elif 'RequestType' in event and event['RequestType'] in set(['Create', 'Update']):
+              boto3.client('logs').put_retention_policy(logGroupName=context.log_group_name, retentionInDays=1)
+
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+      Timeout: 120
+
+  InitializeMysqlDbFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: AMI
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python2.7
+      Code: |
+        ZipFile: !Sub |
+          import logging
+          import cfnresponse
+          import json
+          import boto3
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+            logger.info('Request received: %s\n' % json.dumps(event))
+
+            ami = '${AMI}'
+            db_host = '${KeycloakDbCluster.Endpoint.Address}'
+            db_port = '${KeycloakDbCluster.Endpoint.Port}'
+            physicalId = event['PhysicalResourceId'] if 'PhysicalResourceId' in event else None
+
+            def success(data={}):
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data, physicalId)
+
+            def failed(e):
+              cfnresponse.send(event, context, cfnresponse.FAILED, str(e), physicalId)
+
+            if not 'RequestType' in event:
+              success({'Data': 'Unhandled request'})
+              return
+
+            try:
+                
+              if event['RequestType'] == 'Create':
+                boto3.client('logs').put_retention_policy(logGroupName=context.log_group_name, retentionInDays=1)
+
+                rp = event['ResourceProperties']
+
+                backup_url = rp['DbBackupUrl'] if 'DbBackupUrl' in rp else None
+                signal_resource = rp['SignalResource'] if 'SignalResource' in rp else None
+                key_name = rp['KeyName'] if 'KeyName' in rp else None
+                subnet_id = rp['SubnetId'] if 'SubnetId' in rp else None
+                sec_groups = rp['SecurityGroupIds'] if 'SecurityGroupIds' in rp else None
+
+                if (not backup_url):
+                  success({'Data': 'No backup set'})
+                  return
+                if (not signal_resource or not subnet_id):
+                  raise Exception('Bad parameters')
+
+                ec2client = boto3.client('ec2')
+                run_instances_args = {
+                  'InstanceType': rp['InstanceType'] if 'InstanceType' in rp else 't2.micro'
+                }
+                if key_name:
+                  run_instances_args['KeyName'] = key_name
+                if sec_groups:
+                  run_instances_args['SecurityGroupIds'] = sec_groups
+                instance = ec2client.run_instances(
+                  ImageId=ami,
+                  MinCount=1,
+                  MaxCount=1,
+                  SubnetId=subnet_id,
+                  UserData="""#!/bin/bash
+
+                  BACKUP_URL="%(backup_url)s"
+
+                  function restoreDb() {
+                    yum install -y mysql
+                    curl "$BACKUP_URL" | case "$BACKUP_URL" in
+                      *.gz) zcat ;;
+                      *) cat ;;
+                    esac | mysql --host=%(host)s --port=%(port)s --user=keycloak --password=keycloak1 keycloak
+                  }
+
+                  function initDb() {
+                    ASB=/opt/tests/auth-*/bin
+                    $ASB/add-user-keycloak.sh -u admin -p admin
+                    $ASB/standalone.sh -c standalone.xml -Djboss.bind.address=127.0.0.1 &>/dev/null &
+
+                    KC_PID=$!
+
+                    # Wait for port 8080 to become available
+                    T=360 PORT=8080 CFN_SIGNAL=1
+                    while [ $T -gt 0 ]; do
+                      # Ignore ss header
+                      if [ $(ss -ln4 "( sport = $PORT )" | wc -l) -gt "1" ]; then
+                        CFN_SIGNAL=0
+                        $ASB/kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user admin --password admin
+                        $ASB/kcadm.sh update realms/master -s sslRequired=none
+                        kill -HUP $KC_PID
+                        break
+                      fi
+                      T=$[ $T - 1 ]
+                      sleep 1
+                    done
+
+                    return $CFN_SIGNAL
+                  }
+
+                  if [ -n "$BACKUP_URL" -a "$BACKUP_URL" != "DONT_RESTORE" ]; then
+                    restoreDb
+                  else
+                    initDb
+                  fi
+
+                  cfn-signal -e $? --stack %(stack_id)s --region ${AWS::Region} --resource %(resource)s
+                  
+                  shutdown -h now
+                  """ % { 'backup_url': backup_url, 'host': db_host, 'port': db_port, 'stack_id': event['StackId'], 'resource': signal_resource },
+                  **run_instances_args
+                )
+                physicalId = instance['Instances'][0]['InstanceId']
+
+                success({'Data': 'OK'})
+              if event['RequestType'] == 'Delete':
+                if (physicalId and physicalId.startswith('i-')):
+                  try:
+                    instance = ec2client.terminate_instances(InstanceIds=[physicalId])
+                  except Exception as e:
+                    pass
+
+                success({'Data': 'OK'})
+              else:
+                success({'Data': 'Not processed'})
+            except Exception as e:
+              failed(e)
+      Timeout: 120
+
+  TerminateInstancesFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: AMI
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python2.7
+      Code: |
+        ZipFile: !Sub |
+          import logging
+          import cfnresponse
+          import json
+          import boto3
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+            logger.info('Request received: %s\n' % json.dumps(event))
+
+            def success(data={}):
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+
+            def failed(e):
+              cfnresponse.send(event, context, cfnresponse.FAILED, str(e))
+
+            try:
+                
+              if event['RequestType'] == 'Create':
+                boto3.client('logs').put_retention_policy(logGroupName=context.log_group_name, retentionInDays=1)
+
+                rp = event['ResourceProperties']
+
+                instance_ids = rp['InstanceIds'] if 'InstanceIds' in rp else None
+                ec2client = boto3.client('ec2')
+
+                try:
+                  if instance_ids:
+                    instance = ec2client.terminate_instances(InstanceIds=instance_ids)
+                except Exception as e:
+                  pass
+
+                success({'Data': 'OK'})
+              else:
+                success({'Data': 'Not processed'})
+            except Exception as e:
+              failed(e)
+      Timeout: 120
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+      Policies:
+      - PolicyName: EC2Policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            -
+              Effect: Allow
+              Action:
+              - 'ec2:DescribeInstances'
+              - 'ec2:DescribeImages'
+              - 'ec2:CreateImage'
+              - 'ec2:DeregisterImage'
+              - 'ec2:DescribeSnapshots'
+              - 'ec2:DeleteSnapshot'
+              - 'ec2:StartInstances'
+              - 'ec2:RunInstances'
+              - 'ec2:TerminateInstances'
+              Resource: ['*']
+            -
+              Effect: Allow
+              Action:
+                - s3:ListAllMyBuckets
+                - s3:HeadBucket
+                - logs:PutRetentionPolicy
+                - logs:DeleteLogGroup
+              Resource: "*"
+            -
+              Effect: Allow
+              Action: "s3:*"
+              Resource:
+                - !Sub "arn:aws:s3:::${InfinispanXsiteBucket}/*"
+                - !Sub "arn:aws:s3:::${InfinispanDc1Bucket}/*"
+                - !Sub "arn:aws:s3:::${InfinispanDc2Bucket}/*"
+                - !Sub "arn:aws:s3:::${KeycloakDc1Bucket}/*"
+                - !Sub "arn:aws:s3:::${KeycloakDc2Bucket}/*"
+                - !Sub "arn:aws:s3:::${InfinispanXsiteBucket}"
+                - !Sub "arn:aws:s3:::${InfinispanDc1Bucket}"
+                - !Sub "arn:aws:s3:::${InfinispanDc2Bucket}"
+                - !Sub "arn:aws:s3:::${KeycloakDc1Bucket}"
+                - !Sub "arn:aws:s3:::${KeycloakDc2Bucket}"
+
+Outputs:
+  AMI:
+    Value: !Ref AMI
+    Export:
+      Name: !Sub '${AWS::StackName}-AMI'
+  VPC:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-VPC'
+    Export:
+      Name: !Sub '${AWS::StackName}-VPC'
+  AZDc1:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-AZ-Dc1'
+    Export:
+      Name: !Sub '${AWS::StackName}-AZ-Dc1'
+  AZDc2:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-AZ-Dc2'
+    Export:
+      Name: !Sub '${AWS::StackName}-AZ-Dc2'
+  RouteTableDc1Private:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-RouteTableDc1Private'
+    Export:
+      Name: !Sub '${AWS::StackName}-RouteTableDc1Private'
+  RouteTableDc2Private:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-RouteTableDc2Private'
+    Export:
+      Name: !Sub '${AWS::StackName}-RouteTableDc2Private'
+  SubnetDc1Private:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-SubnetDc1Private'
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetDc1Private'
+  SubnetDc1Public:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-SubnetDc1Public'
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetDc1Public'
+  SubnetDc2Private:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-SubnetDc2Private'
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetDc2Private'
+  SubnetDc2Public:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-SubnetDc2Public'
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetDc2Public'
+  SecurityGroup:
+    Value:
+      'Fn::ImportValue':
+        !Sub '${VPCCloudFormationStack}-SecurityGroup'
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroup'
+
+  OutInfinispanXsiteBucket:
+    Value: !Sub '${InfinispanXsiteBucket}'
+    Export:
+      Name: !Sub '${AWS::StackName}-InfinispanXsiteBucket'
+  OutInfinispanDc1Bucket:
+    Value: !Sub '${InfinispanDc1Bucket}'
+    Export:
+      Name: !Sub '${AWS::StackName}-InfinispanDc1Bucket'
+  OutInfinispanDc2Bucket:
+    Value: !Sub '${InfinispanDc2Bucket}'
+    Export:
+      Name: !Sub '${AWS::StackName}-InfinispanDc2Bucket'
+  OutKeycloakDc1Bucket:
+    Value: !Sub '${KeycloakDc1Bucket}'
+    Export:
+      Name: !Sub '${AWS::StackName}-KeycloakDc1Bucket'
+  OutKeycloakDc2Bucket:
+    Value: !Sub '${KeycloakDc2Bucket}'
+    Export:
+      Name: !Sub '${AWS::StackName}-KeycloakDc2Bucket'
+  ArnCleanupS3Function:
+    Value: !GetAtt CleanupS3Function.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-CleanupS3Function'
+  ArnInitializeMysqlDbFunction:
+    Value: !GetAtt InitializeMysqlDbFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-InitializeMysqlDbFunction'
+  ArnTerminateInstanceFunction:
+    Value: !GetAtt TerminateInstancesFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-TerminateInstancesFunction'
