@@ -1,19 +1,19 @@
-if [ -z "$CPUSETS_DC1" ]; then
-    CPUSETS_DC1="2"
-fi
-if [ -z "$CPUSETS_DC2" ]; then
-    CPUSETS_DC2="3"
-fi
+KEYCLOAK_CPUSETS_DC1="${KEYCLOAK_CPUSETS_DC1:-2}"
+KEYCLOAK_CPUSETS_DC2="${KEYCLOAK_CPUSETS_DC2:-3}"
 OUT=docker-compose-crossdc.yml
 
-cat cpuset-scaling/crossdc/base.yml > $OUT
+echo "KEYCLOAK_CPUSETS_DC1=${KEYCLOAK_CPUSETS_DC1}"
+echo "KEYCLOAK_CPUSETS_DC2=${KEYCLOAK_CPUSETS_DC2}"
+echo "Generating $OUT"
+
+cat scaling/crossdc/docker-compose-base.yml > $OUT
 I=0
-for CPUSET in $CPUSETS_DC1 ; do
+for CPUSET in $KEYCLOAK_CPUSETS_DC1 ; do
     I=$((I+1))
-    sed -e s/%I%/$I/ -e s/%CPUSET%/$CPUSET/ cpuset-scaling/crossdc/keycloak_dc1.yml >> $OUT
+    sed -e s/%I%/$I/ -e s/%CPUSET%/$CPUSET/ scaling/crossdc/docker-compose-keycloak_dc1.yml >> $OUT
 done
 I=0
-for CPUSET in $CPUSETS_DC2 ; do
+for CPUSET in $KEYCLOAK_CPUSETS_DC2 ; do
     I=$((I+1))
-    sed -e s/%I%/$I/ -e s/%CPUSET%/$CPUSET/ cpuset-scaling/crossdc/keycloak_dc2.yml >> $OUT
+    sed -e s/%I%/$I/ -e s/%CPUSET%/$CPUSET/ scaling/crossdc/docker-compose-keycloak_dc2.yml >> $OUT
 done

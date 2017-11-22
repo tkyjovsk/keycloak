@@ -3,7 +3,7 @@
             context: ./keycloak
             args:
                 REMOTE_CACHES: "true"
-        image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
+        image: keycloak_test_keycloak_dc2:${KEYCLOAK_VERSION:-latest}
         depends_on:
             # wait for first kc instance to be ready before starting another
             keycloak_dc1_1:
