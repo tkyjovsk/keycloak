@@ -3,7 +3,7 @@
             context: ./keycloak
             args:
                 REMOTE_CACHES: "true"
-        image: keycloak_test_keycloak:${KEYCLOAK_VERSION:-latest}
+        image: keycloak_test_keycloak_dc1:${KEYCLOAK_VERSION:-latest}
         depends_on:
             # wait for the db cluster to be ready before starting keycloak
             mariadb_dc2:

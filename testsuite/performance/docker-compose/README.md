@@ -1,6 +1,7 @@
 # Keycloak Performance Testsuite - Docker Compose
 
 ## Requirements:
+- Bash
 - Maven 3.1.1+
 - Unpacked Keycloak server distribution in `keycloak/target` folder.
 - Docker 1.13+

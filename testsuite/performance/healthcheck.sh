@@ -29,6 +29,9 @@ function waitUntilSystemHealthy {
     echo System is healthy.
 }
 
+
+if [ ! -f provisioned-system.properties ] ; then exit; fi
+
 if [ -z "$KEYCLOAK_SERVER_URIS" ]; then KEYCLOAK_SERVER_URIS=http://localhost:8080/auth; fi
 
 waitUntilSystemHealthy
