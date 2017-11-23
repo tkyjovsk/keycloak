@@ -36,7 +36,8 @@ services:
                 LOCAL_SITE: dc1
                 REMOTE_SITE: dc2
         image: keycloak_test_infinispan_dc1:${KEYCLOAK_VERSION:-latest}
-        cpus: 1
+        cpuset: ${INFINISPAN_DC1_CPUSET:-1}
+        mem_limit: ${INFINISPAN_MEMLIMIT:-1g}
         networks:
             - ispn_replication
             - dc1_keycloak
@@ -60,7 +61,8 @@ services:
         depends_on:
             infinispan_dc1:
                 condition: service_healthy
-        cpus: 1
+        cpuset: ${INFINISPAN_DC2_CPUSET:-2-3}
+        mem_limit: ${INFINISPAN_MEMLIMIT:-1g}
         networks:
             - ispn_replication
             - dc2_keycloak
@@ -78,7 +80,8 @@ services:
     mariadb_dc1:
         build: db/mariadb
         image: keycloak_test_mariadb:${KEYCLOAK_VERSION:-latest}
-        cpus: 1
+        cpuset: ${DB_DC1_CPUSET:-1}
+        mem_limit: ${DB_MEMLIMIT:-2g}
         networks:
             - db_replication
             - dc1_keycloak
@@ -99,8 +102,8 @@ services:
         depends_on: 
             mariadb_dc1:
                 condition: service_healthy
-        cpuset: ${DB_CPUSET:-1}
-        mem_limit: ${DB_MEMLIMIT:-1g}
+        cpuset: ${DB_DC2_CPUSET:-1}
+        mem_limit: ${DB_MEMLIMIT:-2g}
         networks:
             - db_replication
             - dc2_keycloak
@@ -113,37 +116,39 @@ services:
             - "3307:3306"
 
 
-    keycloak_lb_dc1:
+    loadbalancer_dc1:
         build: load-balancer/wildfly-modcluster
-        image: keycloak_test_keycloak_lb:${KEYCLOAK_VERSION:-latest}
-        cpus: 1
+        image: keycloak_test_loadbalancer:${KEYCLOAK_VERSION:-latest}
+        cpuset: ${LB_DC1_CPUSET:-1}
+        mem_limit: ${LB_MEMLIMIT:-1g}
         networks:
             - dc1_keycloak
 #            - loadbalancing
         environment:
             PRIVATE_SUBNET: 10.1.1.0/24
 #            PUBLIC_SUBNET: 10.0.2.0/24
-            JAVA_OPTS: ${KEYCLOAK_LB_JVM_MEMORY:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
-            HTTP_MAX_CONNECTIONS: ${KEYCLOAK_LB_HTTP_MAX_CONNECTIONS:-500}
-            WORKER_IO_THREADS: ${KEYCLOAK_LB_WORKER_IO_THREADS:-2}
-            WORKER_TASK_MAX_THREADS: ${KEYCLOAK_LB_WORKER_TASK_MAX_THREADS:-16}
+            JAVA_OPTS: ${LB_JVM_MEMORY:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+            HTTP_MAX_CONNECTIONS: ${LB_HTTP_MAX_CONNECTIONS:-500}
+            WORKER_IO_THREADS: ${LB_WORKER_IO_THREADS:-2}
+            WORKER_TASK_MAX_THREADS: ${LB_WORKER_TASK_MAX_THREADS:-16}
         ports:
             - "8081:8080"
             
-    keycloak_lb_dc2:
+    loadbalancer_dc2:
         build: load-balancer/wildfly-modcluster
-        image: keycloak_test_keycloak_lb:${KEYCLOAK_VERSION:-latest}
-        cpus: 1
+        image: keycloak_test_loadbalancer:${KEYCLOAK_VERSION:-latest}
+        cpuset: ${LB_DC2_CPUSET:-1}
+        mem_limit: ${LB_MEMLIMIT:-1g}
         networks:
             - dc2_keycloak
 #            - loadbalancing
         environment:
             PRIVATE_SUBNET: 10.2.1.0/24
 #            PUBLIC_SUBNET: 10.0.2.0/24
-            JAVA_OPTS: ${KEYCLOAK_LB_JVM_MEMORY:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
-            HTTP_MAX_CONNECTIONS: ${KEYCLOAK_LB_HTTP_MAX_CONNECTIONS:-500}
-            WORKER_IO_THREADS: ${KEYCLOAK_LB_WORKER_IO_THREADS:-2}
-            WORKER_TASK_MAX_THREADS: ${KEYCLOAK_LB_WORKER_TASK_MAX_THREADS:-16}
+            JAVA_OPTS: ${LB_JVM_MEMORY:--Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+            HTTP_MAX_CONNECTIONS: ${LB_HTTP_MAX_CONNECTIONS:-500}
+            WORKER_IO_THREADS: ${LB_WORKER_IO_THREADS:-2}
+            WORKER_TASK_MAX_THREADS: ${LB_WORKER_TASK_MAX_THREADS:-16}
         ports:
             - "8082:8080"
 

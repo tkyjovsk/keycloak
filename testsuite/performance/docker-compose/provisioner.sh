@@ -1,11 +1,18 @@
 #!/bin/bash
 
+function run {
+    echo "$1"
+    eval "$1"
+}
+
 cd "$(dirname "$0")/.."
 
 export OPERATION="${OPERATION:-provision}"
 export SERVICE_STACK="${SERVICE_STACK:-singlenode}"
+export SYS_PROPS=provisioned-system.properties
 
 echo "SERVICE_STACK: $SERVICE_STACK"
+
 case "$SERVICE_STACK" in
 
     singlenode)
@@ -62,6 +69,7 @@ esac
 
 
 echo "OPERATION: $OPERATION"
+
 case "$OPERATION" in
 
     provision)
@@ -69,9 +77,21 @@ case "$OPERATION" in
             cluster|crossdc) docker-compose/$SERVICE_STACK/generate-docker-compose-file.sh ;;
         esac
         echo "SERVICES: $SERVICES"
-        docker-compose -f $DOCKER_COMPOSE_FILE up -d --build $SERVICES
+        run "docker-compose -f $DOCKER_COMPOSE_FILE up -d --build $SERVICES"
         case "$SERVICE_STACK" in
-            singlenode|cluster|crossdc) docker-compose/$SERVICE_STACK/generate-provisioned-system-properties.sh ;;
+            singlenode)
+                KC_PORT="$( docker inspect --format='{{(index (index .NetworkSettings.Ports "8080/tcp") 0).HostPort}}' performance_keycloak_1 )"
+                echo "keycloak.server.urls=http://localhost:$KC_PORT/auth" > $SYS_PROPS
+            ;;
+            cluster)
+                KC_PORT="$( docker inspect --format='{{(index (index .NetworkSettings.Ports "8080/tcp") 0).HostPort}}' performance_keycloak_lb_1 )"
+                echo "keycloak.server.urls=http://localhost:$KC_PORT/auth" > $SYS_PROPS
+            ;;
+            crossdc) 
+                KC_DC1_PORT="$( docker inspect --format='{{(index (index .NetworkSettings.Ports "8080/tcp") 0).HostPort}}' performance_keycloak_lb_dc1_1 )"
+                KC_DC2_PORT="$( docker inspect --format='{{(index (index .NetworkSettings.Ports "8080/tcp") 0).HostPort}}' performance_keycloak_lb_dc2_1 )"
+                echo "keycloak.server.urls=http://localhost:$KC_DC1_PORT/auth http://localhost:$KC_DC2_PORT/auth" > $SYS_PROPS
+            ;;
         esac
     ;;
 
@@ -80,9 +100,9 @@ case "$OPERATION" in
         DELETE_DATA="${DELETE_DATA:-true}"
         echo "DELETE_DATA: $DELETE_DATA"
         if "$DELETE_DATA" ; then VOLUMES_ARG="-v"; else VOLUMES_ARG=""; fi
-        docker-compose -f $DOCKER_COMPOSE_FILE down $VOLUMES_ARG
+        run "docker-compose -f $DOCKER_COMPOSE_FILE down $VOLUMES_ARG"
         case "$SERVICE_STACK" in
-            singlenode|cluster|crossdc) rm -f provisioned-system.properties ;;
+            singlenode|cluster|crossdc) rm -f $SYS_PROPS ;;
         esac
     ;;
 
@@ -98,7 +118,7 @@ case "$OPERATION" in
         echo "DATASET: $DATASET"
 
         echo "Stopping Keycloak services: $KEYCLOAK_SERVICES"
-        docker-compose -f $DOCKER_COMPOSE_FILE stop $KEYCLOAK_SERVICES
+        run "docker-compose -f $DOCKER_COMPOSE_FILE stop $KEYCLOAK_SERVICES"
 
         cd tests/datasets
         case "$OPERATION" in
@@ -129,7 +149,7 @@ case "$OPERATION" in
         cd ../..
 
         echo "Starting Keycloak services: $KEYCLOAK_SERVICES"
-        docker-compose -f $DOCKER_COMPOSE_FILE up -d $KEYCLOAK_SERVICES
+        run "docker-compose -f $DOCKER_COMPOSE_FILE up -d $KEYCLOAK_SERVICES"
     ;;
 
     *)

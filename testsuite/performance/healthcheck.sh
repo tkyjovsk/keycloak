@@ -19,8 +19,8 @@ function waitUntilSystemHealthy {
         fi
         sleep 2
         SYSTEM_HEALTHY=true
-        for URI in $KEYCLOAK_SERVER_URIS ; do
-            if ! isKeycloakHealthy $URI; then 
+        for URL in $KEYCLOAK_SERVER_URLS ; do
+            if ! isKeycloakHealthy $URL; then 
                 echo Instance is not healthy.
                 SYSTEM_HEALTHY=false
             fi
@@ -29,9 +29,10 @@ function waitUntilSystemHealthy {
     echo System is healthy.
 }
 
-
-if [ ! -f provisioned-system.properties ] ; then exit; fi
-
-if [ -z "$KEYCLOAK_SERVER_URIS" ]; then KEYCLOAK_SERVER_URIS=http://localhost:8080/auth; fi
+if [ -f provisioned-system.properties ] ; then 
+    KEYCLOAK_SERVER_URLS=$( grep -Po "(?<=^keycloak.server.urls=).*" provisioned-system.properties )
+else
+    exit 0
+fi
 
 waitUntilSystemHealthy

@@ -33,9 +33,18 @@
         <provisioner>docker-compose</provisioner>
         <keycloak.service.stack>singlenode</keycloak.service.stack>
 
+        <!-- Keycloak Server Settings -->
+        <keycloak.scale>1</keycloak.scale>
+        <keycloak.dc1.scale>1</keycloak.dc1.scale>
+        <keycloak.dc2.scale>1</keycloak.dc2.scale>
+        <keycloak.docker.cpuset>2-3</keycloak.docker.cpuset>
+        <keycloak.docker.cpusets>2 3</keycloak.docker.cpusets>
+        <keycloak.dc1.docker.cpusets>2</keycloak.dc1.docker.cpusets>
+        <keycloak.dc2.docker.cpusets>3</keycloak.dc2.docker.cpusets>
+        <keycloak.docker.memlimit>2500m</keycloak.docker.memlimit>
         <keycloak.jvm.memory>-Xms64m -Xmx2g -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</keycloak.jvm.memory>
-        <keycloak.http.max-connections>500</keycloak.http.max-connections>
-        <keycloak.ajp.max-connections>500</keycloak.ajp.max-connections>
+        <keycloak.http.max-connections>50000</keycloak.http.max-connections>
+        <keycloak.ajp.max-connections>50000</keycloak.ajp.max-connections>
         <keycloak.worker.io-threads>2</keycloak.worker.io-threads>
         <keycloak.worker.task-max-threads>16</keycloak.worker.task-max-threads>
         <keycloak.ds.min-pool-size>10</keycloak.ds.min-pool-size>
@@ -43,24 +52,33 @@
         <keycloak.ds.pool-prefill>true</keycloak.ds.pool-prefill>
         <keycloak.ds.ps-cache-size>100</keycloak.ds.ps-cache-size>
 
-        <keycloak-lb.jvm.memory>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</keycloak-lb.jvm.memory>
-        <keycloak-lb.http.max-connections>500</keycloak-lb.http.max-connections>
-        <keycloak-lb.worker.io-threads>2</keycloak-lb.worker.io-threads>
-        <keycloak-lb.worker.task-max-threads>16</keycloak-lb.worker.task-max-threads>
-
-        <!-- Docker-related properties -->
+        <!-- Database Settings -->
         <db.docker.cpuset>1</db.docker.cpuset>
-        <keycloak.docker.cpusets>2-3</keycloak.docker.cpusets>
-        <keycloak.dc1.docker.cpusets>2</keycloak.dc1.docker.cpusets>
-        <keycloak.dc2.docker.cpusets>3</keycloak.dc2.docker.cpusets>
+        <db.dc1.docker.cpuset>1</db.dc1.docker.cpuset>
+        <db.dc2.docker.cpuset>1</db.dc2.docker.cpuset>
+        <db.docker.memlimit>2g</db.docker.memlimit>
+
+        <!-- Load Balancer Settings -->
+        <lb.docker.cpuset>1</lb.docker.cpuset>
+        <lb.dc1.docker.cpuset>1</lb.dc1.docker.cpuset>
+        <lb.dc2.docker.cpuset>1</lb.dc2.docker.cpuset>
+        <lb.docker.memlimit>1g</lb.docker.memlimit>
+        <lb.jvm.memory>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</lb.jvm.memory>
+        <lb.http.max-connections>500</lb.http.max-connections>
+        <lb.worker.io-threads>2</lb.worker.io-threads>
+        <lb.worker.task-max-threads>16</lb.worker.task-max-threads>
+
+        <!-- Infinispan Settings -->
+        <infinispan.docker.cpuset>1</infinispan.docker.cpuset>
+        <infinispan.dc1.docker.cpuset>1</infinispan.dc1.docker.cpuset>
+        <infinispan.dc2.docker.cpuset>1</infinispan.dc2.docker.cpuset>
+        <infinispan.docker.memlimit>1g</infinispan.docker.memlimit>
+        <infinispan.jvm.memory>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+DisableExplicitGC</infinispan.jvm.memory>
+        
+        <!-- Monitoring Settings -->
         <monitoring.docker.cpuset>0</monitoring.docker.cpuset>
 
-        <db.docker.memlimit>2g</db.docker.memlimit>
-        <keycloak.docker.memlimit>2g</keycloak.docker.memlimit>
-        <!-- End of docker-related properties -->
-
-        <infinispan.jvm.memory>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+DisableExplicitGC</infinispan.jvm.memory>
-
+        <!-- Other -->
         <dataset>default</dataset>
         <numOfWorkers>1</numOfWorkers>
 
@@ -294,15 +312,12 @@
             <id>cluster</id>
             <properties>
                 <keycloak.service.stack>cluster</keycloak.service.stack>
-                <keycloak.scale>1</keycloak.scale>
             </properties>
         </profile>
         <profile>
             <id>crossdc</id>
             <properties>
                 <keycloak.service.stack>crossdc</keycloak.service.stack>
-                <keycloak.dc1.scale>1</keycloak.dc1.scale>
-                <keycloak.dc2.scale>1</keycloak.dc2.scale>
             </properties>
         </profile>
         
@@ -326,17 +341,17 @@
                                         <PROVISIONER>${provisioner}</PROVISIONER>
                                         <SERVICE_STACK>${keycloak.service.stack}</SERVICE_STACK>
                                         <OPERATION>provision</OPERATION>
-                                        
-                                        <KEYCLOAK_SCALE>${keycloa.scale}</KEYCLOAK_SCALE>
-                                        <KEYCLOAK_DC1_SCALE>${keycloak.dc1.scale}</KEYCLOAK_DC1_SCALE>
-                                        <KEYCLOAK_DC2_SCALE>${keycloak.dc2.scale}</KEYCLOAK_DC2_SCALE>
 
                                         <KEYCLOAK_VERSION>${project.version}</KEYCLOAK_VERSION>
-
-                                        <KEYCLOAK_MEMLIMIT>${keycloak.docker.memlimit}</KEYCLOAK_MEMLIMIT>
-                                        <DB_CPUSET>${db.docker.cpuset}</DB_CPUSET>
-                                        <DB_MEMLIMIT>${db.docker.memlimit}</DB_MEMLIMIT>
                                         
+                                        <KEYCLOAK_SCALE>${keycloak.scale}</KEYCLOAK_SCALE>
+                                        <KEYCLOAK_DC1_SCALE>${keycloak.dc1.scale}</KEYCLOAK_DC1_SCALE>
+                                        <KEYCLOAK_DC2_SCALE>${keycloak.dc2.scale}</KEYCLOAK_DC2_SCALE>
+                                        <KEYCLOAK_CPUSET>${keycloak.docker.cpuset}</KEYCLOAK_CPUSET>
+                                        <KEYCLOAK_CPUSETS>${keycloak.docker.cpusets}</KEYCLOAK_CPUSETS>
+                                        <KEYCLOAK_DC1_CPUSETS>${keycloak.dc1.docker.cpusets}</KEYCLOAK_DC1_CPUSETS>
+                                        <KEYCLOAK_DC2_CPUSETS>${keycloak.dc2.docker.cpusets}</KEYCLOAK_DC2_CPUSETS>
+                                        <KEYCLOAK_MEMLIMIT>${keycloak.docker.memlimit}</KEYCLOAK_MEMLIMIT>
                                         <KEYCLOAK_JVM_MEMORY>${keycloak.jvm.memory}</KEYCLOAK_JVM_MEMORY>
                                         <KEYCLOAK_HTTP_MAX_CONNECTIONS>${keycloak.http.max-connections}</KEYCLOAK_HTTP_MAX_CONNECTIONS>
                                         <KEYCLOAK_AJP_MAX_CONNECTIONS>${keycloak.ajp.max-connections}</KEYCLOAK_AJP_MAX_CONNECTIONS>
@@ -346,12 +361,25 @@
                                         <KEYCLOAK_DS_MAX_POOL_SIZE>${keycloak.ds.max-pool-size}</KEYCLOAK_DS_MAX_POOL_SIZE>
                                         <KEYCLOAK_DS_POOL_PREFILL>${keycloak.ds.pool-prefill}</KEYCLOAK_DS_POOL_PREFILL>
                                         <KEYCLOAK_DS_PS_CACHE_SIZE>${keycloak.ds.ps-cache-size}</KEYCLOAK_DS_PS_CACHE_SIZE>
+
+                                        <DB_CPUSET>${db.docker.cpuset}</DB_CPUSET>
+                                        <DB_DC1_CPUSET>${db.dc1.docker.cpuset}</DB_DC1_CPUSET>
+                                        <DB_DC2_CPUSET>${db.dc2.docker.cpuset}</DB_DC2_CPUSET>
+                                        <DB_MEMLIMIT>${db.docker.memlimit}</DB_MEMLIMIT>
+
+                                        <LB_CPUSET>${lb.docker.cpuset}</LB_CPUSET>
+                                        <LB_DC1_CPUSET>${lb.dc1.docker.cpuset}</LB_DC1_CPUSET>
+                                        <LB_DC2_CPUSET>${lb.dc2.docker.cpuset}</LB_DC2_CPUSET>
+                                        <LB_MEMLIMIT>${lb.docker.memlimit}</LB_MEMLIMIT>
+                                        <LB_JVM_MEMORY>${lb.jvm.memory}</LB_JVM_MEMORY>
+                                        <LB_HTTP_MAX_CONNECTIONS>${lb.http.max-connections}</LB_HTTP_MAX_CONNECTIONS>
+                                        <LB_WORKER_IO_THREADS>${lb.worker.io-threads}</LB_WORKER_IO_THREADS>
+                                        <LB_WORKER_TASK_MAX_THREADS>${lb.worker.task-max-threads}</LB_WORKER_TASK_MAX_THREADS>
                                         
-                                        <KEYCLOAK_LB_JVM_MEMORY>${keycloak-lb.jvm.memory}</KEYCLOAK_LB_JVM_MEMORY>
-                                        <KEYCLOAK_LB_HTTP_MAX_CONNECTIONS>${keycloak-lb.http.max-connections}</KEYCLOAK_LB_HTTP_MAX_CONNECTIONS>
-                                        <KEYCLOAK_LB_WORKER_IO_THREADS>${keycloak-lb.worker.io-threads}</KEYCLOAK_LB_WORKER_IO_THREADS>
-                                        <KEYCLOAK_LB_WORKER_TASK_MAX_THREADS>${keycloak-lb.worker.task-max-threads}</KEYCLOAK_LB_WORKER_TASK_MAX_THREADS>
-                                        
+                                        <INFINISPAN_CPUSET>${infinispan.docker.cpuset}</INFINISPAN_CPUSET>
+                                        <INFINISPAN_DC1_CPUSET>${infinispan.dc1.docker.cpuset}</INFINISPAN_DC1_CPUSET>
+                                        <INFINISPAN_DC2_CPUSET>${infinispan.dc2.docker.cpuset}</INFINISPAN_DC2_CPUSET>
+                                        <INFINISPAN_MEMLIMIT>${infinispan.docker.memlimit}</INFINISPAN_MEMLIMIT>
                                         <INFINISPAN_JVM_MEMORY>${infinispan.jvm.memory}</INFINISPAN_JVM_MEMORY>
                                     </environmentVariables>
                                 </configuration>
@@ -523,7 +551,7 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>import-dump</id>
+                                <id>teardown</id>
                                 <phase>pre-integration-test</phase>
                                 <goals>
                                     <goal>exec</goal>
