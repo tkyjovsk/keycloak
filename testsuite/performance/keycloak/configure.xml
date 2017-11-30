@@ -41,6 +41,9 @@
             <arg value="--file=io-worker-threads.cli"/>
         </exec>
         <delete dir="${server.unpacked.home}/standalone/configuration/standalone_xml_history"/>
+        <delete dir="${server.unpacked.home}/standalone/log"/>
+        <delete dir="${server.unpacked.home}/standalone/data"/>
+        <delete dir="${server.unpacked.home}/standalone/tmp"/>
         <touch file="${project.build.directory}/performance-configured"/>
     </target>
 
@@ -61,6 +64,9 @@
             <arg value="--file=add-remote-cache-stores.cli"/>
         </exec>
         <delete dir="${server.unpacked.home}/standalone/configuration/standalone_xml_history"/>
+        <delete dir="${server.unpacked.home}/standalone/log"/>
+        <delete dir="${server.unpacked.home}/standalone/data"/>
+        <delete dir="${server.unpacked.home}/standalone/tmp"/>
         <touch file="${project.build.directory}/crossdc-configured"/>
     </target>
 

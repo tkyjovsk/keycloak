@@ -65,7 +65,7 @@
         <lb.dc2.docker.cpusets>1</lb.dc2.docker.cpusets>
         <lb.docker.memlimit>1500m</lb.docker.memlimit>
         <lb.jvm.memory>-Xms64m -Xmx1024m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</lb.jvm.memory>
-        <lb.http.max-connections>500</lb.http.max-connections>
+        <lb.http.max-connections>50000</lb.http.max-connections>
         <lb.worker.io-threads>2</lb.worker.io-threads>
         <lb.worker.task-max-threads>16</lb.worker.task-max-threads>
         <lb.debug.user>admin</lb.debug.user>
@@ -340,9 +340,11 @@
                                             <fileset dir="${project.basedir}/..">
                                                 <include name="db/**"/>
                                                 <include name="infinispan/**"/>
-                                                <include name="load-balancer/**"/>
                                                 <include name="monitoring/**"/>
                                             </fileset>
+                                        </copy>
+                                        <copy todir="${project.build.directory}/docker-compose/load-balancer/wildfly-modcluster" overwrite="false" >
+                                            <fileset dir="${project.basedir}/../load-balancer/wildfly-modcluster/target/docker"/>
                                         </copy>
                                         <copy todir="${project.build.directory}/docker-compose/keycloak" overwrite="false" >
                                             <fileset dir="${project.basedir}/../keycloak/target/docker"/>

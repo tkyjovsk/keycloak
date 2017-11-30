@@ -28,11 +28,7 @@ services:
             - "3306:3306"
 
     loadbalancer:
-        build: 
-            context: load-balancer/wildfly-modcluster
-            args:
-                MANAGEMENT_USER: ${MANAGEMENT_USER}
-                MANAGEMENT_USER_PASS: ${MANAGEMENT_USER_PASS}
+        build: load-balancer/wildfly-modcluster
         image: keycloak_test_loadbalancer:${KEYCLOAK_VERSION:-latest}
 #        depends_on:
 #            keycloak:
@@ -46,7 +42,7 @@ services:
             PRIVATE_SUBNET: 10.0.1.0/24
 #            PUBLIC_SUBNET: 10.0.2.0/24
             JAVA_OPTS: ${LB_JVM_MEMORY:--Xms64m -Xmx1024m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m} -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
-            HTTP_MAX_CONNECTIONS: ${LB_HTTP_MAX_CONNECTIONS:-500}
+            HTTP_MAX_CONNECTIONS: ${LB_HTTP_MAX_CONNECTIONS:-50000}
             WORKER_IO_THREADS: ${LB_WORKER_IO_THREADS:-2}
             WORKER_TASK_MAX_THREADS: ${LB_WORKER_TASK_MAX_THREADS:-16}
         ports:
