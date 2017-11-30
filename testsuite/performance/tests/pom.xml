@@ -63,11 +63,13 @@
         <lb.docker.cpusets>1</lb.docker.cpusets>
         <lb.dc1.docker.cpusets>1</lb.dc1.docker.cpusets>
         <lb.dc2.docker.cpusets>1</lb.dc2.docker.cpusets>
-        <lb.docker.memlimit>1g</lb.docker.memlimit>
-        <lb.jvm.memory>-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</lb.jvm.memory>
+        <lb.docker.memlimit>1500m</lb.docker.memlimit>
+        <lb.jvm.memory>-Xms64m -Xmx1024m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m</lb.jvm.memory>
         <lb.http.max-connections>500</lb.http.max-connections>
         <lb.worker.io-threads>2</lb.worker.io-threads>
         <lb.worker.task-max-threads>16</lb.worker.task-max-threads>
+        <lb.debug.user>admin</lb.debug.user>
+        <lb.debug.user.pass>admin</lb.debug.user.pass>
 
         <!-- Infinispan Settings -->
         <infinispan.dc1.docker.cpusets>1</infinispan.dc1.docker.cpusets>
@@ -421,6 +423,8 @@
                                         <LB_HTTP_MAX_CONNECTIONS>${lb.http.max-connections}</LB_HTTP_MAX_CONNECTIONS>
                                         <LB_WORKER_IO_THREADS>${lb.worker.io-threads}</LB_WORKER_IO_THREADS>
                                         <LB_WORKER_TASK_MAX_THREADS>${lb.worker.task-max-threads}</LB_WORKER_TASK_MAX_THREADS>
+                                        <MANAGEMENT_USER>${management.user}</MANAGEMENT_USER>
+                                        <MANAGEMENT_USER_PASS>${management.user.password}</MANAGEMENT_USER_PASS>
                                         
                                         <INFINISPAN_DC1_CPUSETS>${infinispan.dc1.docker.cpusets}</INFINISPAN_DC1_CPUSETS>
                                         <INFINISPAN_DC2_CPUSETS>${infinispan.dc2.docker.cpusets}</INFINISPAN_DC2_CPUSETS>
@@ -691,6 +695,7 @@
                                         <PROVISIONER>${provisioner}</PROVISIONER>
                                         <DEPLOYMENT>monitoring</DEPLOYMENT>
                                         <OPERATION>provision</OPERATION>
+                                        <MONITORING_CPUSETS>${monitoring.docker.cpusets}</MONITORING_CPUSETS>
                                     </environmentVariables>
                                 </configuration>
                             </execution>

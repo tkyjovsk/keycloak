@@ -57,16 +57,16 @@ The maximum cluster size corresponds to the number of cpusets.
 
 ### Load Balancer
 
-| Category    | Setting                       | Property                     | Default Value                                                      |
-|-------------|-------------------------------|------------------------------|--------------------------------------------------------------------|
-| Docker      | Allocated CPUs                | `lb.docker.cpusets`          | `1`                                                                |
-|             | Allocated CPUs for DC1        | `lb.dc1.docker.cpusets`      | `1`                                                                |
-|             | Allocated CPUs for DC2        | `lb.dc2.docker.cpusets`      | `1`                                                                |
-|             | Available memory              | `lb.docker.memlimit`         | `1g`                                                               |
-| JVM         | Memory settings               | `lb.jvm.memory`              | `-Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m` |
-| Undertow    | HTTP Listener max connections | `lb.http.max-connections`    | `50000`                                                            |
-| IO          | Worker IO thread pool         | `lb.worker.io-threads`       | `2`                                                                |
-|             | Worker Task thread pool       | `lb.worker.task-max-threads` | `16`                                                               |
+| Category    | Setting                       | Property                     | Default Value                                                       |
+|-------------|-------------------------------|------------------------------|---------------------------------------------------------------------|
+| Docker      | Allocated CPUs                | `lb.docker.cpusets`          | `1`                                                                 |
+|             | Allocated CPUs for DC1        | `lb.dc1.docker.cpusets`      | `1`                                                                 |
+|             | Allocated CPUs for DC2        | `lb.dc2.docker.cpusets`      | `1`                                                                 |
+|             | Available memory              | `lb.docker.memlimit`         | `1500m`                                                             |
+| JVM         | Memory settings               | `lb.jvm.memory`              | `-Xms64m -Xmx1024m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m` |
+| Undertow    | HTTP Listener max connections | `lb.http.max-connections`    | `50000`                                                             |
+| IO          | Worker IO thread pool         | `lb.worker.io-threads`       | `2`                                                                 |
+|             | Worker Task thread pool       | `lb.worker.task-max-threads` | `16`                                                                |
 
 ### Infinispan Server
 
@@ -82,6 +82,16 @@ The maximum cluster size corresponds to the number of cpusets.
 | Category    | Setting                       | Property                    | Default Value   |
 |-------------|-------------------------------|-----------------------------|-----------------|
 | Docker      | Allocated CPUs                | `monitoring.docker.cpusets` | `0`             |
+
+## Debugging Settings
+
+By setting the following parameters it is possible to add a management user to all WildFly-backed services: *Keycloak*, *Infinispan* and the *Load Balancer*.
+Unless both parameters are explicitly provided during the provisioning phase the user will not be added so it won't be possible to log into the console or access JMX.
+
+| Setting                       | Property                        | Default Value                                                                             |
+|-------------------------------|---------------------------------|-------------------------------------------------------------------------------------------|
+| Management user               | `management.user`               | Not set.                                                                                  |
+| Management user's password    | `management.user.password`      | Not set.                                                                                  |
 
 
 ## Note on Docker settings

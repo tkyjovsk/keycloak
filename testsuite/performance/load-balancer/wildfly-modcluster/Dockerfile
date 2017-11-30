@@ -1,5 +1,8 @@
 FROM jboss/wildfly
 
+ARG MANAGEMENT_USER
+ARG MANAGEMENT_USER_PASS
+
 ADD configs/ ./
 ADD *.sh /usr/local/bin/
 
@@ -8,6 +11,7 @@ RUN chmod -v +x /usr/local/bin/*.sh
 RUN yum -y install iproute
 USER jboss
 
+RUN if [ ! -z "$MANAGEMENT_USER" ]; then $JBOSS_HOME/bin/add-user.sh -u $MANAGEMENT_USER -p $MANAGEMENT_USER_PASS ; fi
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=mod-cluster-balancer.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=undertow.cli
 RUN $JBOSS_HOME/bin/jboss-cli.sh --file=io-worker-threads.cli; \
