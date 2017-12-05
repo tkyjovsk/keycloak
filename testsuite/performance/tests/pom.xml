@@ -694,6 +694,7 @@
                                         <PROVISIONER>${provisioner}</PROVISIONER>
                                         <DEPLOYMENT>monitoring</DEPLOYMENT>
                                         <OPERATION>provision</OPERATION>
+                                        <MONITORING_CPUSETS>${monitoring.docker.cpusets}</MONITORING_CPUSETS>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
