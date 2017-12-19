@@ -30,13 +30,7 @@ networks:
 services:
 
     infinispan_dc1:
-        build: 
-            context: infinispan
-            args:
-                LOCAL_SITE: dc1
-                REMOTE_SITE: dc2
-                MANAGEMENT_USER: ${MANAGEMENT_USER}
-                MANAGEMENT_USER_PASS: ${MANAGEMENT_USER_PASS}
+        build: infinispan-dc1
         image: keycloak_test_infinispan_dc1:${KEYCLOAK_VERSION:-latest}
         cpuset: ${INFINISPAN_DC1_CPUSET:-1}
         mem_limit: ${INFINISPAN_MEMLIMIT:-1500m}
@@ -54,13 +48,7 @@ services:
             - "9990"
 
     infinispan_dc2:
-        build: 
-            context: infinispan
-            args:
-                LOCAL_SITE: dc2
-                REMOTE_SITE: dc1
-                MANAGEMENT_USER: ${MANAGEMENT_USER}
-                MANAGEMENT_USER_PASS: ${MANAGEMENT_USER_PASS}
+        build: infinispan-dc2
         image: keycloak_test_infinispan_dc2:${KEYCLOAK_VERSION:-latest}
         depends_on:
             infinispan_dc1:

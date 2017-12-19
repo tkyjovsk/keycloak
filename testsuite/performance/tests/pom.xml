@@ -339,9 +339,14 @@
                                         <copy todir="${project.build.directory}/docker-compose" overwrite="false" >
                                             <fileset dir="${project.basedir}/..">
                                                 <include name="db/**"/>
-                                                <include name="infinispan/**"/>
                                                 <include name="monitoring/**"/>
                                             </fileset>
+                                        </copy>
+                                        <copy todir="${project.build.directory}/docker-compose/infinispan-dc1" overwrite="false" >
+                                            <fileset dir="${project.basedir}/../infinispan/target/dc1/docker"/>
+                                        </copy>
+                                        <copy todir="${project.build.directory}/docker-compose/infinispan-dc2" overwrite="false" >
+                                            <fileset dir="${project.basedir}/../infinispan/target/dc2/docker"/>
                                         </copy>
                                         <copy todir="${project.build.directory}/docker-compose/load-balancer/wildfly-modcluster" overwrite="false" >
                                             <fileset dir="${project.basedir}/../load-balancer/wildfly-modcluster/target/docker"/>
