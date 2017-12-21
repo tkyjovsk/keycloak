@@ -58,5 +58,14 @@
         <module>jetty</module>
         <module>integration-arquillian</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>performance</id>
+            <modules>
+                <module>performance</module>
+            </modules>
+        </profile>
+    </profiles>
         
 </project>
