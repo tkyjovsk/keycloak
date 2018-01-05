@@ -385,7 +385,7 @@ case "$OPERATION" in
                 DUMP_DOWNLOAD_SITE=${DUMP_DOWNLOAD_SITE:-https://downloads.jboss.org/keycloak-qe}
                 if [ ! -f "$DATASET.sql.gz" ]; then 
                     echo "Downloading dump file."
-                    if ! curl -f -O $DUMP_DOWNLOAD_SITE/$DATASET.properties -O $DUMP_DOWNLOAD_SITE/$DATASET.sql.gz ; then
+                    if ! curl -f -O "$DUMP_DOWNLOAD_SITE/$DATASET.properties" -O "$DUMP_DOWNLOAD_SITE/$DATASET.sql.gz" ; then
                         echo Download failed.
                         exit 1
                     fi
