@@ -383,6 +383,7 @@ case "$OPERATION" in
             ;;
             import-dump) 
                 DUMP_DOWNLOAD_SITE=${DUMP_DOWNLOAD_SITE:-https://downloads.jboss.org/keycloak-qe}
+                echo "DUMP_DOWNLOAD_SITE: $DUMP_DOWNLOAD_SITE"
                 if [ ! -f "$DATASET.sql.gz" ]; then 
                     DBD_PROP_FILE="$DUMP_DOWNLOAD_SITE/$DATASET.properties"
                     DBD_FILE="$DUMP_DOWNLOAD_SITE/$DATASET.sql.gz"
