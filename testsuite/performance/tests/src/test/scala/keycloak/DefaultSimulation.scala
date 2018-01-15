@@ -133,13 +133,17 @@ class DefaultSimulation extends Simulation {
       .check(status.is(302), header("Location").is("${appUrl}")))
 
   val usersScenario = scenario("users")
-    .asLongAs(s => rampDownPeriodNotReached(), null, TestConfig.rampDownASAP) {
-      pace(TestConfig.pace)
-      userSession
-    }
+//    .asLongAs(s => rampDownPeriodNotReached(), null, TestConfig.rampDownASAP) {
+//      pace(TestConfig.pace)
+      .exec(userSession)
+//    }
 
   setUp(usersScenario
-    .inject(rampUsers(TestConfig.runUsers) over TestConfig.rampUpPeriod)
+    .inject(
+//        rampUsers(TestConfig.usersPerSec) over TestConfig.rampUpPeriod
+        rampUsersPerSec(1) to TestConfig.usersPerSecRampUpFactor * TestConfig.usersPerSec during(TestConfig.rampUpPeriod),
+        constantUsersPerSec(TestConfig.usersPerSec) during(TestConfig.steadyLoadPeriod)
+    )
     .protocols(httpDefault))
 
   //

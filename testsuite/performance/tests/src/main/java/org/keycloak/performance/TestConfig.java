@@ -3,11 +3,9 @@ package org.keycloak.performance;
 import org.keycloak.performance.util.FilteredIterator;
 import org.keycloak.performance.util.LoopingIterator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -56,6 +54,8 @@ public class TestConfig {
     // Settings used by tests to control common test parameters
     //
     public static final int runUsers = Integer.getInteger("runUsers", 1);
+    public static final double usersPerSec = Double.parseDouble(System.getProperty("usersPerSec", "1"));
+    public static final double usersPerSecRampUpFactor = Double.parseDouble(System.getProperty("usersPerSecRampUpFactor", "1"));
     public static final int rampUpPeriod = Integer.getInteger("rampUpPeriod", 0);
     public static final int steadyLoadPeriod = Integer.getInteger("steadyLoadPeriod", 30);
     public static final boolean rampDownASAP = Boolean.getBoolean("rampDownASAP"); // check for rampdown condition after each scenario step
@@ -115,14 +115,17 @@ public class TestConfig {
 
     public static String toStringCommonTestParameters() {
         return String.format(
-        "  runUsers: %s\n" + 
+//        "  runUsers: %s\n" + 
+        "  usersPerSec: %s\n" + 
+        "  usersPerSecRampUpFactor: %s\n" + 
         "  rampUpPeriod: %s\n"+ 
         "  steadyLoadPeriod: %s\n"+
         "  rampDownASAP: %s\n"+ 
         "  pace: %s\n"+ 
         "  userThinkTime: %s\n"+ 
         "  refreshTokenPeriod: %s",
-                runUsers, rampUpPeriod, steadyLoadPeriod, rampDownASAP, pace, userThinkTime, refreshTokenPeriod
+//                runUsers, 
+                usersPerSec, usersPerSecRampUpFactor, rampUpPeriod, steadyLoadPeriod, rampDownASAP, pace, userThinkTime, refreshTokenPeriod
         );
     }
 
