@@ -49,15 +49,13 @@ class BasicOIDCSimulation extends Simulation {
       .thinkPause()
 
 
-  val usersScenario = scenario("users")
-    .asLongAs(s => rampDownNotStarted(), null, TestConfig.rampDownASAP) {
-      pace(TestConfig.pace)
-      userSession.chainBuilder
-    }
+  val usersScenario = scenario("users").exec(userSession.chainBuilder)
 
   setUp(usersScenario
-    .inject(rampUsers(TestConfig.runUsers) over TestConfig.rampUpPeriod)
-    .protocols(httpDefault))
+    .inject(
+       rampUsersPerSec(0.001) to TestConfig.usersPerSec during(TestConfig.rampUpPeriod),
+       constantUsersPerSec(TestConfig.usersPerSec) during(TestConfig.warmUpPeriod + TestConfig.measurementPeriod) 
+    ).protocols(httpDefault))
 
   after {
     filterResults(getClass)

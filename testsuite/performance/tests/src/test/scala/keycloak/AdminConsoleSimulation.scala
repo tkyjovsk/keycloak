@@ -90,15 +90,13 @@ class AdminConsoleSimulation extends Simulation {
     .thinkPause()
 
 
-  val adminScenario = scenario("AdminConsole")
-    .asLongAs(s => rampDownNotStarted(), null, TestConfig.rampDownASAP) {
-      pace(TestConfig.pace)
-      adminSession.chainBuilder
-    }
+  val adminScenario = scenario("AdminConsole").exec(adminSession.chainBuilder)
 
   setUp(adminScenario
-    .inject(rampUsers(TestConfig.runUsers) over TestConfig.rampUpPeriod)
-    .protocols(httpProtocol))
+    .inject(
+       rampUsersPerSec(0.001) to TestConfig.usersPerSec during(TestConfig.rampUpPeriod) ,
+       constantUsersPerSec(TestConfig.usersPerSec) during(TestConfig.warmUpPeriod + TestConfig.measurementPeriod) 
+    ).protocols(httpProtocol))
 
   after {
     filterResults(getClass)

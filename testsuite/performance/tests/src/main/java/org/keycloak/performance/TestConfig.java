@@ -3,11 +3,9 @@ package org.keycloak.performance;
 import org.keycloak.performance.util.FilteredIterator;
 import org.keycloak.performance.util.LoopingIterator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,7 +53,7 @@ public class TestConfig {
     //
     // Settings used by tests to control common test parameters
     //
-    public static final int runUsers = Integer.getInteger("runUsers", 1);
+    public static final double usersPerSec = Double.valueOf(System.getProperty("usersPerSec", "1"));
     public static final int rampUpPeriod = Integer.getInteger("rampUpPeriod", 0);
     public static final int warmUpPeriod = Integer.getInteger("warmUpPeriod", 0);
     public static final int measurementPeriod = Integer.getInteger("measurementPeriod", 30);
@@ -118,17 +116,15 @@ public class TestConfig {
     }
 
     public static String toStringCommonTestParameters() {
-        return String.format("  runUsers: %s\n"
-                + "  rampUpPeriod: %s\n"
-                + "  warmUpPeriod: %s\n"
-                + "  measurementPeriod: %s\n"
-                + "  rampDownASAP: %s\n"
-                + "  filterResults: %s\n"
-                + "  pace: %s\n"
-                + "  userThinkTime: %s\n"
-                + "  refreshTokenPeriod: %s",
-                runUsers, rampUpPeriod, warmUpPeriod, measurementPeriod, rampDownASAP, filterResults, pace, userThinkTime, refreshTokenPeriod
-        );
+        return String.format(
+        "  usersPerSec: %s\n" + 
+        "  rampUpPeriod: %s\n"+ 
+        "  warmUpPeriod: %s\n"+ 
+        "  measurementPeriod: %s\n"+
+        "  filterResults: %s\n"+
+        "  userThinkTime: %s\n"+ 
+        "  refreshTokenPeriod: %s",
+        usersPerSec, rampUpPeriod, warmUpPeriod, measurementPeriod, filterResults, userThinkTime, refreshTokenPeriod);
     }
 
     public static String toStringDatasetProperties() {
