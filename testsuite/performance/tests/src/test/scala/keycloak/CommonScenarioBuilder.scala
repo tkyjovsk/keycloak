@@ -33,7 +33,7 @@ object CommonScenarioBuilder {
       new LogProcessor(clazz).filterLog(
         TestConfig.measurementStartTime, 
         TestConfig.measurementEndTime,
-        false, true, true)
+        false, true)
     }
   }
 
