@@ -27,7 +27,7 @@ mvn clean install
 # Make sure your Docker daemon is running THEN
 mvn verify -Pprovision
 mvn verify -Pgenerate-data -Ddataset=100u -DnumOfWorkers=10 -DhashIterations=100
-mvn verify -Ptest -Ddataset=100u -DusersPerSec=4.5 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DmeasurementPeriod=60
+mvn verify -Ptest -Ddataset=100u -DusersPerSec=4.5 -DrampUpPeriod=10 -DuserThinkTime=0 -DbadLoginAttempts=1 -DrefreshTokenCount=1 -DmeasurementPeriod=60 -DfilterResults=true
 
 ```
 

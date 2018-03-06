@@ -15,7 +15,7 @@ import static org.keycloak.performance.TestConfig.SIMPLE_TIME;
 /**
  * To run use the following:
  *
- *   mvn -f testsuite/integration-arquillian/tests/performance/gatling-perf exec:java -Dexec.mainClass=org.keycloak.performance.log.LogProcessor -Dexec.args="ARGUMENTS"
+ *   mvn -f testsuite/integration-arquillian/performance/tests exec:java -Dexec.mainClass=org.keycloak.performance.log.LogProcessor -Dexec.args="ARGUMENTS"
  *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
@@ -144,9 +144,9 @@ public class LogProcessor {
 
     /**
      *
-     * Setting inlayedIncluded do either true of false, results in first second anomaly towards lower values
-     * Setting outlayedIncluded to true, and inlayedIncluded to false seems to be the only configuration that
-     * balances the first second downward skew with the last second upward skew.
+     * Setting inlayedIncluded to either true or false, results in first second anomaly towards lower values
+     * Setting outlayedIncluded to true, and inlayedIncluded to false seems to behave best balancing the first second
+     * downward skew with the last second upward skew. But it varies between test, and it's hard to say.
      *
      * All requests within time interval will also have their corresponding USER START and USER END entries copied
      * over, and adjusted to time interval start and end boundaries.
@@ -176,7 +176,7 @@ public class LogProcessor {
     
     public void copyPartialLog(PrintWriter output, long start, long end) throws IOException {
 
-        System.out.println(String.format("Extracting from: %s to %s", SIMPLE_TIME.format(start), SIMPLE_TIME.format(end)));
+        System.out.println(String.format("Extracting from: %s to %s   (%s - %s)", SIMPLE_TIME.format(start), SIMPLE_TIME.format(end), start, end));
 
         HashMap<String, LogLine> starts = new HashMap<>();
         HashMap<String, long[]> sessionTimes = new HashMap<>();
@@ -184,9 +184,8 @@ public class LogProcessor {
 
         // We adjust log entires so that stats are correctly calculated
         //   - we add USER START entries for user sessions that cross the time period boundaries
-        //   - we adjust start time of USER START entries to beginning of first included REQUEST entry for that session
-        //   - we adjust end time of USER END entries that occur beyond the time boundaries to the end time of the
-        //     last REQUEST entry for that session within the time boundaries
+        //   - we adjust start time of USER START entries to time interval start time
+        //   - we adjust end time of USER END entries that occur beyond the time boundaries to time interval end time
 
         LogReader reader = new LogReader(simulationLogFile);
         try {
