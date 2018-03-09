@@ -5,7 +5,7 @@ import io.gatling.http.Predef._
 import keycloak.CommonScenarioBuilder._
 import keycloak.BasicOIDCScenarioBuilder._
 
-import org.keycloak.performance.TestConfig
+import org.keycloak.performance.TestConfig._
 
 
 /**
@@ -15,8 +15,8 @@ import org.keycloak.performance.TestConfig
 class BasicOIDCSimulation extends CommonSimulation {
 
   override def printSpecificTestParameters {
-    println("  refreshTokenCount: " + TestConfig.refreshTokenCount)
-    println("  badLoginAttempts: " + TestConfig.badLoginAttempts)
+    println("  refreshTokenCount: " + refreshTokenCount)
+    println("  badLoginAttempts: " + badLoginAttempts)
   }
 
   val httpDefault = http
@@ -46,12 +46,16 @@ class BasicOIDCSimulation extends CommonSimulation {
   val usersScenario = scenario("users").exec(userSession.chainBuilder)
 
   setUp(usersScenario.inject(
-      rampUsersPerSec(0.001) to TestConfig.usersPerSec during(TestConfig.rampUpPeriod),
-      constantUsersPerSec(TestConfig.usersPerSec) during(TestConfig.warmUpPeriod + TestConfig.measurementPeriod) 
+
+      rampUsersPerSec(0.00001) to usersPerSec during(rampUpPeriod),
+
+      constantUsersPerSec(usersPerSec) during(warmUpPeriod),
+
+      rampUsersPerSec(usersPerSec) to spikePeakUsersPerSec during(spikeRampUpPeriod),
+      rampUsersPerSec(spikePeakUsersPerSec) to usersPerSec during(spikeRampDownPeriod),
+
+      constantUsersPerSec(usersPerSec) during(measurementPeriod) 
+
     ).protocols(httpDefault))
   
-//  after {
-//    filterResults(getClass)
-//  }
-
 }

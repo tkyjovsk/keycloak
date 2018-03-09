@@ -57,15 +57,23 @@ public class TestConfig {
     public static final double usersPerSec = Double.valueOf(System.getProperty("usersPerSec", "1"));
     public static final int rampUpPeriod = Integer.getInteger("rampUpPeriod", 0);
     public static final int warmUpPeriod = Integer.getInteger("warmUpPeriod", 0);
+    public static final int spikeRampUpPeriod = Integer.getInteger("spikeRampUpPeriod", 0);
+    public static final int spikeRampDownPeriod = Integer.getInteger("spikeRampDownPeriod", 0);
+    public static final double spikeFactor = Double.valueOf(System.getProperty("spikeFactor", "1"));
     public static final int measurementPeriod = Integer.getInteger("measurementPeriod", 30);
     public static final boolean filterResults = Boolean.getBoolean("filterResults"); // filter out results outside of measurementPeriod
     public static final int userThinkTime = Integer.getInteger("userThinkTime", 0);
     public static final int refreshTokenPeriod = Integer.getInteger("refreshTokenPeriod", 0);
 
+    public static final double spikePeakUsersPerSec = usersPerSec * spikeFactor;
+    public static final boolean spikeEnabled = !(spikeFactor == 1 || (spikeRampUpPeriod + spikeRampDownPeriod) == 0);
+
     // Computed timestamps
     public static final long simulationStartTime = System.currentTimeMillis();
     public static final long warmUpStartTime = simulationStartTime + rampUpPeriod * 1000;
-    public static final long measurementStartTime = warmUpStartTime + warmUpPeriod * 1000;
+    public static final long spikeStartTime = warmUpStartTime + warmUpPeriod * 1000;
+    public static final long spikePeakTime = spikeStartTime + spikeRampUpPeriod * 1000;
+    public static final long measurementStartTime = spikePeakTime + spikeRampDownPeriod * 1000;
     public static final long measurementEndTime = measurementStartTime + measurementPeriod * 1000;
 
     //
@@ -115,26 +123,33 @@ public class TestConfig {
     }
 
     public static String toStringCommonTestParameters() {
-        return String.format(
-        "  usersPerSec: %s\n" + 
-        "  rampUpPeriod: %s\n"+ 
-        "  warmUpPeriod: %s\n"+ 
-        "  measurementPeriod: %s\n"+
-        "  filterResults: %s\n"+
-        "  userThinkTime: %s\n"+ 
-        "  refreshTokenPeriod: %s",
-        usersPerSec, rampUpPeriod, warmUpPeriod, measurementPeriod, filterResults, userThinkTime, refreshTokenPeriod);
+        String spikeInfo = spikeEnabled
+                ? String.format("  spikeRampUpPeriod: %s\n"
+                        + "  spikeRampDownPeriod: %s\n"
+                        + "  spikeFactor: %s ---> spikePeakUsersPerSec: %s\n",
+                        spikeRampUpPeriod, spikeRampDownPeriod, spikeFactor, spikePeakUsersPerSec) : "";
+        return String.format("  usersPerSec: %s\n"
+                + "  rampUpPeriod: %s\n"
+                + "  warmUpPeriod: %s\n%s"
+                + "  measurementPeriod: %s\n"
+                + "  filterResults: %s\n"
+                + "  userThinkTime: %s\n"
+                + "  refreshTokenPeriod: %s",
+                usersPerSec, rampUpPeriod, warmUpPeriod, spikeInfo, measurementPeriod, filterResults, userThinkTime, refreshTokenPeriod);
     }
     
     public static SimpleDateFormat SIMPLE_TIME = new SimpleDateFormat("HH:mm:ss");
     
     public static String toStringTimestamps() {
+        String spikeInfo = spikeEnabled ? String.format("  spikeStartTime: %s\n  spikePeakTime: %s\n", 
+                SIMPLE_TIME.format(spikeStartTime), SIMPLE_TIME.format(spikePeakTime)) : "";
         return String.format("  simulationStartTime: %s\n"
-                + "  warmUpStartTime: %s\n"
+                + "  warmUpStartTime: %s\n%s"
                 + "  measurementStartTime: %s\n"
                 + "  measurementEndTime: %s",
                 SIMPLE_TIME.format(simulationStartTime), 
                 SIMPLE_TIME.format(warmUpStartTime), 
+                spikeInfo,
                 SIMPLE_TIME.format(measurementStartTime), 
                 SIMPLE_TIME.format(measurementEndTime));
     }
