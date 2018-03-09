@@ -1,0 +1,23 @@
+<project basedir="." >
+    <target name="prepare-docker-compose">
+        <copy todir="${project.build.directory}/docker" overwrite="false">
+            <fileset dir="${project.basedir}/src/main/scripts">
+                <include name="*"/>
+                <exclude name="ansible-role"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="prepare-ansible">
+        <copy todir="${project.build.directory}/ansible" overwrite="false">
+            <fileset dir="${project.basedir}/src/main/scripts/ansible-role">
+                <include name="**/*"/>
+            </fileset>
+        </copy>
+        <copy todir="${project.build.directory}/ansible/files" overwrite="false">
+            <fileset dir="${project.basedir}/src/main/scripts/">
+                <include name="*.sh"/>
+                <include name="wsrep*"/>
+            </fileset>
+        </copy>
+    </target>
+</project>

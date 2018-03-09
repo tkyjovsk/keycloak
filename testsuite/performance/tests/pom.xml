@@ -30,9 +30,6 @@
     <name>Keycloak Performance TestSuite - Tests</name>
 
     <properties>
-        <provisioner>docker-compose</provisioner>
-        <deployment>singlenode</deployment>
-
         <provisioning.properties>${provisioner}/4cpus/${deployment}</provisioning.properties>
         <dataset>2u2c</dataset>
         <test.properties>basic-oidc</test.properties>

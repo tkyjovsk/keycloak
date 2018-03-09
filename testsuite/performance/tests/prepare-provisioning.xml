@@ -6,9 +6,12 @@
         </copy>
         <copy todir="${project.build.directory}/docker-compose" overwrite="false" failonerror="true">
             <fileset dir="${project.basedir}/..">
-                <include name="db/**"/>
                 <include name="monitoring/**"/>
+                <include name="sshd/**"/>
             </fileset>
+        </copy>
+        <copy todir="${project.build.directory}/docker-compose/infinispan" overwrite="false" failonerror="true">
+            <fileset dir="${project.basedir}/../infinispan/target/docker"/>
         </copy>
         <copy todir="${project.build.directory}/docker-compose/infinispan" overwrite="false" failonerror="true">
             <fileset dir="${project.basedir}/../infinispan/target/docker"/>
@@ -18,6 +21,12 @@
         </copy>
         <copy todir="${project.build.directory}/docker-compose/keycloak" overwrite="false" failonerror="true">
             <fileset dir="${project.basedir}/../keycloak/target/docker"/>
+        </copy>
+    </target>
+    
+    <target name="prepare-ansible">
+        <copy todir="${project.build.directory}/ansible" overwrite="false" >
+            <fileset dir="${project.basedir}/src/main/ansible"/>
         </copy>
     </target>
     
