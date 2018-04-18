@@ -13,6 +13,8 @@ import org.jboss.perf.util.Util
 import org.jboss.perf.util.Util.randomUUID
 import org.keycloak.gatling.Utils.{urlEncodedRoot, urlencode}
 import org.keycloak.performance.TestConfig
+import io.gatling.core.validation.Validation
+import io.gatling.core.structure.ChainBuilder
 
 
 /**
@@ -47,12 +49,16 @@ object AdminConsoleScenarioBuilder {
           lastRefresh + TestConfig.refreshTokenPeriod * 1000 < System.currentTimeMillis())
     }
 
+  def someUsersExist(): Validation[Boolean] = {
+    TestConfig.summitDeleteUsersIterator.hasNext
+  }
+
 }
 
 class AdminConsoleScenarioBuilder {
 
   var chainBuilder = exec(s => {
-    val realm = TestConfig.randomRealmsIterator().next()
+    val realm = TestConfig.summitRealmIterator.next()
     val serverUrl = TestConfig.serverUrisIterator.next()
     s.setAll(
       "keycloakServer" -> serverUrl,
@@ -64,8 +70,7 @@ class AdminConsoleScenarioBuilder {
       "realm" -> realm,
       "username" -> TestConfig.authUser,
       "password" -> TestConfig.authPassword,
-      "clientId" -> "security-admin-console"
-    )
+      "clientId" -> "admin-cli")
   }).exitHereIfFailed
 
 
@@ -126,6 +131,27 @@ class AdminConsoleScenarioBuilder {
     this
   }
 
+  def login() : AdminConsoleScenarioBuilder = {
+    chainBuilder = chainBuilder
+      .exec(http("Login Admin")
+        .post("/auth/realms/master/protocol/openid-connect/token")
+        .headers(ACCEPT_ALL)
+        .formParam("grant_type", "password")
+        .formParam("username", "${username}")
+        .formParam("password", "${password}")
+        .formParam("client_id", "${clientId}")
+        .check(status.is(200),
+           jsonPath("$.access_token").saveAs("accessToken"),
+           jsonPath("$.refresh_token").saveAs("refreshToken"),
+           jsonPath("$.expires_in").saveAs("expiresIn"),
+           header("Date").saveAs("tokenTime")))
+      .exitHereIfFailed
+      .exec(s => {
+        s.set("accessTokenRefreshTime", ZonedDateTime.parse(s("tokenTime").as[String], DATE_FMT).toEpochSecond * 1000)
+      })
+    this
+  }
+  
   def loginThroughLoginForm() : AdminConsoleScenarioBuilder = {
     chainBuilder = chainBuilder
       .exec(http("JS Adapter Auth - Login Form Redirect")
@@ -530,6 +556,41 @@ class AdminConsoleScenarioBuilder {
         .headers(AUTHORIZATION)
         .check(status.is(200), jsonPath("$[0]['id']").saveAs("userId"))
       )
+    this
+  }
+
+  def deleteUser() : ChainBuilder = {
+    exec(s => {
+          s.set("deleteUsername", TestConfig.summitDeleteUsersIterator.next().username)
+        })
+
+    .exec(http("Search User")
+      .get("/auth/admin/realms/${realm}/users")
+      .headers(AUTHORIZATION)
+      .queryParam("search", "${deleteUsername}")
+      .check(status.is(200), jsonPath("$[0]['id']").saveAs("userId"))
+    ).exitHereIfFailed
+
+    .exec(http("Delete User")
+      .delete("/auth/admin/realms/${realm}/users/${userId}")
+      .headers(AUTHORIZATION)
+      .check(status.is(204))
+    ).exitHereIfFailed
+
+    .exec(s => {
+        TestConfig.summitDeleteUsersIterator.confirmUserDeletion
+        s
+    })
+  }
+  
+  def deleteUsers() : AdminConsoleScenarioBuilder = {
+    refreshTokenIfExpired()
+    chainBuilder = chainBuilder
+    .asLongAs(s => someUsersExist) {
+
+      deleteUser
+      
+    }
     this
   }
 

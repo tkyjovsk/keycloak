@@ -85,9 +85,9 @@ class OIDCScenarioBuilder {
   var chainBuilder = exec(s => {
 
       // initialize session with host, user, client app, login failure ratio ...
-      val realm = TestConfig.getRealmsIterator().next();
-      val userInfo = TestConfig.getUsersIterator(realm).next();
-      val clientInfo = TestConfig.getConfidentialClientsIterator(realm).next()
+      val realm = TestConfig.summitRealmIterator.next()
+      val userInfo = TestConfig.summitRegistrationUsersIterator.next()
+      val clientInfo = TestConfig.summitClientsIterator.next()
 
       AuthorizeAction.init(s)
         .setAll("keycloakServer" -> TestConfig.serverUrisIterator.next(),
@@ -102,6 +102,7 @@ class OIDCScenarioBuilder {
           "password" -> userInfo.password,
           "clientId" -> clientInfo.clientId,
           "secret" -> clientInfo.secret,
+          "isPublic" -> clientInfo.isPublic,
           "appUrl" -> clientInfo.appUrl
         )
     })
@@ -122,7 +123,7 @@ class OIDCScenarioBuilder {
 
   def browserOpensLoginPage() : OIDCScenarioBuilder = {
     chainBuilder = chainBuilder
-      .exec(http("Browser to Log In Endpoint")
+      .exec(http("Browser to Log In Endpoint "+LOGIN_ENDPOINT)
         .get(LOGIN_ENDPOINT)
         .headers(UI_HEADERS)
         .queryParam("login", "true")
