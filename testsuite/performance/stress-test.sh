@@ -5,10 +5,11 @@ cd $BASEDIR
 
 . ./stress-test-config.sh
 
-MVN=${MVN:-mvn}
+MVN="${MVN:-mvn} -f tests/pom.xml"
 PROVISIONING_PARAMETERS=${PROVISIONING_PARAMETERS:-}
 PROVISION_COMMAND="$MVN verify -P provision,import-dump $PROVISIONING_PARAMETERS -Ddataset=$dataset"
 TEARDOWN_COMMAND="$MVN verify -P teardown"
+DELETE_COMMAND="$MVN verify -Ptest $@ -Dtest.properties=delete-users -DnumOfWorkers=${deleteUsersWorkers}"
 
 function runCommand {
     echo "  $1"
@@ -24,13 +25,8 @@ function runTest {
     else 
         warmUpParameter="-DwarmUpPeriod=0 ";
     fi
-    if [[ $sequentialUsersFrom == -1 || $provisioning == true ]]; then
-        sequentialUsers=$sequentialUsersFrom
-    else
-        sequentialUsers=`echo "$sequentialUsersFrom * ( $i + 1 )" | bc`
-    fi
-
-    TEST_COMMAND="$MVN verify -Ptest $@ -Ddataset=$dataset $warmUpParameter -DfilterResults=true -DsequentialUsersFrom=$sequentialUsers -DusersPerSec=$usersPerSec"
+    
+    TEST_COMMAND="$MVN verify -Ptest $@ -Ddataset=$dataset $warmUpParameter -DfilterResults=true -DusersPerSec=$usersPerSec"
 
     echo "ITERATION: $(( i+1 )) / $maxIterations      $ITERATION_INFO"
     echo 
@@ -51,6 +47,12 @@ function runTest {
     fi
 
     [[ $testResult != 0 ]] && echo "Test exit code: $testResult"
+
+    if $deleteUsers; then 
+        echo "Deleting registered users."
+        echo 
+        runCommand "$DELETE_COMMAND"
+    fi
 
 }
 

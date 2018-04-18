@@ -20,7 +20,11 @@ class OIDCRegisterAndLogoutSimulation extends CommonSimulation {
 
   .assertions(
     global.failedRequests.count.lessThan(TestConfig.maxFailedRequests + 1),
-    global.responseTime.mean.lessThan(TestConfig.maxMeanReponseTime)
+    global.responseTime.mean.lessThan(TestConfig.maxMeanResponseTime)
   )
+  
+  after {
+    TestConfig.summitRegistrationUsersIterator.updateNumberOfRegisteredUsers
+  }
 
 }

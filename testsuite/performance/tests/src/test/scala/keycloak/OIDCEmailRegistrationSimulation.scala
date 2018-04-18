@@ -7,14 +7,14 @@ import keycloak.OIDCScenarioBuilder._
 import org.keycloak.performance.TestConfig
 
 
-class OIDCLoginAndLogoutSimulation extends CommonSimulation {
+class OIDCEmailRegistrationSimulation extends CommonSimulation {
 
   override def printSpecificTestParameters {
     println("  refreshTokenCount: " + TestConfig.refreshTokenCount)
     println("  badLoginAttempts: " + TestConfig.badLoginAttempts)
   }
-  
-  val usersScenario = scenario("Logging-in Users").exec(loginAndLogoutScenario.chainBuilder)
+
+  val usersScenario = scenario("Registering Users").exec(registerViaEmailScenario.chainBuilder)
 
   setUp(usersScenario.inject(defaultInjectionProfile).protocols(httpDefault))
 
@@ -22,5 +22,9 @@ class OIDCLoginAndLogoutSimulation extends CommonSimulation {
     global.failedRequests.count.lessThan(TestConfig.maxFailedRequests + 1),
     global.responseTime.mean.lessThan(TestConfig.maxMeanResponseTime)
   )
-    
+  
+  after {
+    TestConfig.summitRegistrationUsersIterator.updateNumberOfRegisteredUsers
+  }
+
 }

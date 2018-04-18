@@ -74,6 +74,15 @@ object OIDCScenarioBuilder {
       .thinkPause()
       .randomLogout()
 
+  val registerViaEmailScenario = new OIDCScenarioBuilder()
+      .browserOpensLoginPage()
+      .thinkPause()
+      .browserPostsRegistrationEmail()
+      .adapterExchangesCodeForTokens()
+      .refreshTokenSeveralTimes()
+      .thinkPause()
+      .randomLogout()
+
 }
 
 
@@ -82,9 +91,9 @@ class OIDCScenarioBuilder {
   var chainBuilder = exec(s => {
 
       // initialize session with host, user, client app, login failure ratio ...
-      val realm = TestConfig.getRealmsIterator().next();
-      val userInfo = TestConfig.getUsersIterator(realm).next();
-      val clientInfo = TestConfig.getConfidentialClientsIterator(realm).next()
+      val realm = TestConfig.summitRealmIterator.next()
+      val userInfo = TestConfig.summitRegistrationUsersIterator.next()
+      val clientInfo = TestConfig.summitClientsIterator.next()
 
       AuthorizeAction.init(s)
         .setAll("keycloakServer" -> TestConfig.serverUrisIterator.next(),
@@ -99,6 +108,7 @@ class OIDCScenarioBuilder {
           "password" -> userInfo.password,
           "clientId" -> clientInfo.clientId,
           "secret" -> clientInfo.secret,
+          "isPublic" -> clientInfo.isPublic,
           "appUrl" -> clientInfo.appUrl
         )
     })
@@ -113,13 +123,13 @@ class OIDCScenarioBuilder {
     builder.pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
   }
 
-  def newThinkPause() : ChainBuilder = {
-    pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
+  def refreshTokenPause() : ChainBuilder = {
+    pause(TestConfig.refreshTokenPeriod, Normal(TestConfig.refreshTokenPeriod * 0.2))
   }
   
   def browserOpensLoginPage() : OIDCScenarioBuilder = {
     chainBuilder = chainBuilder
-      .exec(http("Browser to Log In Endpoint")
+      .exec(http("Browser to Log In Endpoint "+LOGIN_ENDPOINT)
         .get(LOGIN_ENDPOINT)
         .headers(UI_HEADERS)
         .queryParam("login", "true")
@@ -128,8 +138,9 @@ class OIDCScenarioBuilder {
         .queryParam("state", "${state}")
         .queryParam("redirect_uri", "${appUrl}")
         .check(status.is(200), 
-          regex("action=\"([^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("login-form-uri"),
-          regex("href=\"/auth(/realms/[^\"]*/login-actions/registration[^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("registration-link")))
+          regex("action=\"([^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("login-form-uri")
+//          regex("href=\"/auth(/realms/[^\"]*/login-actions/registration[^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("registration-link")
+        ))
         // if already logged in the check will fail with:
         // status.find.is(200), but actually found 302
         // The reason is that instead of returning the login page we are immediately redirected to the app that requested authentication
@@ -198,6 +209,17 @@ class OIDCScenarioBuilder {
     this
   }
 
+  def browserPostsRegistrationEmail() : OIDCScenarioBuilder = {
+    chainBuilder = chainBuilder
+      .exec(http("Browser posts registration email")
+        .post("${login-form-uri}")
+        .headers(UI_HEADERS)
+        .formParam("email", "${email}")
+        .check(status.is(302), header("Location").saveAs("login-redirect")))
+      .exitHereIfFailed
+    this
+  }
+
   def adapterExchangesCodeForTokens() : OIDCScenarioBuilder = {
     chainBuilder = chainBuilder
       .exec(oauth("Adapter exchanges code for tokens")
@@ -215,8 +237,8 @@ class OIDCScenarioBuilder {
   def refreshTokenSeveralTimes() : OIDCScenarioBuilder = {
     chainBuilder = chainBuilder
       .asLongAs(s => downCounterAboveZero(s, "refreshTokenCount")) {
-        // make sure to call newThinkPause rather than thinkPause
-        newThinkPause()
+        // make sure to call refreshTokenPause rather than thinkPause
+        refreshTokenPause()
           .exec(oauth("Adapter refreshes token").refresh())
       }
     this

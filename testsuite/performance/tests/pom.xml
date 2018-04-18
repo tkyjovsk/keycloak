@@ -35,13 +35,13 @@
 
         <provisioning.properties>${provisioner}/4cpus/${deployment}</provisioning.properties>
         <dataset>2u2c</dataset>
-        <test.properties>oidc-login-logout</test.properties>
+        <test.properties>oidc-email</test.properties>
         
         <provisioning.properties.file>${project.basedir}/parameters/provisioning/${provisioning.properties}.properties</provisioning.properties.file>
         <dataset.properties.file>${project.basedir}/parameters/datasets/${dataset}.properties</dataset.properties.file>
         <test.properties.file>${project.basedir}/parameters/test/${test.properties}.properties</test.properties.file>
 
-        <provisioned.system.properties.file>${project.build.directory}/provisioned-system.properties</provisioned.system.properties.file>
+        <provisioned.system.properties.file>${basedir}/target/provisioned-system.properties</provisioned.system.properties.file>
 
         <!--other-->
                         
@@ -132,6 +132,11 @@
             <artifactId>gatling-charts-highcharts</artifactId>
             <version>${gatling.version}</version>
         </dependency>
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.10</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -200,7 +205,7 @@
                         </goals>
                         <configuration>
                             <files>
-                                <file>${project.build.directory}/provisioned-system.properties</file>
+                                <file>${provisioned.system.properties.file}</file>
                             </files>
                             <quiet>true</quiet>
                         </configuration>
@@ -263,6 +268,7 @@
                     <jvmArgs>
                         <!--common params-->
                         <param>-Dproject.build.directory=${project.build.directory}</param>
+                        <param>-Dprovisioned.system.properties.file=${provisioned.system.properties.file}</param>
                         <param>-Dkeycloak.server.uris=${keycloak.frontend.servers}</param>
                         <param>-DauthUser=${keycloak.admin.user}</param>
                         <param>-DauthPassword=${keycloak.admin.password}</param>
@@ -285,6 +291,9 @@
                         <param>-DrefreshTokenPeriod=${refreshTokenPeriod}</param>
                         <param>-DrefreshTokenCount=${refreshTokenCount}</param>
                         <param>-DbadLoginAttempts=${badLoginAttempts}</param>
+                        
+                        <param>-DmaxFailedRequests=${maxFailedRequests}</param>
+                        <param>-DmaxMeanResponseTime=${maxMeanResponseTime}</param>
                         
                         <param>${trustStoreArg}</param>
                         <param>${trustStorePasswordArg}</param>
@@ -444,7 +453,7 @@
                                 <phase>pre-integration-test</phase>
                                 <configuration>
                                     <files>
-                                        <file>${project.build.directory}/provisioned-system.properties</file>
+                                        <file>${provisioned.system.properties.file}</file>
                                     </files>
                                 </configuration>
                             </execution>
@@ -474,6 +483,8 @@
                                     <arguments>
                                         <argument>-classpath</argument>
                                         <classpath/>
+                                        <argument>-Dproject.build.directory=${project.build.directory}</argument>
+                                        <argument>-Dprovisioned.system.properties.file=${provisioned.system.properties.file}</argument>
                                         <argument>-DnumOfRealms=${numOfRealms}</argument>
                                         <argument>-DusersPerRealm=${usersPerRealm}</argument>
                                         <argument>-DclientsPerRealm=${clientsPerRealm}</argument>
@@ -498,6 +509,8 @@
                                     <arguments>
                                         <argument>-classpath</argument>
                                         <classpath/>
+                                        <argument>-Dproject.build.directory=${project.build.directory}</argument>
+                                        <argument>-Dprovisioned.system.properties.file=${provisioned.system.properties.file}</argument>
                                         <argument>${trustStoreArg}</argument>
                                         <argument>${trustStorePasswordArg}</argument>
                                         <argument>-Dkeycloak.server.uris=${keycloak.frontend.servers}</argument>

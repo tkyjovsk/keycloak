@@ -33,6 +33,10 @@ abstract class CommonSimulation extends Simulation {
       constantUsersPerSec(TestConfig.usersPerSec) during(TestConfig.warmUpPeriod + TestConfig.measurementPeriod)   
   )
   
+  var adminsInjectionProfile = Array[InjectionStep] (
+      atOnceUsers(TestConfig.numOfWorkers)
+  )
+
   def printSpecificTestParameters {
     // override in subclass
   }
