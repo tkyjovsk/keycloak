@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 
 import static org.keycloak.performance.RealmsConfigurationBuilder.computeAppUrl;
 import static org.keycloak.performance.RealmsConfigurationBuilder.computeClientId;
@@ -24,6 +28,19 @@ import static org.keycloak.performance.RealmsConfigurationBuilder.computeUsernam
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class TestConfig {
+
+    public static final String projectBuildDirectory = System.getProperty("project.build.directory", "target");
+    public static final String provisionedSystemPropertiesFile = System.getProperty("provisioned.system.properties.file", projectBuildDirectory + "/provisioned-system.properties");
+
+    public static PropertiesConfiguration provisionedSystemProperties;
+
+    static {
+        try {
+            provisionedSystemProperties = new PropertiesConfiguration(provisionedSystemPropertiesFile);
+        } catch (ConfigurationException ex) {
+            Logger.getLogger(TestConfig.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
     //
     // Settings used by RealmsConfigurationBuilder only - when generating the dataset
@@ -59,7 +76,7 @@ public class TestConfig {
     public static final int sequentialUsersFrom = Integer.getInteger("sequentialUsersFrom", -1); // -1 means random iteration
     public static final boolean sequentialRealms = sequentialRealmsFrom >= 0;
     public static final boolean sequentialUsers = sequentialUsersFrom >= 0;
-    
+
     //
     // Settings used by tests to control common test parameters
     //
@@ -133,32 +150,32 @@ public class TestConfig {
 
     public static String toStringCommonTestParameters() {
         return String.format(
-        "  usersPerSec: %s\n" + 
-        "  rampUpPeriod: %s\n"+ 
-        "  warmUpPeriod: %s\n"+ 
-        "  measurementPeriod: %s\n"+
-        "  filterResults: %s\n"+
-        "  userThinkTime: %s\n"+ 
-        "  refreshTokenPeriod: %s",
-        usersPerSec, rampUpPeriod, warmUpPeriod, measurementPeriod, filterResults, userThinkTime, refreshTokenPeriod);
+                "  usersPerSec: %s\n"
+                + "  rampUpPeriod: %s\n"
+                + "  warmUpPeriod: %s\n"
+                + "  measurementPeriod: %s\n"
+                + "  filterResults: %s\n"
+                + "  userThinkTime: %s\n"
+                + "  refreshTokenPeriod: %s",
+                usersPerSec, rampUpPeriod, warmUpPeriod, measurementPeriod, filterResults, userThinkTime, refreshTokenPeriod);
     }
-    
+
     public static SimpleDateFormat SIMPLE_TIME = new SimpleDateFormat("HH:mm:ss");
-    
+
     public static String toStringTimestamps() {
         return String.format("  simulationStartTime: %s\n"
                 + "  warmUpStartTime: %s\n"
                 + "  measurementStartTime: %s\n"
                 + "  measurementEndTime: %s",
-                SIMPLE_TIME.format(simulationStartTime), 
-                SIMPLE_TIME.format(warmUpStartTime), 
-                SIMPLE_TIME.format(measurementStartTime), 
+                SIMPLE_TIME.format(simulationStartTime),
+                SIMPLE_TIME.format(warmUpStartTime),
+                SIMPLE_TIME.format(measurementStartTime),
                 SIMPLE_TIME.format(measurementEndTime));
     }
 
     public static String toStringDatasetProperties() {
         return String.format(
-                  "  numOfRealms: %s%s\n"
+                "  numOfRealms: %s%s\n"
                 + "  usersPerRealm: %s%s\n"
                 + "  clientsPerRealm: %s\n"
                 + "  realmRoles: %s\n"
@@ -166,13 +183,13 @@ public class TestConfig {
                 + "  clientRolesPerUser: %s\n"
                 + "  clientRolesPerClient: %s\n"
                 + "  hashIterations: %s",
-                numOfRealms, sequentialRealms ? ",   sequential iteration starting from " + sequentialRealmsFrom: "",
-                usersPerRealm, sequentialUsers ? ",   sequential iteration starting from " + sequentialUsersFrom: "",
-                clientsPerRealm, 
-                realmRoles, 
-                realmRolesPerUser, 
-                clientRolesPerUser, 
-                clientRolesPerClient, 
+                numOfRealms, sequentialRealms ? ",   sequential iteration starting from " + sequentialRealmsFrom : "",
+                usersPerRealm, sequentialUsers ? ",   sequential iteration starting from " + sequentialUsersFrom : "",
+                clientsPerRealm,
+                realmRoles,
+                realmRolesPerUser,
+                clientRolesPerUser,
+                clientRolesPerClient,
                 hashIterations);
     }
     
@@ -201,9 +218,9 @@ public class TestConfig {
                 }
 
                 String user = computeUsername(realm, idx);
-                String firstName= computeFirstName(idx);
+                String firstName = computeFirstName(idx);
                 idx += 1;
-                return new UserInfo(user, 
+                return new UserInfo(user,
                         computePassword(user),
                         firstName,
                         computeLastName(realm),
@@ -226,7 +243,7 @@ public class TestConfig {
             public UserInfo next() {
                 int idx = ThreadLocalRandom.current().nextInt(usersPerRealm);
                 String user = computeUsername(realm, idx);
-                return new UserInfo(user, 
+                return new UserInfo(user,
                         computePassword(user),
                         computeFirstName(idx),
                         computeLastName(realm),
@@ -260,7 +277,7 @@ public class TestConfig {
         return new Iterator<String>() {
 
             int idx = sequentialRealms ? sequentialRealmsFrom : 0;
-            
+
             @Override
             public boolean hasNext() {
                 return true;
@@ -294,6 +311,124 @@ public class TestConfig {
         };
     }
 
+    public static final String SUMMIT_REALM = "summit";
+    public static final String GAME_CLIENT = "game";
+
+    public static Iterator<String> summitRealmIterator = new Iterator<String>() {
+
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public String next() {
+            return SUMMIT_REALM;
+        }
+    };
+
+    public static Iterator<ClientInfo> summitClientsIterator = new Iterator<ClientInfo>() {
+
+        // note: I set client secret to empty string because of problems with Scala Option handling null
+        ClientInfo gameClient = new ClientInfo(0, GAME_CLIENT, "", "http://localhost:8080/game");
+
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public ClientInfo next() {
+            return gameClient;
+        }
+    };
+
+    public static class SummitRegistrationUsersIterator implements Iterator {
+
+        public final String REGISTERED_USERS_PROPERTY = "registeredSummitUsers";
+        int idx;
+
+        public SummitRegistrationUsersIterator() {
+            idx = getNumberOfRegisteredUsers();
+//            System.out.println(REGISTERED_USERS_PROPERTY + ": " + idx);
+        }
+
+        final int getNumberOfRegisteredUsers() {
+            return provisionedSystemProperties.getInt(REGISTERED_USERS_PROPERTY, 0);
+        }
+
+        public void updateNumberOfRegisteredUsers() {
+            updateNumberOfRegisteredUsers(idx);
+        }
+        
+        public void updateNumberOfRegisteredUsers(int i) {
+            provisionedSystemProperties.setProperty(REGISTERED_USERS_PROPERTY, i);
+            try {
+                provisionedSystemProperties.save();
+            } catch (ConfigurationException ex) {
+                Logger.getLogger(TestConfig.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        protected void iterateIdx() {
+            idx += 1;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public synchronized UserInfo next() {
+            String user = computeUsername(SUMMIT_REALM, idx);
+            String firstName = computeFirstName(idx);
+//            System.out.println("next USER: " + user);
+            iterateIdx();
+            return new UserInfo(user,
+                    computePassword(user),
+                    firstName,
+                    computeLastName(SUMMIT_REALM),
+                    computeEmail(user)
+            );
+        }
+    }
+    
+    public static class SummitDeleteUsersIterator extends SummitRegistrationUsersIterator {
+        
+        int registeredUsers;
+
+        public SummitDeleteUsersIterator() {
+            registeredUsers=idx;
+            idx -= 1;
+        }
+
+        @Override
+        protected void iterateIdx() {
+            idx -= 1;
+        }
+
+        @Override
+        public boolean hasNext() {
+//            System.out.println("has next? "+idx);
+            return idx >= 0;
+        }
+
+        @Override
+        public void updateNumberOfRegisteredUsers() {
+            super.updateNumberOfRegisteredUsers(registeredUsers);
+        }
+        
+        public synchronized void confirmUserDeletion() {
+            registeredUsers--;
+//            System.out.println("USER DELETED");
+        }
+        
+    }
+    
+    public static SummitRegistrationUsersIterator summitRegistrationUsersIterator = new SummitRegistrationUsersIterator();
+    public static SummitDeleteUsersIterator summitDeleteUsersIterator = new SummitDeleteUsersIterator();
+
     public static void validateConfiguration() {
         if (realmRolesPerUser > realmRoles) {
             throw new RuntimeException("Can't have more realmRolesPerUser than there are realmRoles");
@@ -308,5 +443,5 @@ public class TestConfig {
             throw new RuntimeException("The folowing condition must be met: (-1 <= sequentialUsersFrom < usersPerRealm).");
         }
     }
-    
+
 }

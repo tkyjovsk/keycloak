@@ -17,10 +17,14 @@ class OIDCRegisterAndLogoutSimulation extends CommonSimulation {
   val usersScenario = scenario("Registering Users").exec(registerAndLogoutScenario.chainBuilder)
 
   setUp(usersScenario.inject(defaultInjectionProfile).protocols(httpDefault))
-
+  
   .assertions(
     global.failedRequests.count.lessThan(TestConfig.maxFailedRequests + 1),
     global.responseTime.mean.lessThan(TestConfig.maxMeanReponseTime)
   )
+  
+  after {
+    TestConfig.summitRegistrationUsersIterator.updateNumberOfRegisteredUsers
+  }
 
 }

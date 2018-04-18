@@ -10,11 +10,15 @@ public class ClientInfo {
     public final String secret;
     public final String appUrl;
 
-
     public ClientInfo(int index, String clientId, String secret, String appUrl) {
         this.index = index;
         this.clientId = clientId;
         this.secret = secret;
         this.appUrl = appUrl;
     }
+
+    public boolean isPublic() {
+        return secret == null || secret.isEmpty();
+    }
+
 }

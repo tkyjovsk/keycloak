@@ -7,7 +7,6 @@ export maxIterations=10
 
 export dataset=100u2c
 export warmUpPeriod=120
-export sequentialUsersFrom=-1
 
 # incremental 
 export usersPerSec0=5
