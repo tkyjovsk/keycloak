@@ -82,6 +82,15 @@ object OIDCScenarioBuilder {
       .thinkPause()
       .logout()
 
+  val registerViaEmailScenario = new OIDCScenarioBuilder()
+      .browserOpensLoginPage()
+      .thinkPause()
+      .browserPostsRegistrationEmail()
+      .adapterExchangesCodeForTokens()
+      .thinkPause()
+//      .logout()
+//      .thinkPause()
+
 }
 
 
