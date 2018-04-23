@@ -134,7 +134,7 @@ class OIDCScenarioBuilder {
   def newThinkPause() : ChainBuilder = {
     pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
   }
-
+  
   def browserOpensLoginPage() : OIDCScenarioBuilder = {
     chainBuilder = chainBuilder
       .exec(http("Browser to Log In Endpoint "+LOGIN_ENDPOINT)
@@ -252,14 +252,27 @@ class OIDCScenarioBuilder {
     this
   }
 
-  def logout() : OIDCScenarioBuilder = {
-    chainBuilder = chainBuilder
-      .exec(http("Browser logout")
+  def logoutChain() : ChainBuilder = {
+    exec(http("Browser logout")
         .get(LOGOUT_ENDPOINT)
         .headers(UI_HEADERS)
         .queryParam("redirect_uri", "${appUrl}")
         .check(status.is(302), header("Location").is("${appUrl}")))
+  }
+  
+  def logout() : OIDCScenarioBuilder = {
+    chainBuilder = chainBuilder.exec(logoutChain)
     this
   }
+  
+  def randomLogout() : OIDCScenarioBuilder = {
+    chainBuilder = chainBuilder
+    .randomSwitch(
+      // logout randomly based on logoutPct param
+      TestConfig.logoutPct -> exec(logoutChain)
+    )
+    this
+  }
+  
 }
 
