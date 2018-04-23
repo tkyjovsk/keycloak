@@ -77,6 +77,15 @@ object OIDCScenarioBuilder {
       .logout()
       .thinkPause()
 
+  val registerViaEmailScenario = new OIDCScenarioBuilder()
+      .browserOpensLoginPage()
+      .thinkPause()
+      .browserPostsRegistrationEmail()
+      .adapterExchangesCodeForTokens()
+      .thinkPause()
+//      .logout()
+//      .thinkPause()
+
 }
 
 
@@ -197,6 +206,17 @@ class OIDCScenarioBuilder {
         .formParam("username", "${username}")
         .formParam("password", "${password}")
         .formParam("password-confirm", "${password}")
+        .check(status.is(302), header("Location").saveAs("login-redirect")))
+      .exitHereIfFailed
+    this
+  }
+
+  def browserPostsRegistrationEmail() : OIDCScenarioBuilder = {
+    chainBuilder = chainBuilder
+      .exec(http("Browser posts registration email")
+        .post("${login-form-uri}")
+        .headers(UI_HEADERS)
+        .formParam("email", "${email}")
         .check(status.is(302), header("Location").saveAs("login-redirect")))
       .exitHereIfFailed
     this
