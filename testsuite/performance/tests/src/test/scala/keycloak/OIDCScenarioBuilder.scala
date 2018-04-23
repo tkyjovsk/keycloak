@@ -63,8 +63,6 @@ object OIDCScenarioBuilder {
 
       .thinkPause()
       .logout()
-
-      .thinkPause()
   
   val registerAndLogoutScenario = new OIDCScenarioBuilder()
       .browserOpensLoginPage()
@@ -75,7 +73,14 @@ object OIDCScenarioBuilder {
       .adapterExchangesCodeForTokens()
       .thinkPause()
       .logout()
+
+  val registerViaEmailScenario = new OIDCScenarioBuilder()
+      .browserOpensLoginPage()
       .thinkPause()
+      .browserPostsRegistrationEmail()
+      .adapterExchangesCodeForTokens()
+      .thinkPause()
+      .logout()
 
 }
 
@@ -132,8 +137,9 @@ class OIDCScenarioBuilder {
         .queryParam("state", "${state}")
         .queryParam("redirect_uri", "${appUrl}")
         .check(status.is(200), 
-          regex("action=\"([^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("login-form-uri"),
-          regex("href=\"/auth(/realms/[^\"]*/login-actions/registration[^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("registration-link")))
+          regex("action=\"([^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("login-form-uri")
+//          regex("href=\"/auth(/realms/[^\"]*/login-actions/registration[^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("registration-link")
+        ))
         // if already logged in the check will fail with:
         // status.find.is(200), but actually found 302
         // The reason is that instead of returning the login page we are immediately redirected to the app that requested authentication
@@ -197,6 +203,17 @@ class OIDCScenarioBuilder {
         .formParam("username", "${username}")
         .formParam("password", "${password}")
         .formParam("password-confirm", "${password}")
+        .check(status.is(302), header("Location").saveAs("login-redirect")))
+      .exitHereIfFailed
+    this
+  }
+
+  def browserPostsRegistrationEmail() : OIDCScenarioBuilder = {
+    chainBuilder = chainBuilder
+      .exec(http("Browser posts registration email")
+        .post("${login-form-uri}")
+        .headers(UI_HEADERS)
+        .formParam("email", "${email}")
         .check(status.is(302), header("Location").saveAs("login-redirect")))
       .exitHereIfFailed
     this

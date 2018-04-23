@@ -385,7 +385,7 @@ public class TestConfig {
             String firstName = computeFirstName(idx);
 //            System.out.println("next USER: " + user);
             iterateIdx();
-            return new UserInfo(user,
+            return new UserInfo(computeEmail(user),
                     computePassword(user),
                     firstName,
                     computeLastName(SUMMIT_REALM),
