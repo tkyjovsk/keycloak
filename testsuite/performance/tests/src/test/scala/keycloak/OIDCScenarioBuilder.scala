@@ -62,7 +62,7 @@ object OIDCScenarioBuilder {
       .refreshTokenSeveralTimes()
 
       .thinkPause()
-      .logout()
+      .randomLogout()
   
   val registerAndLogoutScenario = new OIDCScenarioBuilder()
       .browserOpensLoginPage()
@@ -72,7 +72,7 @@ object OIDCScenarioBuilder {
       .browserPostsRegistrationDetails()
       .adapterExchangesCodeForTokens()
       .thinkPause()
-      .logout()
+      .randomLogout()
 
   val registerViaEmailScenario = new OIDCScenarioBuilder()
       .browserOpensLoginPage()
@@ -80,16 +80,7 @@ object OIDCScenarioBuilder {
       .browserPostsRegistrationEmail()
       .adapterExchangesCodeForTokens()
       .thinkPause()
-      .logout()
-
-  val registerViaEmailScenario = new OIDCScenarioBuilder()
-      .browserOpensLoginPage()
-      .thinkPause()
-      .browserPostsRegistrationEmail()
-      .adapterExchangesCodeForTokens()
-      .thinkPause()
-//      .logout()
-//      .thinkPause()
+      .randomLogout()
 
 }
 
