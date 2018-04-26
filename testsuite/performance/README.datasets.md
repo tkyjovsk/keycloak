@@ -1,7 +1,41 @@
-# Keycloak Performance Testsuite - Generating datasets
+# Keycloak Performance Testsuite Datasets
 
+## Size
 
-## Generating a set of datasets for multiple realms
+| Property | Description | Default Value |
+| --- | --- | --- |
+| `numOfRealms` | | `1` |
+| `usersPerRealm` | | `2` |
+| `clientsPerRealm` | | `2` |
+| `realmRoles` | | `2` |
+| `realmRolesPerUser` | | `2` |
+| `clientRolesPerClient` | | `2` |
+| `clientRolesPerUser` | | `2` |
+
+## Templating
+
+| Entity | Attribute | Available Variables | 
+| --- | --- | --- | 
+| Realm | `realm`     | `realmIdx` |
+| User  | `username`  | `realmIdx`, `realm`, `userIdx` |
+|       | `password`  | `realmIdx`, `realm`, `userIdx`, `username` |
+|       | `email`     | `realmIdx`, `realm`, `userIdx`, `username` |
+|       | `firstName` | `realmIdx`, `realm`, `userIdx`, `username` |
+|       | `lastName`  | `realmIdx`, `realm`, `userIdx`, `username` |
+| Client | `clientId`  | `realmIdx`, `realm`, `clientIdx` |
+|        | `clientType`  | `roundRobinCBP`, `roundRobinCB`, `roundRobinCP`, `roundRobinBP`. The `C`, `B`, `P` stand for Confidential, Bearer-Only and Public client type. The round-robin algorithm cycles through the required client types using modulo of `clientIdx`. |
+|        | `clientUrl`  | `realmIdx`, `realm`, `clientIdx`, `clientId` |
+|        | `clientSecret`  | `realmIdx`, `realm`, `clientIdx`, `clientId` |
+| Realm Role | `realmRole`  | `realmIdx`, `realm`, `realmRoleIdx` |
+|            | `realmRoleDescription`  | `realmIdx`, `realm`, `realmRoleIdx`, `realmRole` |
+| Client Role | `clientRole`  | `realmIdx`, `realm`, `clientIdx`, `clientId`, `clientRoleIdx` |
+|             | `clientRoleDescription`  | `realmIdx`, `realm`, `clientIdx`, `clientId`, `clientRoleIdx`, `clientRole` |
+
+## State
+
+## Generating Datasets
+
+### Generating a set of datasets for multiple realms
 
 The first dataset is small and is created quickly. Building of each subsequent dataset continues on top
 of the previous dataset.
@@ -44,3 +78,4 @@ mvn verify -Pprovision
 mvn verify -Pimport-dump -Ddataset=20r100u1c -Dserver.version=4.0.0.Beta1
 
 ```
+

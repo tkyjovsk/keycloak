@@ -1,4 +1,4 @@
-package org.keycloak.performance.log;
+package org.keycloak.gatling.log;
 
 import java.util.ArrayList;
 import java.util.HashMap;

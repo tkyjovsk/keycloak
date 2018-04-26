@@ -1,4 +1,4 @@
-package org.keycloak.performance.util;
+package org.keycloak.performance.iteration;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

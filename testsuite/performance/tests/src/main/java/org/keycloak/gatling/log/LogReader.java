@@ -1,4 +1,4 @@
-package org.keycloak.performance.log;
+package org.keycloak.gatling.log;
 
 import java.io.BufferedReader;
 import java.io.File;

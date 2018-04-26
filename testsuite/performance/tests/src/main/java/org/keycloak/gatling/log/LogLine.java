@@ -1,4 +1,4 @@
-package org.keycloak.performance.log;
+package org.keycloak.gatling.log;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
