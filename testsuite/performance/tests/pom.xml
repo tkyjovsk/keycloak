@@ -41,6 +41,12 @@
         <dataset.properties.file>${project.basedir}/parameters/datasets/${dataset}.properties</dataset.properties.file>
         <test.properties.file>${project.basedir}/parameters/test/${test.properties}.properties</test.properties.file>
 
+        <!--dataset definition for gatling generator-->
+        <dataset.size>default</dataset.size>
+        <dataset.templating>default</dataset.templating>
+        <dataset.size.properties.file>dataset/size/${dataset.size}.properties</dataset.size.properties.file>
+        <dataset.templating.properties.file>dataset/templating/${dataset.templating}.properties</dataset.templating.properties.file>
+
         <provisioned.system.properties.file>${project.build.directory}/provisioned-system.properties</provisioned.system.properties.file>
 
         <!--other-->
@@ -99,6 +105,25 @@
             <version>${server.version}</version>
         </dependency>
         <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.spec.javax.ws.rs</groupId>
             <artifactId>jboss-jaxrs-api_2.0_spec</artifactId>
         </dependency>
@@ -137,8 +162,17 @@
     <build>
         <testResources>
             <testResource>
-                <directory>src/test/resources</directory>
                 <filtering>true</filtering>
+                <directory>src/test/resources</directory>
+                <excludes>
+                    <exclude>**/*.properties</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                </includes>
             </testResource>
         </testResources>
         <plugins>
@@ -261,6 +295,7 @@
                     <skip>${gatling.skip.run}</skip>
                     <disableCompiler>true</disableCompiler>
                     <runMultipleSimulations>true</runMultipleSimulations>
+                    <propagateSystemProperties>true</propagateSystemProperties>
                     <jvmArgs>
                         <!--common params-->
                         <param>-Dproject.build.directory=${project.build.directory}</param>
@@ -268,14 +303,18 @@
                         <param>-DauthUser=${keycloak.admin.user}</param>
                         <param>-DauthPassword=${keycloak.admin.password}</param>
                         <!--dataset params-->
-                        <param>-DnumOfRealms=${numOfRealms}</param>
+                        
+                        <param>-Ddataset.size.properties.file=${dataset.size.properties.file}</param>
+                        <param>-Ddataset.templating.properties.file=${dataset.templating.properties.file}</param>
+                        
+                        <!--                        <param>-DnumOfRealms=${numOfRealms}</param>
                         <param>-DusersPerRealm=${usersPerRealm}</param>
                         <param>-DclientsPerRealm=${clientsPerRealm}</param>
                         <param>-DrealmRoles=${realmRoles}</param>
                         <param>-DrealmRolesPerUser=${realmRolesPerUser}</param>
                         <param>-DclientRolesPerUser=${clientRolesPerUser}</param>
                         <param>-DclientRolesPerClient=${clientRolesPerClient}</param>
-                        <param>-DhashIterations=${hashIterations}</param>
+                        <param>-DhashIterations=${hashIterations}</param>-->
                         <!--test params-->
                         <param>-DusersPerSec=${usersPerSec}</param>
                         <param>-DrampUpPeriod=${rampUpPeriod}</param>
@@ -309,6 +348,17 @@
                     <workingDirectory>${project.basedir}</workingDirectory>
                 </configuration>
             </plugin>
+            
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+<!--                        <dataset.size.properties.file>${dataset.size.properties.file}</dataset.size.properties.file>
+                        <dataset.templating.properties.file>${dataset.templating.properties.file}</dataset.templating.properties.file>-->
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            
         </plugins>
     </build>
 
