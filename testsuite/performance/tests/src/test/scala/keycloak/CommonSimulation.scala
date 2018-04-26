@@ -2,7 +2,7 @@ package keycloak
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
-import org.keycloak.performance.log.LogProcessor
+import org.keycloak.gatling.log.LogProcessor
 import io.gatling.core.validation.Validation
 
 import io.gatling.core.controller.inject.InjectionStep
