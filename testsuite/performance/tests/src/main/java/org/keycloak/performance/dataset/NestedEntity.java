@@ -1,30 +1,29 @@
 package org.keycloak.performance.dataset;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import org.apache.commons.lang.Validate;
 
 /**
  *
  * @author tkyjovsk
- * @param <P> parent entity type
+ * @param <PE> parent entity type
  */
-public class NestedEntity<P extends Entity> extends Entity {
-    
-    @JsonBackReference
-    private final P parentEntity;
+public abstract class NestedEntity<PE extends Entity, R> extends Entity<R> {
 
-    public NestedEntity(P parentEntity) {
+    private final PE parentEntity;
+
+    public NestedEntity(PE parentEntity, R representation) {
+        super(representation);
         Validate.notNull(parentEntity);
         this.parentEntity = parentEntity;
     }
 
-    public P getParentEntity() {
+    public PE getParentEntity() {
         return parentEntity;
     }
-    
+
     @Override
     public int hashCode() {
-        return simpleClassNameHashCode() + getParentEntity().hashCode();
+        return simpleClassName().hashCode() + getParentEntity().hashCode();
     }
 
     @Override

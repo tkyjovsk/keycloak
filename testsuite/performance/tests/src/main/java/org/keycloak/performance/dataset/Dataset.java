@@ -1,6 +1,5 @@
 package org.keycloak.performance.dataset;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.keycloak.performance.dataset.idm.Realm;
 import java.util.List;
 import java.util.stream.Stream;
@@ -8,33 +7,37 @@ import org.keycloak.performance.dataset.idm.Client;
 import org.keycloak.performance.dataset.idm.ClientRole;
 import org.keycloak.performance.dataset.idm.ClientRoleMappings;
 import org.keycloak.performance.dataset.idm.Credential;
+import org.keycloak.performance.dataset.idm.Group;
 import org.keycloak.performance.dataset.idm.RealmRole;
-import org.keycloak.performance.dataset.idm.RealmRoleMappings;
+import org.keycloak.performance.dataset.idm.RoleMappings;
 import org.keycloak.performance.dataset.idm.User;
+import org.keycloak.performance.dataset.idm.authorization.ClientPolicy;
+import org.keycloak.performance.dataset.idm.authorization.JsPolicy;
 import org.keycloak.performance.dataset.idm.authorization.Resource;
+import org.keycloak.performance.dataset.idm.authorization.ResourcePermission;
 import org.keycloak.performance.dataset.idm.authorization.ResourceServer;
 import org.keycloak.performance.dataset.idm.authorization.RolePolicy;
 import org.keycloak.performance.dataset.idm.authorization.Scope;
+import org.keycloak.performance.dataset.idm.authorization.ScopePermission;
+import org.keycloak.performance.dataset.idm.authorization.UserPolicy;
 
 /**
  *
  * @author tkyjovsk
  */
-public class Dataset extends Entity {
+public class Dataset extends Entity<DatasetRepresentation> {
 
-    @JsonIgnore
     private List<Realm> realms;
 
-    @JsonIgnore
-    private List<User> users; // all realms' users
+    private List<User> users; // users from all users
 
-    @Override
-    public int hashCode() {
-        return simpleClassNameHashCode();
+    public Dataset(DatasetRepresentation representation) {
+        super(representation);
     }
 
-    public boolean equals(Object other) { // TODO decide if Dataset should be indexed or singleton
-        return other instanceof Dataset;
+    @Override
+    public String toString() {
+        return getRepresentation().getName();
     }
 
     public List<Realm> getRealms() {
@@ -53,19 +56,6 @@ public class Dataset extends Entity {
         this.users = users;
     }
 
-//    public Stream<? extends Entity> entities() {
-//        return Stream.of(
-//                realms(),
-//                realmRoles(),
-//                clients(),
-//                clientRoles(),
-//                users(),
-//                userRealmRoleMappings(),
-//                userClientRoleMappings()
-//        )
-//                .reduce(Stream::concat)
-//                .orElseGet(Stream::empty);
-//    }
     public Stream<Realm> realms() {
         return realms.stream();
     }
@@ -90,16 +80,20 @@ public class Dataset extends Entity {
         return users().map(User::getCredentials).flatMap(List::stream);
     }
 
-    public Stream<RealmRoleMappings> userRealmRoleMappings() {
+    public Stream<RoleMappings<User>> userRealmRoleMappings() {
         return users().map(User::getRealmRoleMappings);
     }
 
-    public Stream<ClientRoleMappings> userClientRoleMappings() {
+    public Stream<ClientRoleMappings<User>> userClientRoleMappings() {
         return users().map(User::getClientRoleMappingsList).flatMap(List::stream);
     }
 
+    public Stream<Group> groups() {
+        return realms.stream().map(Realm::getGroups).flatMap(List::stream);
+    }
+
     public Stream<ResourceServer> resourceServers() {
-        return clients().filter(c -> c.isAuthorizationServicesEnabled())
+        return clients().filter(c -> c.getRepresentation().getAuthorizationServicesEnabled())
                 .map(c -> c.getResourceServer());
     }
 
@@ -113,6 +107,26 @@ public class Dataset extends Entity {
 
     public Stream<RolePolicy> rolePolicies() {
         return resourceServers().map(rs -> rs.getRolePolicies()).flatMap(List::stream);
+    }
+
+    public Stream<JsPolicy> jsPolicies() {
+        return resourceServers().map(rs -> rs.getJsPolicies()).flatMap(List::stream);
+    }
+
+    public Stream<UserPolicy> userPolicies() {
+        return resourceServers().map(rs -> rs.getUserPolicies()).flatMap(List::stream);
+    }
+
+    public Stream<ClientPolicy> clientPolicies() {
+        return resourceServers().map(rs -> rs.getClientPolicies()).flatMap(List::stream);
+    }
+
+    public Stream<ResourcePermission> resourcePermissions() {
+        return resourceServers().map(rs -> rs.getResourcePermissions()).flatMap(List::stream);
+    }
+
+    public Stream<ScopePermission> scopePermissions() {
+        return resourceServers().map(rs -> rs.getScopePermissions()).flatMap(List::stream);
     }
 
 }

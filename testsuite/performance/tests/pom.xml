@@ -44,8 +44,8 @@
         <!--dataset definition for gatling generator-->
         <dataset.size>default</dataset.size>
         <dataset.templating>default</dataset.templating>
-        <dataset.size.properties.file>dataset/size/${dataset.size}.properties</dataset.size.properties.file>
-        <dataset.templating.properties.file>dataset/templating/${dataset.templating}.properties</dataset.templating.properties.file>
+        <dataset.size.properties.file>${project.basedir}/src/test/resources/dataset/size/${dataset.size}.properties</dataset.size.properties.file>
+        <dataset.templating.properties.file>${project.basedir}/src/test/resources/dataset/templating/${dataset.templating}.properties</dataset.templating.properties.file>
 
         <provisioned.system.properties.file>${project.build.directory}/provisioned-system.properties</provisioned.system.properties.file>
 
@@ -62,6 +62,10 @@
         <gatling-plugin.version>2.2.1</gatling-plugin.version>
         <scala-maven-plugin.version>3.2.2</scala-maven-plugin.version>
         <jboss-logging.version>3.3.0.Final</jboss-logging.version>
+        
+        <jackson.version>2.9.6</jackson.version>
+        <jackson.databind.version>${jackson.version}</jackson.databind.version>
+        <jackson.annotations.version>${jackson.databind.version}</jackson.annotations.version>
 
         <gatling.simulationClass>keycloak.OIDCLoginAndLogoutSimulation</gatling.simulationClass>
         <gatling.skip.run>true</gatling.skip.run>
@@ -98,6 +102,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
@@ -273,6 +282,7 @@
                                 <arg>-language:implicitConversions</arg>
                                 <arg>-language:postfixOps</arg>
                             </args>
+                            <skip>true</skip>
                         </configuration>
                     </execution>
                 </executions>
@@ -353,8 +363,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-<!--                        <dataset.size.properties.file>${dataset.size.properties.file}</dataset.size.properties.file>
-                        <dataset.templating.properties.file>${dataset.templating.properties.file}</dataset.templating.properties.file>-->
+                        <dataset.size.properties.file>${dataset.size.properties.file}</dataset.size.properties.file>
+                        <dataset.templating.properties.file>${dataset.templating.properties.file}</dataset.templating.properties.file>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -508,10 +518,10 @@
         <profile>
             <id>generate-data</id>
             <properties>
-                <startAtRealmIdx>0</startAtRealmIdx>
-                <ignoreConflicts>false</ignoreConflicts>
-                <skipRealmRoles>false</skipRealmRoles>
-                <skipClientRoles>false</skipClientRoles>
+                <delete>false</delete>
+                <log.every>5</log.every>
+                <queue.timeout>60</queue.timeout>
+                <shutdown.timeout>60</shutdown.timeout>
             </properties>
             <build>
                 <plugins>
@@ -519,30 +529,6 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
-                            <execution>
-                                <id>generate-data</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>java</executable>
-                                    <workingDirectory>${project.build.directory}</workingDirectory>
-                                    <arguments>
-                                        <argument>-classpath</argument>
-                                        <classpath/>
-                                        <argument>-DnumOfRealms=${numOfRealms}</argument>
-                                        <argument>-DusersPerRealm=${usersPerRealm}</argument>
-                                        <argument>-DclientsPerRealm=${clientsPerRealm}</argument>
-                                        <argument>-DrealmRoles=${realmRoles}</argument>
-                                        <argument>-DrealmRolesPerUser=${realmRolesPerUser}</argument>
-                                        <argument>-DclientRolesPerUser=${clientRolesPerUser}</argument>
-                                        <argument>-DclientRolesPerClient=${clientRolesPerClient}</argument>
-                                        <argument>-DhashIterations=${hashIterations}</argument>
-                                        <argument>org.keycloak.performance.RealmsConfigurationBuilder</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
                             <execution>
                                 <id>load-data</id>
                                 <phase>pre-integration-test</phase>
@@ -553,20 +539,26 @@
                                     <executable>java</executable>
                                     <workingDirectory>${project.build.directory}</workingDirectory>
                                     <arguments>
+                                        
                                         <argument>-classpath</argument>
                                         <classpath/>
-                                        <argument>${trustStoreArg}</argument>
-                                        <argument>${trustStorePasswordArg}</argument>
+                                        
                                         <argument>-Dkeycloak.server.uris=${keycloak.frontend.servers}</argument>
                                         <argument>-DauthUser=${keycloak.admin.user}</argument>
                                         <argument>-DauthPassword=${keycloak.admin.password}</argument>
                                         <argument>-DnumOfWorkers=${numOfWorkers}</argument>
-                                        <argument>-DstartAtRealmIdx=${startAtRealmIdx}</argument>
-                                        <argument>-DignoreConflicts=${ignoreConflicts}</argument>
-                                        <argument>-DskipRealmRoles=${skipRealmRoles}</argument>
-                                        <argument>-DskipClientRoles=${skipClientRoles}</argument>
-                                        <argument>org.keycloak.performance.RealmsConfigurationLoader</argument>
-                                        <argument>benchmark-realms.json</argument>
+                                        <argument>-Ddataset.size.properties.file=${dataset.size.properties.file}</argument>
+                                        <argument>-Ddataset.templating.properties.file=${dataset.templating.properties.file}</argument>
+                                        <argument>${trustStoreArg}</argument>
+                                        <argument>${trustStorePasswordArg}</argument>
+                                        
+                                        <argument>-Ddelete=${delete}</argument>
+                                        <argument>-Dlog.every=${log.every}</argument>
+                                        <argument>-Dqueue.timeout=${queue.timeout}</argument>
+                                        <argument>-Dshutdown.timeout=${shutdown.timeout}</argument>
+                                        
+                                        <argument>org.keycloak.performance.dataset.DatasetLoader</argument>
+                                        
                                     </arguments>
                                 </configuration>
                             </execution>

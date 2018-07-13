@@ -29,9 +29,7 @@
     <logger name="org.keycloak.performance" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE_MSG_ONLY" />
     </logger>
-    <logger name="org.keycloak.performance.dataset" level="INFO" additivity="false">
-        <appender-ref ref="CONSOLE" />
-    </logger>
+
     
     <logger name="ch.qos.logback" level="WARN"/>
     

@@ -1,6 +1,9 @@
 package org.keycloak.performance.dataset.idm;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RoleByIdResource;
+import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 
 /**
  *
@@ -8,13 +11,22 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class RealmRole extends Role<Realm> {
 
-    public RealmRole(Realm realm, int index) {
-        super(realm, index);
+    public RealmRole(Realm realm, int index, RoleRepresentation representation) {
+        super(realm, index, representation);
     }
 
-    @JsonIgnore
     public Realm getRealm() {
         return getParentEntity();
+    }
+
+    @Override
+    public RolesResource rolesResource(Keycloak adminClient) {
+        return getRealm().realmResource(adminClient).roles();
+    }
+
+    @Override
+    public RoleByIdResource roleByIdResource(Keycloak adminClient) {
+        return getRealm().realmResource(adminClient).rolesById();
     }
 
 }

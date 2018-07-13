@@ -1,41 +1,58 @@
 package org.keycloak.performance.dataset.idm;
 
+import javax.ws.rs.core.Response;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RoleByIdResource;
+import org.keycloak.admin.client.resource.RoleResource;
+import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.performance.dataset.Entity;
 import org.keycloak.performance.dataset.NestedIndexedEntity;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.performance.dataset.ResourceFacade;
 
 /**
  *
  * @author tkyjovsk
- * @param <P>
+ * @param <PE>
  */
-public abstract class Role<P extends Entity> extends NestedIndexedEntity<P> {
-
-    private String name;
-    private String description;
-
-    public Role(P parentEntity, int index) {
-        super(parentEntity, index);
+public abstract class Role<PE extends Entity> extends NestedIndexedEntity<PE, RoleRepresentation>
+        implements ResourceFacade<RoleRepresentation> {
+    
+    public Role(PE parentEntity, int index, RoleRepresentation representation) {
+        super(parentEntity, index, representation);
     }
-
+    
     @Override
     public String toString() {
-        return getName();
+        return getRepresentation().getName();
     }
-
-    public String getName() {
-        return name;
+    
+    public abstract RolesResource rolesResource(Keycloak adminClient);
+    
+    public abstract RoleByIdResource roleByIdResource(Keycloak adminClient);
+    
+    public RoleResource roleResource(Keycloak adminClient) {
+        return rolesResource(adminClient).get(getRepresentation().getName());
     }
-
-    public void setName(String name) {
-        this.name = name;
+    
+    @Override
+    public RoleRepresentation read(Keycloak adminClient) {
+        return roleResource(adminClient).toRepresentation();
     }
-
-    public String getDescription() {
-        return description;
+    
+    @Override
+    public Response create(Keycloak adminClient) { // FIXME
+        rolesResource(adminClient).create(getRepresentation());
+        return null;
     }
-
-    public void setDescription(String description) {
-        this.description = description;
+    
+    @Override
+    public void update(Keycloak adminClient) {
+        roleByIdResource(adminClient).updateRole(getId(), getRepresentation());
     }
-
+    
+    @Override
+    public void delete(Keycloak adminClient) {
+        roleByIdResource(adminClient).deleteRole(getId());
+    }
 }

@@ -8,10 +8,10 @@ import org.keycloak.performance.dataset.EntityTest;
  *
  * @author tkyjovsk
  */
-public class ClientRoleMappingsTest extends EntityTest<ClientRoleMappings> {
+public class ClientRoleMappingsTest extends EntityTest<ClientRoleMappings<User>> {
 
     @Override
-    public Stream<ClientRoleMappings> entityStream(Dataset dataset) {
+    public Stream<ClientRoleMappings<User>> entityStream(Dataset dataset) {
         return dataset.userClientRoleMappings();
     }
 

@@ -4,51 +4,83 @@ import java.util.List;
 import org.keycloak.performance.dataset.idm.Client;
 import org.keycloak.performance.dataset.idm.ClientRole;
 import org.keycloak.performance.dataset.Dataset;
-import org.keycloak.performance.iteration.FlattenedListOfLists;
+import org.keycloak.performance.iteration.Flattened2DList;
 import org.keycloak.performance.dataset.idm.Realm;
 import org.keycloak.performance.dataset.idm.authorization.ResourceServerList;
 import org.keycloak.performance.templates.NestedIndexedEntityTemplate;
 import org.keycloak.performance.templates.NestedIndexedEntityTemplateWrapperList;
 import org.keycloak.performance.templates.DatasetTemplate;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
  *
  * @author tkyjovsk
  */
-public class RealmTemplate extends NestedIndexedEntityTemplate<Dataset, Realm> {
+public class RealmTemplate extends NestedIndexedEntityTemplate<Dataset, Realm, RealmRepresentation> {
 
     private final int realms;
 
     private final ClientTemplate clientTemplate;
     private final RealmRoleTemplate realmRoleTemplate;
     private final UserTemplate userTemplate;
+    private final GroupTemplate groupTemplate;
 
     public RealmTemplate(DatasetTemplate datasetTemplate) {
         super(datasetTemplate);
-        registerAttributeTemplate("realm");
-        registerAttributeTemplate("displayName");
-        registerAttributeTemplate("enabled");
-        registerAttributeTemplate("registrationAllowed");
-        registerAttributeTemplate("accessTokenLifeSpan");
-        registerAttributeTemplate("passwordPolicy");
-        this.realms = configuration.getInt("realms", 0);
-        clientTemplate = new ClientTemplate(this);
-        realmRoleTemplate = new RealmRoleTemplate(this);
-        userTemplate = new UserTemplate(this);
+        this.realms = getConfiguration().getInt("realms", 0);
+        this.clientTemplate = new ClientTemplate(this);
+        this.realmRoleTemplate = new RealmRoleTemplate(this);
+        this.userTemplate = new UserTemplate(this);
+        this.groupTemplate = new GroupTemplate(this);
+    }
+
+    public ClientTemplate getClientTemplate() {
+        return clientTemplate;
+    }
+
+    public RealmRoleTemplate getRealmRoleTemplate() {
+        return realmRoleTemplate;
+    }
+
+    public UserTemplate getUserTemplate() {
+        return userTemplate;
+    }
+
+    public GroupTemplate getGroupTemplate() {
+        return groupTemplate;
     }
 
     @Override
-    public synchronized Realm produce(Dataset dataset, int index) {
-        Realm realm = new Realm(dataset, index);
-        realm.setRealm(processAttribute("realm", realm));
-        realm.setDisplayName(processAttribute("displayName", realm));
-        realm.setEnabled(Boolean.parseBoolean(processAttribute("enabled", realm)));
-        realm.setRegistrationAllowed(Boolean.parseBoolean(processAttribute("registrationAllowed", realm)));
-        realm.setAccessTokenLifespan(Integer.parseInt(processAttribute("accessTokenLifeSpan", realm)));
-        realm.setPasswordPolicy(processAttribute("passwordPolicy", realm));
+    public int getEntityCountPerParent() {
+        return getRealms();
+    }
+
+    public int getRealms() {
+        return realms;
+    }
+
+    @Override
+    public void validateConfiguration() {
+        // sizing
+        logger().info(String.format("realms: %s", realms));
+        validateInt().minValue(realms, 0);
+
+        clientTemplate.validateConfiguration();
+        realmRoleTemplate.validateConfiguration();
+        userTemplate.validateConfiguration();
+        groupTemplate.validateConfiguration();
+    }
+
+    @Override
+    public Realm newEntity(Dataset parentEntity, int index) {
+        return new Realm(parentEntity, index, new RealmRepresentation());
+    }
+
+    @Override
+    public void processMappings(Realm realm) {
         realm.setClients(new NestedIndexedEntityTemplateWrapperList<>(realm, clientTemplate));
         realm.setResourceServers(new ResourceServerList(realm.getClients()));
-        realm.setClientRoles(new FlattenedListOfLists<Client, ClientRole>() { // only for mapping, no CRUD
+        realm.setClientRoles(new Flattened2DList<Client, ClientRole>() {
             @Override
             public List<Client> getXList() {
                 return realm.getClients();
@@ -66,39 +98,7 @@ public class RealmTemplate extends NestedIndexedEntityTemplate<Dataset, Realm> {
         });
         realm.setRealmRoles(new NestedIndexedEntityTemplateWrapperList<>(realm, realmRoleTemplate));
         realm.setUsers(new NestedIndexedEntityTemplateWrapperList<>(realm, userTemplate));
-        return realm;
-    }
-
-    public UserTemplate getUserTemplate() {
-        return userTemplate;
-    }
-
-    public ClientTemplate getClientTemplate() {
-        return clientTemplate;
-    }
-
-    public RealmRoleTemplate getRealmRoleTemplate() {
-        return realmRoleTemplate;
-    }
-
-    @Override
-    public int getEntityCountPerParent() {
-        return getRealms();
-    }
-
-    public int getRealms() {
-        return realms;
-    }
-
-    @Override
-    public void validateSizeConfiguration() {
-        // sizing
-        logger().info(String.format("realms: %s", realms));
-        validateInt().minValue(realms, 0);
-
-        clientTemplate.validateSizeConfiguration();
-        realmRoleTemplate.validateSizeConfiguration();
-        userTemplate.validateSizeConfiguration();
+        realm.setGroups(new NestedIndexedEntityTemplateWrapperList<>(realm, groupTemplate));
     }
 
 }

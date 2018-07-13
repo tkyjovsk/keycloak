@@ -1,39 +1,34 @@
 package org.keycloak.performance.dataset.idm;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.io.IOException;
-import java.util.List;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.performance.dataset.NestedEntity;
-import static org.keycloak.util.JsonSerialization.writeValueAsString;
+import org.keycloak.performance.dataset.UpdateOnlyResourceFacade;
 
 /**
  *
  * @author tkyjovsk
+ * @param <RM> role-mapper parent entity (user or group)
  */
-public abstract class RoleMappings<R extends Role> extends NestedEntity<RoleMapper> {
-    
-    private List<R> roles;
+public class RoleMappings<RM extends RoleMapper> extends NestedEntity<RM, RoleMappingsRepresentation>
+        implements UpdateOnlyResourceFacade<RoleMappingsRepresentation> {
 
-    public RoleMappings(RoleMapper roleMapper) {
-        super(roleMapper);
+    public RoleMappings(RM roleMapper, RoleMappingsRepresentation representation) {
+        super(roleMapper, representation);
     }
 
-    @Override
-    public String toJSON() throws IOException {
-        return writeValueAsString(getRoles());
-    }
-
-    @JsonIgnore
     public RoleMapper getRoleMapper() {
         return getParentEntity();
     }
-    
-    public List<R> getRoles() {
-        return roles;
+
+    @Override
+    public String toString() {
+        return String.format("%s/role-mappings/realm", getRoleMapper());
     }
 
-    public void setRoles(List<R> roles) {
-        this.roles = roles;
+    @Override
+    public void update(Keycloak adminClient) {
+//        logger().warn("UPDATING ROLE MAPPINGS");
+        getRoleMapper().roleMappingResource(adminClient).realmLevel().add(getRepresentation());
     }
 
 }

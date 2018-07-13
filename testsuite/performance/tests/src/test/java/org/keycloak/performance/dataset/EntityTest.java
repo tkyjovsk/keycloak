@@ -6,7 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
-import org.keycloak.performance.TestConfig;
 import org.keycloak.performance.templates.DatasetTemplate;
 import org.keycloak.performance.util.Loggable;
 
@@ -25,9 +24,11 @@ public abstract class EntityTest<T extends Entity> implements Loggable {
         fmc.setBooleanFormat("true,false");
         fmc.setNumberFormat("computer");
 
-        DatasetTemplate dt = new DatasetTemplate(TestConfig.CONFIG, fmc);
+        DatasetTemplate dt = new DatasetTemplate();
         d1 = dt.produce();
+//        logger().info("created: " + d1);
         d2 = dt.produce();
+//        logger().info("created: " + d2);
     }
 
     public Dataset getD1() {
@@ -50,28 +51,51 @@ public abstract class EntityTest<T extends Entity> implements Loggable {
 
     @Test
     public void testHashCode() {
+        logger().info(this.getClass().getSimpleName() + " testHashCode()");
+        Iterator<T> e1i = d1EntityStream().iterator();
         Iterator<T> e2i = d2EntityStream().iterator();
-        d1EntityStream().forEach(e1 -> {
+        int checkCount = 0;
+        while (e1i.hasNext()) {
+            T e1 = e1i.next();
             assertTrue(e2i.hasNext());
             T e2 = e2i.next();
 
-            logger().info(String.format("hashCodes: %s %s", e1.hashCode(), e2.hashCode()));
-
+//            logger().info(String.format("entities: %s %s", e1, e2));
+//            logger().info(String.format("hashCodes: %s %s", e1.hashCode(), e2.hashCode()));
             assertEquals(e1.hashCode(), e1.hashCode());
             assertEquals(e2.hashCode(), e2.hashCode());
             assertEquals(e1.hashCode(), e2.hashCode());
-        });
+
+            checkCount++;
+//            if (checkCount > 10) {
+//                break;
+//            }
+        }
+        logger().info("checkCount: " + checkCount);
+//        assertTrue(checkCount > 0);
     }
 
     @Test
     public void testEquals() {
+        logger().info(this.getClass().getSimpleName() + " testEquals()");
+        Iterator<T> e1i = d1EntityStream().iterator();
         Iterator<T> e2i = d2EntityStream().iterator();
-        d1EntityStream().forEach(e1 -> {
+        int checkCount = 0;
+        while (e1i.hasNext()) {
+            T e1 = e1i.next();
             assertTrue(e2i.hasNext());
             T e2 = e2i.next();
+//            logger().info(String.format("entities: %s %s", e1, e2));
             assertTrue(e1.equals(e2));
             assertTrue(e2.equals(e1));
-        });
+
+            checkCount++;
+//            if (checkCount > 10) {
+//                break;
+//            }
+        }
+        logger().info("checkCount: " + checkCount);
+//        assertTrue(checkCount > 0);
     }
 
 }

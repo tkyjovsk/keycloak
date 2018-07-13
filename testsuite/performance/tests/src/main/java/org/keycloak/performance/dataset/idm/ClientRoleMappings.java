@@ -1,19 +1,27 @@
 package org.keycloak.performance.dataset.idm;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import org.keycloak.admin.client.Keycloak;
 
 /**
  *
  * @author tkyjovsk
  */
-public class ClientRoleMappings extends RoleMappings<ClientRole> {
+public class ClientRoleMappings<RM extends RoleMapper> extends RoleMappings<RM> {
 
-    @JsonBackReference
     private final Client client;
 
-    public ClientRoleMappings(RoleMapper roleMapper, Client client) {
-        super(roleMapper);
+    public ClientRoleMappings(RM roleMapper, Client client, RoleMappingsRepresentation representation) {
+        super(roleMapper, representation);
         this.client = client;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s/role-mappings/%s", getRoleMapper(), getClient());
+    }
+
+    public RoleMapper getRoleMapper() {
+        return getParentEntity();
     }
 
     public Client getClient() {
@@ -21,8 +29,11 @@ public class ClientRoleMappings extends RoleMappings<ClientRole> {
     }
 
     @Override
-    public String toString() {
-        return String.format("%s/role-mappings/%s", getRoleMapper(), getClient());
+    public void update(Keycloak adminClient) {
+        getRoleMapper()
+                .roleMappingResource(adminClient)
+                .clientLevel(getClient().getId())
+                .add(getRepresentation());
     }
 
 }

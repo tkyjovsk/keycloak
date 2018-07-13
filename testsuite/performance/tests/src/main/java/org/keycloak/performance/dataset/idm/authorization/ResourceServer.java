@@ -1,71 +1,57 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
+import javax.ws.rs.core.Response;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.performance.dataset.NestedEntity;
 import org.keycloak.performance.dataset.idm.Client;
-import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
+import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
+import org.keycloak.performance.dataset.UpdateOnlyResourceFacade;
 
 /**
  *
  * @author tkyjovsk
  */
-public class ResourceServer extends NestedEntity<Client> {
+public class ResourceServer extends NestedEntity<Client, ResourceServerRepresentation>
+        implements UpdateOnlyResourceFacade<ResourceServerRepresentation> {
 
-    private boolean allowRemoteResourceManagement;
-    private PolicyEnforcementMode policyEnforcementMode;
-
-    @JsonIgnore
     private List<Scope> scopes;
-
-    @JsonIgnore
     private List<Resource> resources;
-
-    @JsonIgnore
     private List<RolePolicy> rolePolicies;
+    private List<JsPolicy> jsPolicies;
+    private List<UserPolicy> userPolicies;
+    private List<ClientPolicy> clientPolicies;
+    private List<ResourcePermission> resourcePermissions;
+    private List<ScopePermission> scopePermissions;
+    
+    private List<Policy> allPolicies;
 
-    public ResourceServer(Client client) {
-        super(client);
+    public ResourceServer(Client client, ResourceServerRepresentation representation) {
+        super(client, representation);
     }
 
-    @Override
-    public String toString() {
-        return getClient().toString();
-    }
-
-    @JsonBackReference
     public Client getClient() {
         return getParentEntity();
     }
 
     @Override
-    public synchronized String getId() {
+    public ResourceServerRepresentation getRepresentation() {
+        ResourceServerRepresentation r = super.getRepresentation();
+        r.setId(getClient().getRepresentation().getId());
+        r.setClientId(getClient().getRepresentation().getClientId());
+        r.setName(getClient().getRepresentation().getName());
+        return r;
+    }
+
+    @Override
+    public String getId() {
         return getClient().getId();
     }
 
-    public String getClientId() {
-        return getClient().getClientId();
-    }
-
-    public String getName() {
-        return getClient().getName();
-    }
-
-    public boolean isAllowRemoteResourceManagement() {
-        return allowRemoteResourceManagement;
-    }
-
-    public void setAllowRemoteResourceManagement(boolean allowRemoteResourceManagement) {
-        this.allowRemoteResourceManagement = allowRemoteResourceManagement;
-    }
-
-    public PolicyEnforcementMode getPolicyEnforcementMode() {
-        return policyEnforcementMode;
-    }
-
-    public void setPolicyEnforcementMode(PolicyEnforcementMode policyEnforcementMode) {
-        this.policyEnforcementMode = policyEnforcementMode;
+    @Override
+    public String toString() {
+        return getClient().toString();
     }
 
     public List<Resource> getResources() {
@@ -90,6 +76,78 @@ public class ResourceServer extends NestedEntity<Client> {
 
     public void setRolePolicies(List<RolePolicy> rolePolicies) {
         this.rolePolicies = rolePolicies;
+    }
+
+    public AuthorizationResource authorization(Keycloak adminClient) {
+        return getClient().clientResource(adminClient).authorization();
+    }
+
+    @Override
+    public ResourceServerRepresentation read(Keycloak adminClient) {
+        return authorization(adminClient).getSettings();
+    }
+
+    @Override
+    public Response create(Keycloak adminClient) {
+        return null;
+    }
+
+    @Override
+    public void update(Keycloak adminClient) {
+        authorization(adminClient).update(getRepresentation());
+    }
+
+    @Override
+    public void delete(Keycloak adminClient) {
+        getClient().delete(adminClient);
+    }
+
+    public List<JsPolicy> getJsPolicies() {
+        return jsPolicies;
+    }
+
+    public void setJsPolicies(List<JsPolicy> jsPolicies) {
+        this.jsPolicies = jsPolicies;
+    }
+
+    public List<UserPolicy> getUserPolicies() {
+        return userPolicies;
+    }
+
+    public void setUserPolicies(List<UserPolicy> userPolicies) {
+        this.userPolicies = userPolicies;
+    }
+
+    public List<ClientPolicy> getClientPolicies() {
+        return clientPolicies;
+    }
+
+    public void setClientPolicies(List<ClientPolicy> clientPolicies) {
+        this.clientPolicies = clientPolicies;
+    }
+
+    public List<ResourcePermission> getResourcePermissions() {
+        return resourcePermissions;
+    }
+
+    public void setResourcePermissions(List<ResourcePermission> resourcePermissions) {
+        this.resourcePermissions = resourcePermissions;
+    }
+
+    public List<Policy> getAllPolicies() {
+        return allPolicies;
+    }
+
+    public void setAllPolicies(List<Policy> allPolicies) {
+        this.allPolicies = allPolicies;
+    }
+
+    public List<ScopePermission> getScopePermissions() {
+        return scopePermissions;
+    }
+
+    public void setScopePermissions(List<ScopePermission> scopePermissions) {
+        this.scopePermissions = scopePermissions;
     }
 
 }

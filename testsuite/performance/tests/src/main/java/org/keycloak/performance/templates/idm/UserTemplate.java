@@ -1,19 +1,30 @@
 package org.keycloak.performance.templates.idm;
 
+import java.util.LinkedList;
+import java.util.List;
+import static java.util.stream.Collectors.toList;
+import org.keycloak.performance.dataset.attr.AttributeMap;
+import org.keycloak.performance.dataset.idm.Client;
+import org.keycloak.performance.dataset.idm.ClientRole;
+import org.keycloak.performance.dataset.idm.ClientRoleMappings;
 import org.keycloak.performance.dataset.idm.Credential;
 import org.keycloak.performance.dataset.idm.Realm;
+import org.keycloak.performance.dataset.idm.RealmRole;
+import org.keycloak.performance.dataset.idm.RoleMappings;
+import org.keycloak.performance.dataset.idm.RoleMappingsRepresentation;
 import org.keycloak.performance.dataset.idm.User;
 import org.keycloak.performance.templates.NestedIndexedEntityTemplate;
-import org.keycloak.performance.templates.AttributeMap;
 import org.keycloak.performance.templates.NestedIndexedEntityTemplateWrapperList;
-import org.keycloak.performance.templates.StringListAttributeTemplate;
+import org.keycloak.performance.templates.attr.StringListAttributeTemplate;
 import org.keycloak.performance.iteration.RandomSublist;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 
 /**
  *
  * @author tkyjovsk
  */
-public class UserTemplate extends NestedIndexedEntityTemplate<Realm, User> {
+public class UserTemplate extends NestedIndexedEntityTemplate<Realm, User, UserRepresentation> {
 
     UserAttributeTemplate attributeTemplate;
     CredentialTemplate credentialTemplate;
@@ -24,55 +35,59 @@ public class UserTemplate extends NestedIndexedEntityTemplate<Realm, User> {
 
     public UserTemplate(RealmTemplate realmTemplate) {
         super(realmTemplate);
-        registerAttributeTemplate("username");
-        registerAttributeTemplate("enabled");
-        registerAttributeTemplate("password");
-        registerAttributeTemplate("email");
-        registerAttributeTemplate("emailVerified");
-        registerAttributeTemplate("firstName");
-        registerAttributeTemplate("lastName");
         this.attributeTemplate = new UserAttributeTemplate();
         this.credentialTemplate = new CredentialTemplate();
-        this.usersPerRealm = configuration.getInt("usersPerRealm", 0);
-        this.realmRolesPerUser = configuration.getInt("realmRolesPerUser", 0);
-        this.clientRolesPerUser = configuration.getInt("clientRolesPerUser", 0);
+        this.usersPerRealm = getConfiguration().getInt("usersPerRealm", 0);
+        this.realmRolesPerUser = getConfiguration().getInt("realmRolesPerUser", 0);
+        this.clientRolesPerUser = getConfiguration().getInt("clientRolesPerUser", 0);
     }
 
     @Override
-    public synchronized User produce(Realm realm, int index) {
-        User user = new User(realm, index);
-        user.setUsername(processAttribute("username", user));
-        user.setEnabled(Boolean.parseBoolean(processAttribute("enabled", user)));
-        user.setPassword(processAttribute("password", user));
-        user.setEmail(processAttribute("email", user));
-        user.setEmailVerified(Boolean.parseBoolean(processAttribute("emailVerified", user)));
-        user.setFirstName(processAttribute("firstName", user));
-        user.setLastName(processAttribute("lastName", user));
+    public User newEntity(Realm parentEntity, int index) {
+        return new User(parentEntity, index, new UserRepresentation());
+    }
 
-        user.setAttributes(new AttributeMap<>(
-                new NestedIndexedEntityTemplateWrapperList<>(user, attributeTemplate)));
-        
+    @Override
+    public void processMappings(User user) {
+
         user.setCredentials(new NestedIndexedEntityTemplateWrapperList<>(user, credentialTemplate));
 
-        user.setRealmRoles(
-                new RandomSublist(
-                        user.getRealm().getRealmRoles(), // original list
-                        user.hashCode(), // random seed
-                        getRealmRolesPerUser(), // sublist size
-                        false // unique randoms?
-                )
+        // note: attributes are embedded in user rep.
+        user.getRepresentation().setAttributes(new AttributeMap(new NestedIndexedEntityTemplateWrapperList<>(user, attributeTemplate)));
+
+        // REALM ROLE MAPPINGS
+        List<RealmRole> realmRoles = new RandomSublist(
+                user.getRealm().getRealmRoles(), // original list
+                user.hashCode(), // random seed
+                getRealmRolesPerUser(), // sublist size
+                false // unique randoms?
+        );
+        RoleMappingsRepresentation rmr = new RoleMappingsRepresentation();
+        realmRoles.forEach(rr -> rmr.add(rr.getRepresentation()));
+        user.setRealmRoleMappings(new RoleMappings<>(user, rmr));
+
+        // CLIENT ROLE MAPPINGS
+        List<ClientRole> clientRoles = new RandomSublist(
+                user.getRealm().getClientRoles(), // original list
+                user.hashCode(), // random seed
+                getClientRolesPerUser(), // sublist size
+                false // unique randoms?
         );
 
-        user.setClientRoles(
-                new RandomSublist(
-                        user.getRealm().getClientRoles(), // original list
-                        user.hashCode(), // random seed
-                        getClientRolesPerUser(), // sublist size
-                        false // unique randoms?
-                )
-        );
+        List<ClientRoleMappings<User>> clientRoleMappingsList = new LinkedList<>();
+        List<Client> clients = clientRoles.stream().map(ClientRole::getClient).distinct().collect(toList());
+        clients.forEach(client -> {
+            List<ClientRole> clientClientRoles = clientRoles.stream().filter(clientRole
+                    -> client.equals(clientRole.getClient()))
+                    .collect(toList());
 
-        return user;
+            RoleMappingsRepresentation cmr = new RoleMappingsRepresentation();
+            clientClientRoles.forEach(cr -> cmr.add(cr.getRepresentation()));
+
+            ClientRoleMappings<User> crm = new ClientRoleMappings(user, client, cmr);
+            clientRoleMappingsList.add(crm);
+        });
+        user.setClientRoleMappingsList(clientRoleMappingsList);
     }
 
     @Override
@@ -93,14 +108,14 @@ public class UserTemplate extends NestedIndexedEntityTemplate<Realm, User> {
     }
 
     @Override
-    public void validateSizeConfiguration() {
+    public void validateConfiguration() {
 
         // sizing
         logger().info(String.format("usersPerRealm: %s", usersPerRealm));
         validateInt().minValue(usersPerRealm, 0);
 
         // mappings
-        attributeTemplate.validateSizeConfiguration();
+        attributeTemplate.validateConfiguration();
 
         logger().info(String.format("realmRolesPerUser: %s", realmRolesPerUser));
         RealmTemplate rt = (RealmTemplate) getParentEntityTemplate();
@@ -114,42 +129,10 @@ public class UserTemplate extends NestedIndexedEntityTemplate<Realm, User> {
 
     }
 
-    public class UserAttributeTemplate extends StringListAttributeTemplate<User> {
-
-        private final int attributesPerUser;
-
-        public UserAttributeTemplate() {
-            super(UserTemplate.this);
-            this.attributesPerUser = configuration.getInt("attributesPerUser", 0);
-        }
-
-        @Override
-        public int getEntityCountPerParent() {
-            return attributesPerUser;
-        }
-
-        @Override
-        public void validateSizeConfiguration() {
-            logger().info(String.format("attributesPerUser: %s", attributesPerUser));
-            validateInt().minValue(attributesPerUser, 0);
-        }
-
-    }
-
-    public class CredentialTemplate extends NestedIndexedEntityTemplate<User, Credential> {
+    public class CredentialTemplate extends NestedIndexedEntityTemplate<User, Credential, CredentialRepresentation> {
 
         public CredentialTemplate() {
             super(UserTemplate.this);
-        }
-
-        @Override
-        public Credential produce(User user, int index) {
-            validateInt().isInRange(index, 1, 1);
-            Credential credential = new Credential(user, index);
-            credential.setType("password");
-            credential.setValue(user.getPassword());
-            credential.setTemporary(false);
-            return credential;
         }
 
         @Override
@@ -158,7 +141,38 @@ public class UserTemplate extends NestedIndexedEntityTemplate<Realm, User> {
         }
 
         @Override
-        public void validateSizeConfiguration() {
+        public void validateConfiguration() {
+        }
+
+        @Override
+        public Credential newEntity(User parentEntity, int index) {
+            return new Credential(parentEntity, index, new CredentialRepresentation());
+        }
+
+        @Override
+        public void processMappings(Credential entity) {
+        }
+
+    }
+
+    public class UserAttributeTemplate extends StringListAttributeTemplate<User> {
+
+        private final int attributesPerUser;
+
+        public UserAttributeTemplate() {
+            super(UserTemplate.this);
+            this.attributesPerUser = getConfiguration().getInt("attributesPerUser", 0);
+        }
+
+        @Override
+        public int getEntityCountPerParent() {
+            return attributesPerUser;
+        }
+
+        @Override
+        public void validateConfiguration() {
+            logger().info(String.format("attributesPerUser: %s", attributesPerUser));
+            validateInt().minValue(attributesPerUser, 0);
         }
 
     }

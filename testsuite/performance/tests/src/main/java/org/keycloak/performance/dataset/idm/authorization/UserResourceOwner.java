@@ -1,7 +1,7 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import org.keycloak.performance.dataset.idm.User;
+import org.keycloak.representations.idm.authorization.ResourceOwnerRepresentation;
 
 /**
  *
@@ -12,14 +12,17 @@ public class UserResourceOwner extends ResourceOwner<User> {
     public UserResourceOwner(User user) {
         super(user);
     }
-    
-    @JsonBackReference
+
     public User getUser() {
         return getParentEntity();
     }
 
-    public String getName() {
-        return getUser().getUsername();
+    @Override
+    public ResourceOwnerRepresentation getRepresentation() {
+        ResourceOwnerRepresentation r = super.getRepresentation();
+        r.setId(getUser().getRepresentation().getId());
+        r.setName(getUser().getRepresentation().getUsername());
+        return r;
     }
-    
+
 }

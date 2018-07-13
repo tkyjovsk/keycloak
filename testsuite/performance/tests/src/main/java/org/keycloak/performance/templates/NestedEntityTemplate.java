@@ -1,41 +1,44 @@
 package org.keycloak.performance.templates;
 
-import org.apache.commons.configuration.Configuration;
 import org.keycloak.performance.dataset.Entity;
 import org.keycloak.performance.dataset.NestedEntity;
 
 /**
  *
  * @author tkyjovsk
+ * @param <PE>
+ * @param <NE>
+ * @param <R>
  */
-public abstract class NestedEntityTemplate<P extends Entity, N extends NestedEntity> extends EntityTemplate<N> {
+public abstract class NestedEntityTemplate<PE extends Entity, NE extends NestedEntity<PE, R>, R>
+        extends EntityTemplate<NE, R> {
 
-    private final EntityTemplate<P> parentEntityTemplate;
+    private final EntityTemplate parentEntityTemplate;
 
-    public NestedEntityTemplate(EntityTemplate<P> parentEntityTemplate) {
-        super(parentEntityTemplate.getConfiguration(), parentEntityTemplate.getFreemarkerConfiguration());
+    public NestedEntityTemplate(EntityTemplate parentEntityTemplate) {
+        super(parentEntityTemplate.getConfiguration());
         this.parentEntityTemplate = parentEntityTemplate;
     }
 
-    public EntityTemplate<P> getParentEntityTemplate() {
+    public EntityTemplate getParentEntityTemplate() {
         return parentEntityTemplate;
     }
 
     @Override
-    public Configuration getConfiguration() {
-        return parentEntityTemplate.getConfiguration();
+    public NE newEntity() {
+        throw new UnsupportedOperationException("Nested entity requires a parent entity.");
     }
 
     @Override
-    public freemarker.template.Configuration getFreemarkerConfiguration() {
-        return parentEntityTemplate.getFreemarkerConfiguration();
+    public NE produce() {
+        throw new UnsupportedOperationException("Nested entity requires a parent entity.");
     }
 
-    @Override
-    public N produce() {
-        throw new UnsupportedOperationException();
+    public abstract NE newEntity(PE parentEntity);
+
+    public NE produce(PE parentEntity) {
+        return processEntity(newEntity(parentEntity));
     }
 
-    public abstract N produce(P parentEntity);
 
 }

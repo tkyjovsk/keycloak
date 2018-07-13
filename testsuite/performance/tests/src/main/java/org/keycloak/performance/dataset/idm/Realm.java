@@ -1,73 +1,41 @@
 package org.keycloak.performance.dataset.idm;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
+import javax.ws.rs.core.Response;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.performance.dataset.Dataset;
 import org.keycloak.performance.dataset.NestedIndexedEntity;
 import org.keycloak.performance.dataset.idm.authorization.ResourceServer;
-import org.keycloak.performance.iteration.FlattenedListOfLists;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.performance.dataset.ResourceFacade;
 
 /**
  *
  * @author tkyjovsk
  */
-public class Realm extends NestedIndexedEntity<Dataset> {
+public class Realm extends NestedIndexedEntity<Dataset, RealmRepresentation>
+        implements ResourceFacade<RealmRepresentation> {
 
-    @JsonIgnore
-    private List<User> users;
-    @JsonIgnore
     private List<Client> clients;
-    @JsonIgnore
     private List<RealmRole> realmRoles;
+    private List<User> users;
+    private List<Group> groups;
 
-    @JsonIgnore
     private List<ClientRole> clientRoles; // all clients' roles
-    @JsonIgnore
     private List<ResourceServer> resourceServers;
 
-    private String realm;
-    private String displayName;
-    private boolean enabled;
-    private boolean registrationAllowed;
-    private int accessTokenLifespan;
-    private String passwordPolicy;
-
-    public Realm(Dataset dataset, int index) {
-        super(dataset, index);
+    public Realm(Dataset dataset, int index, RealmRepresentation representation) {
+        super(dataset, index, representation);
     }
 
     @Override
     public String toString() {
-        return getRealm();
+        return getRepresentation().getRealm();
     }
 
-    @JsonIgnore
     public Dataset getDataset() {
         return getParentEntity();
-    }
-
-    public String getRealm() {
-        return realm;
-    }
-    
-    public void setRealm(String realm) {
-        this.realm = realm;
-    }
-
-    public boolean isRegistrationAllowed() {
-        return registrationAllowed;
-    }
-
-    public void setRegistrationAllowed(boolean registrationAllowed) {
-        this.registrationAllowed = registrationAllowed;
-    }
-
-    public int getAccessTokenLifespan() {
-        return accessTokenLifespan;
-    }
-
-    public void setAccessTokenLifespan(int accessTokenLifespan) {
-        this.accessTokenLifespan = accessTokenLifespan;
     }
 
     public List<User> getUsers() {
@@ -98,34 +66,6 @@ public class Realm extends NestedIndexedEntity<Dataset> {
         return clientRoles;
     }
 
-    public void setClientRoles(FlattenedListOfLists<Client, ClientRole> clientRoles) {
-        this.clientRoles = clientRoles;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public String getPasswordPolicy() {
-        return passwordPolicy;
-    }
-
-    public void setPasswordPolicy(String passwordPolicy) {
-        this.passwordPolicy = passwordPolicy;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
     public void setClientRoles(List<ClientRole> clientRoles) {
         this.clientRoles = clientRoles;
     }
@@ -136,6 +76,39 @@ public class Realm extends NestedIndexedEntity<Dataset> {
 
     public void setResourceServers(List<ResourceServer> resourceServers) {
         this.resourceServers = resourceServers;
+    }
+
+    @Override
+    public RealmRepresentation read(Keycloak adminClient) {
+        return adminClient.realms().realm(getRepresentation().getRealm()).toRepresentation();
+    }
+
+    @Override
+    public Response create(Keycloak adminClient) {
+        adminClient.realms().create(getRepresentation());
+        return null;
+    }
+
+    public RealmResource realmResource(Keycloak adminClient) {
+        return adminClient.realm(getRepresentation().getRealm());
+    }
+
+    @Override
+    public void update(Keycloak adminClient) {
+        realmResource(adminClient).update(getRepresentation());
+    }
+
+    @Override
+    public void delete(Keycloak adminClient) {
+        realmResource(adminClient).remove();
+    }
+
+    public List<Group> getGroups() {
+        return groups;
+    }
+
+    public void setGroups(List<Group> groups) {
+        this.groups = groups;
     }
 
 }

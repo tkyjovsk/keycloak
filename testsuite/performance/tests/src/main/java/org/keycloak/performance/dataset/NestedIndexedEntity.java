@@ -1,32 +1,37 @@
 package org.keycloak.performance.dataset;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import static org.keycloak.performance.iteration.RandomBooleans.getRandomBooleans;
 import static org.keycloak.performance.iteration.RandomIntegers.getRandomIntegers;
 
 /**
  *
  * @author tkyjovsk
- * @param <P> parent entity
+ * @param <PE> parent entity
  */
-public abstract class NestedIndexedEntity<P extends Entity> extends NestedEntity<P> {
+public abstract class NestedIndexedEntity<PE extends Entity, R> extends NestedEntity<PE, R> {
 
-    @JsonIgnore
     private final int index;
+    private final int seed;
 
-    public NestedIndexedEntity(P parentEntity, int index) {
-        super(parentEntity);
+    public NestedIndexedEntity(PE parentEntity, int index, R representation) {
+        super(parentEntity, representation);
         validateInt().minValue(index, 0);
         this.index = index;
+        this.seed = getParentEntity().hashCode() + simpleClassName().hashCode();
     }
 
-    public final int getIndex() {
+    public synchronized final int getIndex() {
+        validateInt().minValue(index, 0);
         return index;
     }
 
+    public synchronized int getSeed() {
+        return seed;
+    }
+
     @Override
-    public int hashCode() {
-        return simpleClassNameHashCode() * getIndex() + getParentEntity().hashCode();
+    public synchronized int hashCode() {
+        return simpleClassName().hashCode() * getIndex() + getParentEntity().hashCode();
     }
 
     @Override
@@ -34,19 +39,15 @@ public abstract class NestedIndexedEntity<P extends Entity> extends NestedEntity
         return super.equals(other);
     }
 
-    public int indexBasedSeed() { // for seed of random sequence use parent's hashcode + class name hashcode
-        return getParentEntity().hashCode() + simpleClassNameHashCode();
+    public synchronized int indexBasedRandomInt(int bound) {
+        return getRandomIntegers(getSeed(), bound).get(getIndex());
     }
 
-    public int indexBasedRandomInt(int bound) {
-        return getRandomIntegers(indexBasedSeed(), bound).get(getIndex());
+    public synchronized boolean indexBasedRandomBool(int truePercentage) {
+        return getRandomBooleans(getSeed(), truePercentage).get(getIndex());
     }
 
-    public boolean indexBasedRandomBool(int truePercentage) {
-        return getRandomBooleans(indexBasedSeed(), truePercentage).get(getIndex());
-    }
-
-    public boolean indexBasedRandomBool() {
+    public synchronized boolean indexBasedRandomBool() {
         return indexBasedRandomBool(50);
     }
 

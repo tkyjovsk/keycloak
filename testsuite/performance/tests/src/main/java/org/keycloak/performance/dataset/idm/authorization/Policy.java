@@ -1,67 +1,29 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import org.keycloak.performance.dataset.NestedIndexedEntity;
-import org.keycloak.representations.idm.authorization.DecisionStrategy;
-import org.keycloak.representations.idm.authorization.Logic;
+import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
+import org.keycloak.performance.dataset.ResourceFacade;
 
 /**
  *
  * @author tkyjovsk
  */
-public abstract class Policy extends NestedIndexedEntity<ResourceServer> {
+public abstract class Policy<PR extends AbstractPolicyRepresentation> 
+        extends NestedIndexedEntity<ResourceServer, PR> 
+        implements ResourceFacade<PR>
+{
 
-    private String name;
-    private String description;
-    private Logic logic;
-    private DecisionStrategy decisionStrategy;
-
-    public Policy(ResourceServer resourceServer, int index) {
-        super(resourceServer, index);
+    public Policy(ResourceServer resourceServer, int index, PR representation) {
+        super(resourceServer, index, representation);
     }
 
     @Override
     public String toString() {
-        return getName();
+        return getRepresentation().getName();
     }
-    
-    @JsonBackReference
+
     public ResourceServer getResourceServer() {
         return getParentEntity();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Logic getLogic() {
-        return logic;
-    }
-
-    public void setLogic(Logic logic) {
-        this.logic = logic;
-    }
-
-    public abstract String getType();
-
-    public DecisionStrategy getDecisionStrategy() {
-        return decisionStrategy;
-    }
-
-    public void setDecisionStrategy(DecisionStrategy decisionStrategy) {
-        this.decisionStrategy = decisionStrategy;
     }
 
 }

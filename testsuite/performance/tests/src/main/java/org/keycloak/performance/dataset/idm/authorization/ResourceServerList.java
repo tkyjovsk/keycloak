@@ -20,7 +20,7 @@ public class ResourceServerList extends AbstractList<ResourceServer> {
 
     public void update() {
         resourceServers = clients.stream()
-                .filter(c -> c.isAuthorizationServicesEnabled())
+                .filter(c -> c.getRepresentation().getAuthorizationServicesEnabled())
                 .map(c -> c.getResourceServer())
                 .collect(toList());
     }

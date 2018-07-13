@@ -1,6 +1,5 @@
 package org.keycloak.performance;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import org.keycloak.performance.iteration.FilteredIterator;
 import org.keycloak.performance.iteration.LoopingIterator;
@@ -12,10 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.configuration.CombinedConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.SystemConfiguration;
 import org.jboss.logging.Logger;
-import static org.jboss.logging.Logger.Level.DEBUG;
 
 import static org.keycloak.performance.RealmsConfigurationBuilder.computeAppUrl;
 import static org.keycloak.performance.RealmsConfigurationBuilder.computeClientId;
@@ -26,46 +22,19 @@ import static org.keycloak.performance.RealmsConfigurationBuilder.computePasswor
 import static org.keycloak.performance.RealmsConfigurationBuilder.computeSecret;
 import static org.keycloak.performance.RealmsConfigurationBuilder.computeUsername;
 import org.keycloak.performance.util.CombinedConfigurationNoInterpolation;
-import static org.keycloak.performance.util.ConfigurationUtil.loadFromFile;
-import org.keycloak.performance.dataset.Dataset;
-import org.keycloak.performance.templates.DatasetTemplate;
-import static org.keycloak.performance.util.ConfigurationUtil.logConfigurationState;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  * @author <a href="mailto:tkyjovsk@redhat.com">Tomas Kyjovsky</a>
  */
 public class TestConfig {
-    
+
     private static final Logger LOGGER = Logger.getLogger(TestConfig.class);
 
     public static final CombinedConfiguration CONFIG;
-    public static final Dataset DATASET;
 
     static {
         CONFIG = new CombinedConfigurationNoInterpolation();
-        CONFIG.addConfiguration(new SystemConfiguration());
-        try {
-            
-            String datasetSizePropFile = CONFIG.getString("dataset.size.properties.file", "dataset/size/default.properties");
-            String datasetTemplatingPropFile = CONFIG.getString("dataset.templating.properties.file", "dataset/templating/default.properties");
-            
-            CONFIG.addConfiguration(loadFromFile(new File(datasetSizePropFile)));
-            CONFIG.addConfiguration(loadFromFile(new File(datasetTemplatingPropFile)));
-
-            logConfigurationState(CONFIG, LOGGER, DEBUG);
-            
-            freemarker.template.Configuration fmc = new freemarker.template.Configuration(freemarker.template.Configuration.VERSION_2_3_26);
-            fmc.setBooleanFormat("true,false");
-            fmc.setNumberFormat("computer");
-            DatasetTemplate dt = new DatasetTemplate(CONFIG, fmc);
-            dt.validateSizeConfiguration();
-            DATASET = dt.produce();
-            
-            System.out.println(dt.toStringTotalCount());
-        } catch (ConfigurationException ex) {
-            throw new RuntimeException("Failed to load configuration.", ex);
-        }
     }
 
     //

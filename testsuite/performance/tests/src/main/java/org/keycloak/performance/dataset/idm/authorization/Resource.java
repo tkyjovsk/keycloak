@@ -1,100 +1,69 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
+import java.util.List;
+import javax.ws.rs.core.Response;
+import org.apache.commons.lang.Validate;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ResourcesResource;
 import org.keycloak.performance.dataset.NestedIndexedEntity;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.performance.dataset.ResourceFacade;
 
 /**
  *
  * @author tkyjovsk
  */
-public class Resource extends NestedIndexedEntity<ResourceServer> {
+public class Resource extends NestedIndexedEntity<ResourceServer, ResourceRepresentation>
+        implements ResourceFacade<ResourceRepresentation> {
 
-//    @JsonBackReference
-    private ResourceOwner owner;
+    private List<Scope> scopes;
 
-    private String name;
-    private String displayName;
-    private String type;
-    private String uri;
-    private boolean ownerManagedAccess;
-    private Map<String, String> attributes;
-
-    public Resource(ResourceServer resourceServer, int index) {
-        super(resourceServer, index);
+    public Resource(ResourceServer resourceServer, int index, ResourceRepresentation representation) {
+        super(resourceServer, index, representation);
     }
 
     @Override
     public String toString() {
-        return getName();
+        return getRepresentation().getName();
     }
 
-    @Override
-    @JsonProperty("_id")
-    public synchronized String getId() {
-        return super.getId();
-    }
-    
-    @JsonBackReference
     public ResourceServer getResourceServer() {
         return getParentEntity();
     }
 
-    public ResourceOwner getOwner() {
-        return owner;
+    public ResourcesResource resourcesResource(Keycloak adminClient) {
+        return getResourceServer().authorization(adminClient).resources();
     }
 
-    public void setOwner(ResourceOwner owner) {
-        this.owner = owner;
-    }
-    
-    public String getName() {
-        return name;
+    @Override
+    public ResourceRepresentation read(Keycloak adminClient) {
+        return resourcesResource(adminClient).findByName(getRepresentation().getName()).get(0);
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public Response create(Keycloak adminClient) {
+        Validate.notNull(getResourceServer());
+        Validate.notNull(getResourceServer().getClient());
+        Validate.notNull(getResourceServer().getClient().getRepresentation().getBaseUrl());
+        return resourcesResource(adminClient).create(getRepresentation());
     }
 
-    public String getDisplayName() {
-        return displayName;
+    @Override
+    public void update(Keycloak adminClient) {
+        resourcesResource(adminClient).resource(getId()).update(getRepresentation());
     }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
+    @Override
+    public void delete(Keycloak adminClient) {
+        resourcesResource(adminClient).resource(getId()).remove();
     }
 
-    public String getType() {
-        return type;
+    public List<Scope> getScopes() {
+        return scopes;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getUri() {
-        return uri;
-    }
-
-    public void setUri(String uri) {
-        this.uri = uri;
-    }
-
-    public boolean isOwnerManagedAccess() {
-        return ownerManagedAccess;
-    }
-
-    public void setOwnerManagedAccess(boolean ownerManagedAccess) {
-        this.ownerManagedAccess = ownerManagedAccess;
-    }
-
-    public Map<String, String> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, String> attributes) {
-        this.attributes = attributes;
+    public void setScopes(List<Scope> scopes) {
+        this.scopes = scopes;
     }
 
 }

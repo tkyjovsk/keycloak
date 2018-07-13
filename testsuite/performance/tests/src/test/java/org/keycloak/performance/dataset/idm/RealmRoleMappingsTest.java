@@ -8,10 +8,10 @@ import org.keycloak.performance.dataset.EntityTest;
  *
  * @author tkyjovsk
  */
-public class RealmRoleMappingsTest extends EntityTest<RealmRoleMappings> {
+public class RealmRoleMappingsTest extends EntityTest<RoleMappings<User>> {
 
     @Override
-    public Stream<RealmRoleMappings> entityStream(Dataset dataset) {
+    public Stream<RoleMappings<User>> entityStream(Dataset dataset) {
         return dataset.userRealmRoleMappings();
     }
     

@@ -1,43 +1,49 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
+import javax.ws.rs.core.Response;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.performance.dataset.idm.Role;
+import org.keycloak.representations.idm.authorization.RolePolicyRepresentation;
 
 /**
  *
  * @author tkyjovsk
  */
-public class RolePolicy extends Policy {
+public class RolePolicy extends Policy<RolePolicyRepresentation> {
 
-    private List<RolePolicyRoleDefinition> roles;
+    private List<Role> roles;
 
-    @JsonIgnore
-    private List<Role> mappedRoles;
-
-    public RolePolicy(ResourceServer resourceServer, int index) {
-        super(resourceServer, index);
+    public RolePolicy(ResourceServer resourceServer, int index, RolePolicyRepresentation representation) {
+        super(resourceServer, index, representation);
     }
 
-    @Override
-    public final String getType() {
-        return "role";
-    }
-
-    public void setRoles(List<RolePolicyRoleDefinition> roles) {
-        this.roles = roles;
-    }
-
-    public List<RolePolicyRoleDefinition> getRoles() {
+    public List<Role> getRoles() {
         return roles;
     }
 
-    public List<Role> getMappedRoles() {
-        return mappedRoles;
+    public void setRoles(List<Role> roles) {
+        this.roles = roles;
     }
 
-    public void setMappedRoles(List<Role> mappedRoles) {
-        this.mappedRoles = mappedRoles;
+    @Override
+    public RolePolicyRepresentation read(Keycloak adminClient) {
+        return getResourceServer().authorization(adminClient).policies().role().findByName(getRepresentation().getName());
+    }
+
+    @Override
+    public Response create(Keycloak adminClient) {
+        return getResourceServer().authorization(adminClient).policies().role().create(getRepresentation());
+    }
+
+    @Override
+    public void update(Keycloak adminClient) {
+        getResourceServer().authorization(adminClient).policies().role().findById(getId()).update(getRepresentation());
+    }
+
+    @Override
+    public void delete(Keycloak adminClient) {
+        getResourceServer().authorization(adminClient).policies().role().findById(getId()).remove();
     }
 
 }

@@ -5,24 +5,25 @@ import org.keycloak.performance.dataset.NestedIndexedEntity;
 import org.keycloak.performance.iteration.CachingList;
 
 /**
- * A wrapper list for NestedIndexedEntityTemplate which delegates to the template if requested element is absent in cache.
- * 
+ * A wrapper list for NestedIndexedEntityTemplate which delegates to the
+ * template if requested element is absent in cache.
+ *
  * @author tkyjovsk
- * @param <P> parent entity type
- * @param <N> child entity type
+ * @param <PE> parent entity type
+ * @param <NIE> child entity type
  */
-public class NestedIndexedEntityTemplateWrapperList<P extends Entity, N extends NestedIndexedEntity> extends CachingList<N> {
+public class NestedIndexedEntityTemplateWrapperList<PE extends Entity, NIE extends NestedIndexedEntity<PE, R>, R> extends CachingList<NIE> {
 
-    P parentEntity;
-    NestedIndexedEntityTemplate<P, N> nestedEntityTemplate;
+    PE parentEntity;
+    NestedIndexedEntityTemplate<PE, NIE, R> nestedEntityTemplate;
 
-    public NestedIndexedEntityTemplateWrapperList(P parentEntity, NestedIndexedEntityTemplate<P, N> nestedEntityTemplate) {
+    public NestedIndexedEntityTemplateWrapperList(PE parentEntity, NestedIndexedEntityTemplate<PE, NIE, R> nestedEntityTemplate) {
         this.parentEntity = parentEntity;
         this.nestedEntityTemplate = nestedEntityTemplate;
     }
 
     @Override
-    public N compute(int index) {
+    public NIE compute(int index) {
         return nestedEntityTemplate.produce(parentEntity, index);
     }
 

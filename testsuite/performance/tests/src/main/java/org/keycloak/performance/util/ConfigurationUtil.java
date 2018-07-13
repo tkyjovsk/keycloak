@@ -46,8 +46,6 @@ public class ConfigurationUtil {
         PropertiesConfiguration configuration = newPropertiesConfiguration(listParsing);
         String path = file.isAbsolute() ? file.getParent() : null;
         String filename = file.isAbsolute() ? file.getName() : file.getPath();
-        System.out.println("PATH: "+path);
-        System.out.println("NAME: "+filename);
         configuration.setBasePath(path);
         configuration.load(filename);
         return configuration;

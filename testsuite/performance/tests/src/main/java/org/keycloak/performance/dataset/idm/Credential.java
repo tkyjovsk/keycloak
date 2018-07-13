@@ -1,49 +1,41 @@
 package org.keycloak.performance.dataset.idm;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.performance.dataset.NestedIndexedEntity;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import static org.keycloak.representations.idm.CredentialRepresentation.PASSWORD;
+import org.keycloak.performance.dataset.UpdateOnlyResourceFacade;
 
 /**
  *
  * @author tkyjovsk
  */
-public class Credential extends NestedIndexedEntity<User> {
-    
-    private String type;
-    private String value;
-    private boolean temporary;
+public class Credential extends NestedIndexedEntity<User, CredentialRepresentation>
+        implements UpdateOnlyResourceFacade<CredentialRepresentation> {
 
-    public Credential(User user, int index) {
-        super(user, index);
+    public Credential(User user, int index, CredentialRepresentation representation) {
+        super(user, index, representation);
     }
-    
-    @JsonIgnore
+
+    @Override
+    public String toString() {
+        return getRepresentation().getType();
+    }
+
     public User getUser() {
         return getParentEntity();
     }
 
-    public String getType() {
-        return type;
+    @Override
+    public void update(Keycloak adminClient) {
+        if (getRepresentation().getType().equals(PASSWORD)) {
+            
+//            logger().warn("UPDATING PASSWORD");
+            
+            getUser().userResource(adminClient).resetPassword(getRepresentation());
+        } else {
+            logger().warn("Cannot reset password. Non-password credetial type.");
+        }
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public boolean isTemporary() {
-        return temporary;
-    }
-
-    public void setTemporary(boolean temporary) {
-        this.temporary = temporary;
-    }
-    
 }

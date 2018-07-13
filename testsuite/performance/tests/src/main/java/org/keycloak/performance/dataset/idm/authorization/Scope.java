@@ -1,45 +1,48 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import javax.ws.rs.core.Response;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.performance.dataset.NestedIndexedEntity;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
+import org.keycloak.performance.dataset.ResourceFacade;
 
 /**
  *
  * @author tkyjovsk
  */
-public class Scope extends NestedIndexedEntity<ResourceServer> {
+public class Scope extends NestedIndexedEntity<ResourceServer, ScopeRepresentation>
+        implements ResourceFacade<ScopeRepresentation> {
 
-    private String name;
-    private String displayName;
-
-    public Scope(ResourceServer resourceServer, int index) {
-        super(resourceServer, index);
+    public Scope(ResourceServer resourceServer, int index, ScopeRepresentation representation) {
+        super(resourceServer, index, representation);
     }
 
     @Override
     public String toString() {
-        return getName();
+        return getRepresentation().getName();
     }
-    
-    @JsonBackReference
+
     public ResourceServer getResourceServer() {
         return getParentEntity();
     }
 
-    public String getName() {
-        return name;
+    @Override
+    public ScopeRepresentation read(Keycloak adminClient) {
+        return getResourceServer().authorization(adminClient).scopes().findByName(getRepresentation().getName());
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public Response create(Keycloak adminClient) {
+        return getResourceServer().authorization(adminClient).scopes().create(getRepresentation());
     }
 
-    public String getDisplayName() {
-        return displayName;
+    @Override
+    public void update(Keycloak adminClient) {
+        getResourceServer().authorization(adminClient).scopes().scope(getId()).update(getRepresentation());
     }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
+    @Override
+    public void delete(Keycloak adminClient) {
+        getResourceServer().authorization(adminClient).scopes().scope(getId()).remove();
     }
-
 }

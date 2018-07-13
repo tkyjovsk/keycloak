@@ -1,27 +1,26 @@
 package org.keycloak.performance.dataset.idm.authorization;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import org.keycloak.performance.dataset.Entity;
 import org.keycloak.performance.dataset.NestedEntity;
+import org.keycloak.representations.idm.authorization.ResourceOwnerRepresentation;
 
 /**
  *
  * @author tkyjovsk
  */
-public abstract class ResourceOwner<T extends Entity> extends NestedEntity<T> {
-    
-    public ResourceOwner(T resourceOwner) {
-        super(resourceOwner);
+public abstract class ResourceOwner<PE extends Entity> extends NestedEntity<PE, ResourceOwnerRepresentation> {
+
+    public ResourceOwner(PE resourceOwner) {
+        super(resourceOwner, new ResourceOwnerRepresentation());
     }
 
-    @JsonBackReference
-    public T getResourceOwner() {
+    public PE getResourceOwner() {
         return getParentEntity();
     }
-    
+
     @Override
-    public synchronized String getId() {
-        return getResourceOwner().getId();
+    public String toString() {
+        return getRepresentation().getName();
     }
-    
+
 }
