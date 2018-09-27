@@ -84,7 +84,8 @@ public class Keycloak {
         return new Keycloak(serverUrl, realm, username, password, clientId, clientSecret, PASSWORD, clientBuilder.build(), null);
     }
 
-    private static ResteasyClientBuilder newResteasyClientBuilder() {
+    protected static ResteasyClient newSSLAwareRestEasyClient() {
+        ResteasyClientBuilder builder = new ResteasyClientBuilder();
         if (authServerSslRequired) {
             // Disable PKIX path validation errors when running tests using SSL
             HostnameVerifier hostnameVerifier = new HostnameVerifier() {
@@ -93,21 +94,21 @@ public class Keycloak {
                     return true;
                 }
             };
-            return new ResteasyClientBuilder().disableTrustManager().hostnameVerifier(hostnameVerifier);
+            builder.disableTrustManager().hostnameVerifier(hostnameVerifier);
         }
-        return new ResteasyClientBuilder();
+        return builder.build();
     }
 
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, String clientSecret) {
-        return new Keycloak(serverUrl, realm, username, password, clientId, clientSecret, PASSWORD, null, null);
+        return new Keycloak(serverUrl, realm, username, password, clientId, clientSecret, PASSWORD, newSSLAwareRestEasyClient(), null);
     }
 
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId) {
-        return new Keycloak(serverUrl, realm, username, password, clientId, null, PASSWORD, null, null);
+        return new Keycloak(serverUrl, realm, username, password, clientId, null, PASSWORD, newSSLAwareRestEasyClient(), null);
     }
 
     public static Keycloak getInstance(String serverUrl, String realm, String clientId, String authToken) {
-        return new Keycloak(serverUrl, realm, null, null, clientId, null, PASSWORD, null, authToken);
+        return new Keycloak(serverUrl, realm, null, null, clientId, null, PASSWORD, newSSLAwareRestEasyClient(), authToken);
     }
 
     public RealmsResource realms() {

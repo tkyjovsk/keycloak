@@ -25,7 +25,6 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
 
     static final String DEFAULT_CLIENT = "admin-cli";
 
-
     @Option(name = "config", description = "Path to the config file (~/.keycloak/kcreg.config by default)", hasValue = true)
     protected String config;
 
@@ -151,6 +150,8 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             } catch (Exception e) {
                 throw new RuntimeException("Failed to load truststore: " + truststore, e);
             }
+        } else {
+            HttpUtil.setSkipCertificateValidation();
         }
     }
 

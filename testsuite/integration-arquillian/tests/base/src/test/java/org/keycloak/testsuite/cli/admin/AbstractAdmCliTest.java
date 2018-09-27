@@ -11,6 +11,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.cli.AbstractCliTest;
 import org.keycloak.testsuite.cli.KcAdmExec;
+import org.keycloak.testsuite.cli.KcRegExec;
 import org.keycloak.testsuite.util.ClientBuilder;
 import org.keycloak.testsuite.util.UserBuilder;
 import org.keycloak.util.JsonSerialization;
@@ -279,7 +280,7 @@ public abstract class AbstractAdmCliTest extends AbstractCliTest {
                 " --realm test " + credentials + " " + extraOptions + " -s clientId=test-client -o");
 
         Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
-        Assert.assertEquals("login message", loginMessage, exe.stderrLines().get(0));
+        Assert.assertEquals("login message", loginMessage, exe.stderrLines().get(0 + additionalLinesGeneratedByTlsWarning));
 
         ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client.getClientId());
@@ -292,7 +293,7 @@ public abstract class AbstractAdmCliTest extends AbstractCliTest {
 
         exe = execute("get clients/" + client.getId() + " --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        assertExitCodeAndStdErrSize(exe, 0, 1);
+        assertExitCodeAndStdErrSize(exe, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
         ClientRepresentation client2 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client2.getClientId());
@@ -306,7 +307,7 @@ public abstract class AbstractAdmCliTest extends AbstractCliTest {
         exe = execute("update clients/" + client.getId() + " --no-config --server " + serverUrl + " --realm test " +
                 credentials + " " + extraOptions + " -s enabled=false -o");
 
-        assertExitCodeAndStdErrSize(exe, 0, 1);
+        assertExitCodeAndStdErrSize(exe, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
         ClientRepresentation client4 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client4.getClientId());
@@ -320,8 +321,8 @@ public abstract class AbstractAdmCliTest extends AbstractCliTest {
 
         exe = execute("delete clients/" + client.getId() + " --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        int linecountOffset = loginMessage.equals("") ? 1 : 0; // if there is no login, then there is one less stdErrLinecount
-        assertExitCodeAndStreamSizes(exe, 0, 0, 1 - linecountOffset);
+        int linecountOffset = "".equals(loginMessage) ? 1 : 0; // if there is no login, then there is one less stdErrLinecount
+        assertExitCodeAndStreamSizes(exe, 0, 0, 1 - linecountOffset + additionalLinesGeneratedByTlsWarning);
 
         lastModified2 = configFile.exists() ? configFile.lastModified() : 0;
         Assert.assertEquals("config file not modified", lastModified, lastModified2);
@@ -332,9 +333,9 @@ public abstract class AbstractAdmCliTest extends AbstractCliTest {
         // subsequent delete should fail
         exe = execute("delete clients/" + client.getId() + " --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2 - linecountOffset);
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 - linecountOffset + additionalLinesGeneratedByTlsWarning);
         String resourceUri = serverUrl + "/admin/realms/test/clients/" + client.getId();
-        Assert.assertEquals("error message", "Resource not found for url: " + resourceUri, exe.stderrLines().get(1 - linecountOffset));
+        Assert.assertEquals("error message", "Resource not found for url: " + resourceUri, exe.stderrLines().get(1 - linecountOffset + additionalLinesGeneratedByTlsWarning));
 
         lastModified2 = configFile.exists() ? configFile.lastModified() : 0;
         Assert.assertEquals("config file not modified", lastModified, lastModified2);
@@ -376,13 +377,7 @@ public abstract class AbstractAdmCliTest extends AbstractCliTest {
         KcAdmExec exe = KcAdmExec.execute("config credentials --server " + server + " --realm " + realm +
                 " --user " + user + " --password " + password + " --config " + configFile.getAbsolutePath());
 
-        Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
-
-        List<String> lines = exe.stdoutLines();
-        Assert.assertTrue("stdout output empty", lines.size() == 0);
-
-        lines = exe.stderrLines();
-        Assert.assertTrue("stderr output one line", lines.size() == 1);
-        Assert.assertEquals("stderr first line", "Logging into " + server + " as user " + user + " of realm " + realm, lines.get(0));
+        assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
     }
+
 }

@@ -36,7 +36,7 @@ public class KcRegUpdateTest extends AbstractRegCliTest {
             // create an object so we can update it
             KcRegExec exe = execute("create --config '" + configFile.getName() + "' -o -s clientId=my_client");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
 
@@ -50,7 +50,7 @@ public class KcRegUpdateTest extends AbstractRegCliTest {
             exe = execute("update my_client --config '" + configFile.getName() + "' -o " +
                         " -s enabled=false -s 'redirectUris=[\"http://localhost:8980/myapp/*\"]'");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             Assert.assertEquals("enabled", false, client.isEnabled());
@@ -61,7 +61,7 @@ public class KcRegUpdateTest extends AbstractRegCliTest {
             // Another merge update - test deleting an attribute, deleting a list item and adding a list item
             exe = execute("update my_client --config '" + configFile.getName() + "' -o -d redirectUris -s webOrigins+=http://localhost:8980/myapp -s webOrigins+=http://localhost:8981/myapp -d webOrigins[0]");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
 
@@ -99,8 +99,8 @@ public class KcRegUpdateTest extends AbstractRegCliTest {
             // try use incompatible endpoint
             exe = execute("update my_client --config '" + configFile.getName() + "' -o -s enabled=true -e oidc");
 
-            assertExitCodeAndStreamSizes(exe, 1, 0, 1);
-            Assert.assertEquals("error message", "Failed to set attribute 'enabled' on document type 'oidc'", exe.stderrLines().get(0));
+            assertExitCodeAndStreamSizes(exe, 1, 0, 1 + additionalLinesGeneratedByTlsWarning);
+            Assert.assertEquals("error message", "Failed to set attribute 'enabled' on document type 'oidc'", exe.stderrLines().get(0 + additionalLinesGeneratedByTlsWarning));
 
 
 
@@ -111,7 +111,7 @@ public class KcRegUpdateTest extends AbstractRegCliTest {
                     .stdin(new ByteArrayInputStream("{ \"enabled\": false }".getBytes()))
                     .execute();
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             // web origin is not sent to the server, thus it retains the current value
@@ -128,7 +128,7 @@ public class KcRegUpdateTest extends AbstractRegCliTest {
                     .stdin(new ByteArrayInputStream("{ \"webOrigins\": [\"http://localhost:8980/myapp\"] }".getBytes()))
                     .execute();
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             Assert.assertEquals("webOrigins", Arrays.asList("http://localhost:8980/myapp"), client.getWebOrigins());

@@ -43,13 +43,13 @@ public class KcRegCreateTest extends AbstractRegCliTest {
             KcRegExec exe = execute("config credentials -x --config '" + configFile.getName() +
                     "' --server " + serverUrl + " --realm master --user admin --password admin");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             // use initial token of another realm with server, and realm override
             String token = issueInitialAccessToken("test");
             exe = execute("create --config '" + configFile.getName() + "' --server " + serverUrl + " --realm test -s clientId=my_first_client -t " + token);
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
         }
     }
 
@@ -98,7 +98,7 @@ public class KcRegCreateTest extends AbstractRegCliTest {
 
                 exe = execute("create --config '" + configFile.getName() + "' -o -f - < '" + tmpFile.getName() + "'");
 
-                assertExitCodeAndStdErrSize(exe, 0, 0);
+                assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
                 ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
                 Assert.assertNotNull("id", client.getId());
@@ -124,7 +124,7 @@ public class KcRegCreateTest extends AbstractRegCliTest {
                         " -s 'name=My Client App II' -s protocol=openid-connect -s 'webOrigins=[\"http://localhost:8980/myapp2\"]'" +
                         " -s baseUrl=http://localhost:8980/myapp2 -s rootUrl=http://localhost:8980/myapp2");
 
-                assertExitCodeAndStdErrSize(exe, 0, 0);
+                assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
                 ClientRepresentation client2 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
                 Assert.assertNotNull("id", client2.getId());
@@ -154,14 +154,14 @@ public class KcRegCreateTest extends AbstractRegCliTest {
             // simple create, output an id
             exe = execute("create --config '" + configFile.getName() + "' -i -s clientId=my_client3");
 
-            assertExitCodeAndStreamSizes(exe, 0, 1, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 1, additionalLinesGeneratedByTlsWarning);
             Assert.assertEquals("only clientId returned", "my_client3", exe.stdoutLines().get(0));
 
             // simple create, default output
             exe = execute("create --config '" + configFile.getName() + "' -s clientId=my_client4");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
-            Assert.assertEquals("only clientId returned", "Registered new client with client_id 'my_client4'", exe.stderrLines().get(0));
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
+            Assert.assertEquals("only clientId returned", "Registered new client with client_id 'my_client4'", exe.stderrLines().get(0 + additionalLinesGeneratedByTlsWarning));
 
 
 
@@ -180,7 +180,7 @@ public class KcRegCreateTest extends AbstractRegCliTest {
                         " -s 'redirect_uris=[\"http://localhost:8980/myapp5/*\"]' -s client_uri=http://localhost:8980/myapp5" +
                         " -o -f - < '" + tmpFile.getName() + "'");
 
-                assertExitCodeAndStdErrSize(exe, 0, 0);
+                assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
                 OIDCClientRepresentation client = JsonSerialization.readValue(exe.stdout(), OIDCClientRepresentation.class);
 
@@ -207,7 +207,7 @@ public class KcRegCreateTest extends AbstractRegCliTest {
 
             exe = execute("create --config '" + configFile.getName() + "' -o -f - < '" + samlSpMetaFile.getAbsolutePath() + "'");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             Assert.assertNotNull("id", client.getId());
@@ -235,11 +235,11 @@ public class KcRegCreateTest extends AbstractRegCliTest {
 
             KcRegExec exe = execute("config credentials -x --config '" + configFile.getName() +
                     "' --server " + serverUrl + " --realm master --user admin --password admin");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             String token = issueInitialAccessToken("test");
             exe = execute("create --config '" + configFile.getName() + "' --server " + serverUrl + " --realm test -s clientId=authz-client -s authorizationServicesEnabled=true -t " + token);
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             RealmResource realm = adminClient.realm("test");
             ClientsResource clients = realm.clients();
@@ -275,7 +275,7 @@ public class KcRegCreateTest extends AbstractRegCliTest {
                         " -s 'redirect_uris=[\"http://localhost:8980/myapp5/*\"]' -s client_uri=http://localhost:8980/myapp5" +
                         " -o -f - < '" + tmpFile.getName() + "'");
 
-                assertExitCodeAndStdErrSize(exe, 0, 0);
+                assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
                 OIDCClientRepresentation oidcClient = JsonSerialization.readValue(exe.stdout(), OIDCClientRepresentation.class);
 

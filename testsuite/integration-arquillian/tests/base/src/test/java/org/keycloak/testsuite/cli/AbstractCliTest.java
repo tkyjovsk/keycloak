@@ -11,6 +11,7 @@ import java.util.List;
  */
 public abstract class AbstractCliTest extends AbstractKeycloakTest {
 
+    protected int additionalLinesGeneratedByTlsWarning = AUTH_SERVER_SSL_REQUIRED ? 2 : 0;
 
     public void assertExitCodeAndStdOutSize(AbstractExec exe, int exitCode, int stdOutLineCount) {
         assertExitCodeAndStreamSizes(exe, exitCode, stdOutLineCount, -1);

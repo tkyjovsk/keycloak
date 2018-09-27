@@ -21,6 +21,11 @@ import static org.keycloak.testsuite.cli.KcRegExec.execute;
  */
 public class KcRegTruststoreTest extends AbstractRegCliTest {
 
+    {
+        // Since we are using truststore, there is no warning generated.
+        additionalLinesGeneratedByTlsWarning = 0;
+    }
+
     @Test
     public void testTruststore() throws IOException {
 
@@ -33,7 +38,7 @@ public class KcRegTruststoreTest extends AbstractRegCliTest {
         Assert.assertEquals("try help", "Try '" + OsUtil.CMD + " help config truststore' for more information", exe.stderrLines().get(1));
 
         // only run the rest of this test if ssl protected keycloak server is available
-        if (!isAuthServerSSL()) {
+        if (!AUTH_SERVER_SSL_REQUIRED) {
             System.out.println("TEST SKIPPED - This test requires HTTPS. Run with '-Pauth-server-wildfly -Dauth.server.ssl.required=true'");
             return;
         }

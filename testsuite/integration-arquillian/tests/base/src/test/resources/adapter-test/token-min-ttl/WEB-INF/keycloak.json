@@ -3,6 +3,7 @@
   "resource": "token-min-ttl",
   "auth-server-url": "http://localhost:8180/auth",
   "ssl-required" : "external",
+  "disable-trust-manager": true,
   "credentials": {
     "secret": "password"
   },

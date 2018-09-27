@@ -1,8 +1,9 @@
 {
   "realm" : "demo",
   "resource" : "customer-db",
-  "auth-server-url": "http://localhost:8180/auth",
+  "auth-server-url": "https://localhost:8543/auth",
   "ssl-required" : "external",
+  "disable-trust-manager": true,
   "bearer-only" : true,
   "enable-cors" : true,
   "public-key-cache-ttl": 600

@@ -29,6 +29,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.util.OAuthClient;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.keycloak.testsuite.admin.AbstractAdminTest.loadJson;

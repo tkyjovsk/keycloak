@@ -16,18 +16,28 @@
  */
 package org.keycloak.testsuite.adapter.servlet;
 
+import org.junit.Assert;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.spi.HttpFacade;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintWriter;
+import java.util.Scanner;
 
 /**
  *
  * @author Juraci Paixão Kröhling <juraci at kroehling.de>
  */
 public class MultiTenantResolver implements KeycloakConfigResolver {
+
+    protected static final boolean AUTH_SERVER_SSL_REQUIRED = Boolean.parseBoolean(System.getProperty("auth.server.ssl.required", "true"));
+    protected static final String AUTH_SERVER_SCHEME = AUTH_SERVER_SSL_REQUIRED ? "https" : "http";
+    protected static final String AUTH_SERVER_PORT = AUTH_SERVER_SSL_REQUIRED ? System.getProperty("auth.server.https.port", "8543") : System.getProperty("auth.server.http.port", "8180");
 
     @Override
     public KeycloakDeployment resolve(HttpFacade.Request request) {
@@ -49,8 +59,28 @@ public class MultiTenantResolver implements KeycloakConfigResolver {
             throw new IllegalStateException("Not able to find the file /" + realm + "-keycloak.json");
         }
 
-        KeycloakDeployment deployment = KeycloakDeploymentBuilder.build(is);
-        return deployment;
+        try {
+            return KeycloakDeploymentBuilder.build(httpsAwareConfigurationStream(is));
+        } catch (IOException e) {
+            throw new AssertionError("There's a problem with loading keycloak configuration", e);
+        }
+    }
+
+    protected static InputStream httpsAwareConfigurationStream(InputStream input) throws IOException {
+        if (!AUTH_SERVER_SSL_REQUIRED) {
+            return input;
+        }
+        PipedInputStream in = new PipedInputStream();
+        final PipedOutputStream out = new PipedOutputStream(in);
+        try (PrintWriter pw = new PrintWriter(out)) {
+            try (Scanner s = new Scanner(input)) {
+                while (s.hasNextLine()) {
+                    String lineWithReplaces = s.nextLine().replace("http://localhost:8180/auth", AUTH_SERVER_SCHEME + "://localhost:" + AUTH_SERVER_PORT + "/auth");
+                    pw.println(lineWithReplaces);
+                }
+            }
+        }
+        return in;
     }
 
 }

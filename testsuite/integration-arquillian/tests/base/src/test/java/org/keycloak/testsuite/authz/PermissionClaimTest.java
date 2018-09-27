@@ -452,7 +452,7 @@ public class PermissionClaimTest extends AbstractAuthzTest {
 
     private AuthzClient getAuthzClient() {
         try {
-            return AuthzClient.create(JsonSerialization.readValue(getClass().getResourceAsStream("/authorization-test/default-keycloak.json"), Configuration.class));
+            return AuthzClient.create(JsonSerialization.readValue(httpsAwareConfigurationStream(getClass().getResourceAsStream("/authorization-test/default-keycloak.json")), Configuration.class));
         } catch (IOException cause) {
             throw new RuntimeException("Failed to create authz client", cause);
         }

@@ -559,7 +559,7 @@ public class OfflineTokenTest extends AbstractKeycloakTest {
         // Go to account mgmt applications page
         applicationsPage.open();
         loginPage.login("test-user@localhost", "password");
-        events.expectLogin().client("account").detail(Details.REDIRECT_URI, AccountFormServiceTest.ACCOUNT_REDIRECT + "?path=applications").assertEvent();
+        events.expectLogin().client("account").detail(Details.REDIRECT_URI, getAccountRedirectUrl() + "?path=applications").assertEvent();
         assertTrue(applicationsPage.isCurrent());
         Map<String, AccountApplicationsPage.AppEntry> apps = applicationsPage.getApplications();
         assertTrue(apps.containsKey("offline-client-2"));

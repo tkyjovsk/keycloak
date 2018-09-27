@@ -29,11 +29,11 @@ public class KcAdmCreateTest extends AbstractAdmCliTest {
             KcAdmExec exe = execute("config credentials -x --config '" + configFile.getName() +
                     "' --server " + serverUrl + " --realm master --user admin --password admin");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             exe = execute("create clients --config '" + configFile.getName() + "' --server " + serverUrl + " -r test -s clientId=my_first_client");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
         }
     }
 
@@ -51,7 +51,7 @@ public class KcAdmCreateTest extends AbstractAdmCliTest {
             KcAdmExec exe = KcAdmExec.execute("config credentials -x --config '" + configFile.getName() +
                     "' --server " + serverUrl + " --realm master --user admin --password admin");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             // create configuration from file using stdin redirect ... output an object
             String content = "{\n" +
@@ -73,7 +73,7 @@ public class KcAdmCreateTest extends AbstractAdmCliTest {
 
                 exe = execute("create clients --config '" + configFile.getName() + "' -o -f - < '" + tmpFile.getName() + "'");
 
-                assertExitCodeAndStdErrSize(exe, 0, 0);
+                assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
                 ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
                 Assert.assertNotNull("id", client.getId());
@@ -97,7 +97,7 @@ public class KcAdmCreateTest extends AbstractAdmCliTest {
                         " -s 'name=My Client App II' -s 'webOrigins=[\"http://localhost:8980/myapp2\"]'" +
                         " -s baseUrl=http://localhost:8980/myapp2 -s rootUrl=http://localhost:8980/myapp2");
 
-                assertExitCodeAndStdErrSize(exe, 0, 0);
+                assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
                 ClientRepresentation client2 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
                 Assert.assertNotNull("id", client2.getId());
@@ -119,13 +119,13 @@ public class KcAdmCreateTest extends AbstractAdmCliTest {
             // simple create, output an id
             exe = execute("create clients --config '" + configFile.getName() + "' -i -s clientId=my_client3");
 
-            assertExitCodeAndStreamSizes(exe, 0, 1, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 1, additionalLinesGeneratedByTlsWarning);
 
             // simple create, default output
             exe = execute("create clients --config '" + configFile.getName() + "' -s clientId=my_client4");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
-            Assert.assertTrue("only id returned", exe.stderrLines().get(0).startsWith("Created new client with id '"));
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
+            Assert.assertTrue("only id returned", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning).startsWith("Created new client with id '"));
         }
     }
 }

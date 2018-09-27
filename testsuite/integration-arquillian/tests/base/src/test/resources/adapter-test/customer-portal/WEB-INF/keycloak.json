@@ -3,6 +3,7 @@
     "resource": "customer-portal",
     "auth-server-url": "http://localhost:8180/auth",
     "ssl-required" : "external",
+    "disable-trust-manager": true,
     "expose-token": true,
     "min-time-between-jwks-requests": 120,
     "credentials": {

@@ -29,7 +29,7 @@ public class KcRegUpdateTokenTest extends AbstractRegCliTest {
         try (TempFileResource configFile = new TempFileResource(handler.getConfigFile())) {
 
             KcRegExec exe = execute("config credentials --config '" + configFile.getName() + "' --server " + serverUrl + " --realm master --user admin --password admin");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             // read current registration access token
             ConfigData data = ConfigUtil.loadConfig();
@@ -39,7 +39,7 @@ public class KcRegUpdateTokenTest extends AbstractRegCliTest {
             // update registration access token
             exe = execute("update-token --config '" + configFile.getName() + "' reg-cli-secret-direct  --server " + serverUrl + " --realm test --user user1 --password userpass");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             // read current registration token
             data = ConfigUtil.loadConfig();
@@ -51,7 +51,7 @@ public class KcRegUpdateTokenTest extends AbstractRegCliTest {
 
             // use --no-config and on-the-fly auth
             exe = execute("update-token reg-cli-secret-direct --no-config --server " + serverUrl + " --realm test --user user1 --password userpass");
-            assertExitCodeAndStreamSizes(exe, 0, 1, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 1, 1 + additionalLinesGeneratedByTlsWarning);
 
             // save the token
             String token = exe.stdoutLines().get(0);
@@ -59,7 +59,7 @@ public class KcRegUpdateTokenTest extends AbstractRegCliTest {
             // test that the token works
             exe = execute("get reg-cli-secret-direct --no-config --server " + serverUrl + " --realm test -t " + token);
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0,  + additionalLinesGeneratedByTlsWarning);
 
             ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             Assert.assertEquals("client representation returned", "reg-cli-secret-direct", client.getClientId());

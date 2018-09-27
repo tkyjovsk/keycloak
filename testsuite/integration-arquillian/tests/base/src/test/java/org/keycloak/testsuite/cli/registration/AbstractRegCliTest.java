@@ -47,10 +47,7 @@ import static org.keycloak.testsuite.cli.KcRegExec.execute;
  */
 public abstract class AbstractRegCliTest extends AbstractCliTest {
 
-    protected String serverUrl = isAuthServerSSL() ?
-            "https://localhost:" + getAuthServerHttpsPort() + "/auth" :
-            "http://localhost:" + getAuthServerHttpPort() + "/auth";
-
+    protected String serverUrl = oauth.AUTH_SERVER_ROOT;
 
     @Before
     public void deleteDefaultConfig() {
@@ -61,32 +58,9 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
         return "true".equals(System.getProperty("test.intermittent"));
     }
 
-    static boolean isAuthServerSSL() {
-        return "true".equals(System.getProperty("auth.server.ssl.required"));
-    }
-
-    static int getAuthServerHttpsPort() {
-        try {
-            return Integer.valueOf(System.getProperty("auth.server.https.port"));
-        } catch (Exception e) {
-            throw new RuntimeException("System property 'auth.server.https.port' not set or invalid: '"
-                    + System.getProperty("auth.server.https.port") + "'");
-        }
-    }
-
-    static int getAuthServerHttpPort() {
-        try {
-            return Integer.valueOf(System.getProperty("auth.server.http.port"));
-        } catch (Exception e) {
-            throw new RuntimeException("System property 'auth.server.http.port' not set or invalid: '"
-                    + System.getProperty("auth.server.http.port") + "'");
-        }
-    }
-
     static File getDefaultConfigFilePath() {
         return new File(System.getProperty("user.home") + "/.keycloak/kcreg.config");
     }
-
 
     @Override
     public void addTestRealms(List<RealmRepresentation> testRealms) {
@@ -159,23 +133,13 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
                 .build();
 
         realmRepresentation.getClients().add(regClient);
-
     }
 
-
     void loginAsUser(File configFile, String server, String realm, String user, String password) {
-
         KcRegExec exe = execute("config credentials --server " + server + " --realm " + realm +
                 " --user " + user + " --password " + password + " --config " + configFile.getAbsolutePath());
 
-        Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
-
-        List<String> lines = exe.stdoutLines();
-        Assert.assertTrue("stdout output empty", lines.size() == 0);
-
-        lines = exe.stderrLines();
-        Assert.assertTrue("stderr output one line", lines.size() == 1);
-        Assert.assertEquals("stderr first line", "Logging into " + server + " as user " + user + " of realm " + realm, lines.get(0));
+        assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
     }
 
     void assertFieldsEqualWithExclusions(ConfigData config1, ConfigData config2, String ... excluded) {
@@ -417,7 +381,7 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
                 " --realm test " + credentials + " " + extraOptions + " -s clientId=test-client -o");
 
         Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
-        Assert.assertEquals("login message", loginMessage, exe.stderrLines().get(0));
+        Assert.assertEquals("login message", loginMessage, exe.stderrLines().get(0 + additionalLinesGeneratedByTlsWarning));
 
         ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client.getClientId());
@@ -431,7 +395,7 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
 
         exe = execute("get test-client --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        assertExitCodeAndStdErrSize(exe, 0, 1);
+        assertExitCodeAndStdErrSize(exe, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
         ClientRepresentation client2 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client2.getClientId());
@@ -450,7 +414,7 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
         // because the previous invocation didn't use a registration access token
         exe = execute("get test-client --no-config --server " + serverUrl + " --realm test " + extraOptions + " -t " + client.getRegistrationAccessToken());
 
-        assertExitCodeAndStdErrSize(exe, 0, 0);
+        assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
         ClientRepresentation client3 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client3.getClientId());
@@ -469,7 +433,7 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
         exe = execute("update test-client --no-config --server " + serverUrl + " --realm test " +
                 credentials + " " + extraOptions + " -s enabled=false -o");
 
-        assertExitCodeAndStdErrSize(exe, 0, 1);
+        assertExitCodeAndStdErrSize(exe, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
         ClientRepresentation client4 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client4.getClientId());
@@ -489,7 +453,7 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
         exe = execute("update test-client --no-config --server " + serverUrl + " --realm test " + extraOptions +
                 " -s enabled=true -o -t " + client3.getRegistrationAccessToken());
 
-        assertExitCodeAndStdErrSize(exe, 0, 0);
+        assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
         ClientRepresentation client5 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client5.getClientId());
@@ -509,7 +473,7 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
 
         exe = execute("delete test-client --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+        assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
         lastModified2 = configFile.exists() ? configFile.lastModified() : 0;
         Assert.assertEquals("config file not modified", lastModified, lastModified2);
@@ -521,8 +485,8 @@ public abstract class AbstractRegCliTest extends AbstractCliTest {
         // subsequent delete should fail
         exe = execute("delete test-client --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("error message", "Client not found [invalid_request]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("error message", "Client not found [invalid_request]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
         lastModified2 = configFile.exists() ? configFile.lastModified() : 0;
         Assert.assertEquals("config file not modified", lastModified, lastModified2);

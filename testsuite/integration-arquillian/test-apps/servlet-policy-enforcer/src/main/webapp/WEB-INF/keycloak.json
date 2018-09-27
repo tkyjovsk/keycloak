@@ -2,6 +2,7 @@
     "realm": "servlet-policy-enforcer-authz",
     "auth-server-url": "http://localhost:8180/auth",
     "ssl-required": "external",
+    "disable-trust-manager": true,
     "resource": "servlet-policy-enforcer",
     "credentials": {
         "secret": "secret"

@@ -211,7 +211,7 @@ public class AuthorizationAPITest extends AbstractAuthzTest {
 
     private AuthzClient getAuthzClient(String configFile) {
         try {
-            return AuthzClient.create(JsonSerialization.readValue(getClass().getResourceAsStream("/authorization-test/" + configFile), Configuration.class));
+            return AuthzClient.create(JsonSerialization.readValue(httpsAwareConfigurationStream(getClass().getResourceAsStream("/authorization-test/" + configFile)), Configuration.class));
         } catch (IOException cause) {
             throw new RuntimeException("Failed to create authz client", cause);
         }
