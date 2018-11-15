@@ -25,6 +25,9 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 import javax.ws.rs.core.Response;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -34,11 +37,13 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.junit.Assert;
@@ -86,8 +91,8 @@ public class ConcurrentLoginTest extends AbstractConcurrencyTest {
             ClientRepresentation client = ClientBuilder.create()
               .clientId("client" + i)
               .directAccessGrants()
-              .redirectUris("http://localhost:8180/auth/realms/master/app/*")
-              .addWebOrigin("http://localhost:8180")
+              .redirectUris("*")
+              .addWebOrigin("*")
               .secret("password")
               .build();
 
@@ -108,7 +113,7 @@ public class ConcurrentLoginTest extends AbstractConcurrencyTest {
         AtomicReference<String> userSessionId = new AtomicReference<>();
         LoginTask loginTask = null;
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build()) {
+        try (CloseableHttpClient httpClient = getHttpsAwareClient()) {
             loginTask = new LoginTask(httpClient, userSessionId, 100, 1, false, Arrays.asList(
               createHttpClientContextForUser(httpClient, "test-user@localhost", "password")
             ));
@@ -121,6 +126,15 @@ public class ConcurrentLoginTest extends AbstractConcurrencyTest {
             log.info("concurrentLoginSingleUser took " + (end/1000) + "s");
             log.info("*********************************************");
         }
+    }
+
+    protected CloseableHttpClient getHttpsAwareClient() {
+        HttpClientBuilder builder = HttpClientBuilder.create()
+              .setRedirectStrategy(new LaxRedirectStrategy());
+        if (AUTH_SERVER_SSL_REQUIRED) {
+            builder.setSSLHostnameVerifier((s, sslSession) -> true);
+        }
+        return builder.build();
     }
 
     protected HttpClientContext createHttpClientContextForUser(final CloseableHttpClient httpClient, String userName, String password) throws IOException {
@@ -140,7 +154,7 @@ public class ConcurrentLoginTest extends AbstractConcurrencyTest {
         AtomicReference<String> userSessionId = new AtomicReference<>();
         LoginTask loginTask = null;
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build()) {
+        try (CloseableHttpClient httpClient = getHttpsAwareClient()) {
             loginTask = new LoginTask(httpClient, userSessionId, 100, 1, true, Arrays.asList(
                     createHttpClientContextForUser(httpClient, "test-user@localhost", "password")
             ));
@@ -163,7 +177,7 @@ public class ConcurrentLoginTest extends AbstractConcurrencyTest {
         AtomicReference<String> userSessionId = new AtomicReference<>();
         LoginTask loginTask = null;
 
-        try (CloseableHttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build()) {
+        try (CloseableHttpClient httpClient = getHttpsAwareClient()) {
             loginTask = new LoginTask(httpClient, userSessionId, 100, 1, false, Arrays.asList(
               createHttpClientContextForUser(httpClient, "test-user@localhost", "password"),
               createHttpClientContextForUser(httpClient, "john-doh@localhost", "password"),

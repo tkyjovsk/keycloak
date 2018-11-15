@@ -208,20 +208,24 @@ public class DeploymentArchiveProcessorUtils {
         if (AUTH_SERVER_SSL_REQUIRED) {
             IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "bindingUrl", "8080", System.getProperty("auth.server.https.port"));
             IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "bindingUrl", "http", "https");
-            IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "assertionConsumerServiceUrl", "8080", System.getProperty("app.server.https.port"));
-            IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "assertionConsumerServiceUrl", "http", "https");
             IOUtil.modifyDocElementAttribute(doc, "SingleLogoutService", "postBindingUrl", "8080", System.getProperty("auth.server.https.port"));
             IOUtil.modifyDocElementAttribute(doc, "SingleLogoutService", "postBindingUrl", "http", "https");
             IOUtil.modifyDocElementAttribute(doc, "SingleLogoutService", "redirectBindingUrl", "8080", System.getProperty("auth.server.https.port"));
             IOUtil.modifyDocElementAttribute(doc, "SingleLogoutService", "redirectBindingUrl", "http", "https");
-            IOUtil.modifyDocElementAttribute(doc, "SP", "logoutPage", "8080", System.getProperty("app.server.https.port"));
-            IOUtil.modifyDocElementAttribute(doc, "SP", "logoutPage", "http", "https");
         } else {
             IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "bindingUrl", "8080", System.getProperty("auth.server.http.port"));
-            IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "assertionConsumerServiceUrl", "8080", System.getProperty("app.server.http.port"));
             IOUtil.modifyDocElementAttribute(doc, "SingleLogoutService", "postBindingUrl", "8080", System.getProperty("auth.server.http.port"));
             IOUtil.modifyDocElementAttribute(doc, "SingleLogoutService", "redirectBindingUrl", "8080", System.getProperty("auth.server.http.port"));
             IOUtil.modifyDocElementAttribute(doc, "SP", "logoutPage", "8080", System.getProperty("app.server.http.port"));
+        }
+        if (APP_SERVER_SSL_REQUIRED) {
+            IOUtil.modifyDocElementAttribute(doc, "SP", "logoutPage", "8080", System.getProperty("app.server.https.port"));
+            IOUtil.modifyDocElementAttribute(doc, "SP", "logoutPage", "http", "https");
+                        IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "assertionConsumerServiceUrl", "8080", System.getProperty("app.server.https.port"));
+            IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "assertionConsumerServiceUrl", "http", "https");
+        } else {
+            IOUtil.modifyDocElementAttribute(doc, "SP", "logoutPage", "8080", System.getProperty("app.server.http.port"));
+            IOUtil.modifyDocElementAttribute(doc, "SingleSignOnService", "assertionConsumerServiceUrl", "8080", System.getProperty("app.server.http.port"));
         }
 
         archive.add(new StringAsset(IOUtil.documentToString(doc)), adapterConfigPath);

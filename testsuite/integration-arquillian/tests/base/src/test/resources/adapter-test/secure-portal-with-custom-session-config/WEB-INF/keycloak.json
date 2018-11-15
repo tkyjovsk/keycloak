@@ -2,6 +2,7 @@
   "realm": "demo",
   "auth-server-url": "http://localhost:8180/auth",
   "ssl-required": "external",
+  "disable-trust-manager": true,
   "resource": "secure-portal-with-custom-session-config",
   "credentials": {
     "jwt": {

@@ -219,7 +219,7 @@ public class KcRegTest extends AbstractRegCliTest {
          */
         KcRegExec exe = execute("config credentials --server " + serverUrl + " --realm master");
 
-        assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+        assertExitCodeAndStreamSizes(exe, 0, 0,  0);
     }
 
     @Test
@@ -265,7 +265,7 @@ public class KcRegTest extends AbstractRegCliTest {
          */
         KcRegExec exe = execute("config credentials --server " + serverUrl + " --realm master --user admin --password admin");
 
-        assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+        assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
         Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as user admin of realm master", exe.stderrLines().get(0));
     }
 
@@ -288,7 +288,7 @@ public class KcRegTest extends AbstractRegCliTest {
         exe.sendToStdin("admin" + EOL);
         exe.waitCompletion();
 
-        assertExitCodeAndStreamSizes(exe, 0, 1, 1);
+        assertExitCodeAndStreamSizes(exe, 0, 1, 1 + additionalLinesGeneratedByTlsWarning);
         Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as user admin of realm master", exe.stderrLines().get(0));
 
 
@@ -304,7 +304,7 @@ public class KcRegTest extends AbstractRegCliTest {
 
             exe = execute("config credentials --server " + serverUrl + " --realm master --user admin < '" + tmpFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 1, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 1, 1 + additionalLinesGeneratedByTlsWarning);
             Assert.assertTrue("Enter password prompt", exe.stdoutLines().get(0).startsWith("Enter password: "));
             Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as user admin of realm master", exe.stderrLines().get(0));
 
@@ -333,7 +333,7 @@ public class KcRegTest extends AbstractRegCliTest {
         exe.sendToStdin("password" + EOL);
         exe.waitCompletion();
 
-        assertExitCodeAndStreamSizes(exe, 0, 1, 1);
+        assertExitCodeAndStreamSizes(exe, 0, 1, 1 + additionalLinesGeneratedByTlsWarning);
         Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as service-account-reg-cli-secret of realm test", exe.stderrLines().get(0));
 
         /*
@@ -350,7 +350,7 @@ public class KcRegTest extends AbstractRegCliTest {
                     .argsLine("config credentials --server " + serverUrl + " --realm test --client reg-cli-secret < '" + tmpFile.getName() + "'")
                     .execute();
 
-            assertExitCodeAndStreamSizes(exe, 0, 1, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 1, 1 + additionalLinesGeneratedByTlsWarning);
             Assert.assertTrue("Enter client secret prompt", exe.stdoutLines().get(0).startsWith("Enter client secret: "));
             Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as service-account-reg-cli-secret of realm test", exe.stderrLines().get(0));
         } finally {
@@ -370,7 +370,7 @@ public class KcRegTest extends AbstractRegCliTest {
             KcRegExec exe = execute("config credentials --server " + serverUrl + " --realm master" +
                     " --user admin --password admin --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
             Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as user admin of realm master", exe.stderrLines().get(0));
 
             // make sure the config file exists, and has the right content
@@ -409,7 +409,7 @@ public class KcRegTest extends AbstractRegCliTest {
             KcRegExec exe = execute("config credentials --server " + serverUrl +
                     " --realm master --user admin --password admin --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             // remember the state of config file
             ConfigData config1 = handler.loadConfig();
@@ -419,7 +419,7 @@ public class KcRegTest extends AbstractRegCliTest {
 
             exe = execute("create --config '" + configFile.getName() + "' -s clientId=test-client -o");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             // check changes to config file
             ConfigData config2 = handler.loadConfig();
@@ -440,7 +440,7 @@ public class KcRegTest extends AbstractRegCliTest {
 
             exe = execute("delete test-client --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0,  additionalLinesGeneratedByTlsWarning);
 
             // check changes to config file
             ConfigData config3 = handler.loadConfig();
@@ -471,27 +471,27 @@ public class KcRegTest extends AbstractRegCliTest {
         KcRegExec exe = execute("get test-client --no-config --server " + serverUrl + " --realm test" +
                 " --user user1 --password userpass --client reg-cli-secret --secret password");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong user password
         exe = execute("get test-client --no-config --server " + serverUrl + " --realm test" +
                 " --user user1 --password wrong --client reg-cli-secret-direct --secret password");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong client secret
         exe = execute("get test-client --no-config --server " + serverUrl + " --realm test" +
                 " --user user1 --password userpass --client reg-cli-secret-direct --secret wrong");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Invalid client secret [unauthorized_client]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Invalid client secret [unauthorized_client]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try whole CRUD
@@ -513,9 +513,9 @@ public class KcRegTest extends AbstractRegCliTest {
                 " --user user1 --password userpass --client reg-cli-jwt --keystore '" + keystore.getAbsolutePath() + "'" +
                 " --storepass storepass --keypass keypass --alias reg-cli");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong user password
@@ -523,9 +523,9 @@ public class KcRegTest extends AbstractRegCliTest {
                 " --user user1 --password wrong --client reg-cli-jwt-direct --keystore '" + keystore.getAbsolutePath() + "'" +
                 " --storepass storepass --keypass keypass --alias reg-cli");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong storepass
@@ -533,9 +533,9 @@ public class KcRegTest extends AbstractRegCliTest {
                 " --user user1 --password userpass --client reg-cli-jwt-direct --keystore '" + keystore.getAbsolutePath() + "'" +
                 " --storepass wrong --keypass keypass --alias reg-cli");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Failed to load private key: Keystore was tampered with, or password was incorrect", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Failed to load private key: Keystore was tampered with, or password was incorrect", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try whole CRUD
@@ -623,7 +623,7 @@ public class KcRegTest extends AbstractRegCliTest {
             exe = execute("delete test-client2 " + (useConfig ? ("--config '" + configFile.getAbsolutePath()) + "'" : "--no-config")
                     + " --server " + serverUrl + " --realm " + realm + " -t " + client.getRegistrationAccessToken());
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
         }
     }
 
@@ -649,7 +649,7 @@ public class KcRegTest extends AbstractRegCliTest {
             KcRegExec exe = execute("create " + (useConfig ? ("--config '" + configFile.getAbsolutePath()) + "'" : "--no-config")
                     + " --server " + serverUrl + " --realm " + realm + " -s clientId=test-client -o");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
 
@@ -659,7 +659,7 @@ public class KcRegTest extends AbstractRegCliTest {
             exe = execute("delete test-client " + (useConfig ? ("--config '" + configFile.getAbsolutePath()) + "'" : "--no-config")
                     + " --server " + serverUrl + " --realm " + realm + " -t " + client.getRegistrationAccessToken());
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
         }
     }
 

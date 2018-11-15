@@ -35,7 +35,7 @@ public class KcAdmUpdateTest extends AbstractAdmCliTest {
             // create an object so we can update it
             KcAdmExec exe = execute("create clients --config '" + configFile.getName() + "' -o -s clientId=my_client");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             ClientRepresentation client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
 
@@ -49,7 +49,7 @@ public class KcAdmUpdateTest extends AbstractAdmCliTest {
             exe = execute("update clients/" + client.getId() + " --config '" + configFile.getName() + "' -o " +
                     " -s enabled=false -s 'redirectUris=[\"http://localhost:8980/myapp/*\"]'");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             Assert.assertEquals("enabled", false, client.isEnabled());
@@ -60,7 +60,7 @@ public class KcAdmUpdateTest extends AbstractAdmCliTest {
             // Another merge update - test deleting an attribute, deleting a list item and adding a list item
             exe = execute("update clients/" + client.getId() + " --config '" + configFile.getName() + "' -o -d redirectUris[0] -s webOrigins+=http://localhost:8980/myapp -s webOrigins+=http://localhost:8981/myapp -d webOrigins[0]");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
 
@@ -102,7 +102,7 @@ public class KcAdmUpdateTest extends AbstractAdmCliTest {
                     .stdin(new ByteArrayInputStream("{ \"enabled\": false }".getBytes()))
                     .execute();
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
             // web origin is not sent to the server, thus it retains the current value
@@ -118,7 +118,7 @@ public class KcAdmUpdateTest extends AbstractAdmCliTest {
                     .stdin(new ByteArrayInputStream("{ \"webOrigins\": [\"http://localhost:8980/myapp\"] }".getBytes()))
                     .execute();
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
 
             client = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);

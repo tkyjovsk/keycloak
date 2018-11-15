@@ -136,7 +136,7 @@ public class EntitlementAPITest extends AbstractAuthzTest {
                         .directAccessGrants())
                 .client(ClientBuilder.create().clientId(PUBLIC_TEST_CLIENT)
                         .secret("secret")
-                        .redirectUris("http://localhost:8180/auth/realms/master/app/auth/*")
+                        .redirectUris("http://localhost:8180/auth/realms/master/app/auth/*", "https://localhost:8543/auth/realms/master/app/auth/*")
                         .publicClient())
                 .build());
     }
@@ -1367,7 +1367,7 @@ public class EntitlementAPITest extends AbstractAuthzTest {
     private AuthzClient getAuthzClient(String configFile) {
         if (authzClient == null) {
             try {
-                authzClient = AuthzClient.create(JsonSerialization.readValue(getClass().getResourceAsStream("/authorization-test/" + configFile), Configuration.class));
+                authzClient = AuthzClient.create(JsonSerialization.readValue(httpsAwareConfigurationStream(getClass().getResourceAsStream("/authorization-test/" + configFile)), Configuration.class));
             } catch (IOException cause) {
                 throw new RuntimeException("Failed to create authz client", cause);
             }

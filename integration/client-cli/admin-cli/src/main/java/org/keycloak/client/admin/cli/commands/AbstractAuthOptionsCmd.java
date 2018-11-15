@@ -177,6 +177,8 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             } catch (Exception e) {
                 throw new RuntimeException("Failed to load truststore: " + truststore, e);
             }
+        } else {
+            HttpUtil.setSkipCertificateValidation();
         }
     }
 

@@ -277,7 +277,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
          */
         KcAdmExec exe = KcAdmExec.execute("config credentials --server " + serverUrl + " --realm master --user admin --password admin");
 
-        assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+        assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
         Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as user admin of realm master", exe.stderrLines().get(0));
     }
 
@@ -382,7 +382,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
             KcAdmExec exe = KcAdmExec.execute("config credentials --server " + serverUrl + " --realm master" +
                     " --user admin --password admin --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
             Assert.assertEquals("stderr first line", "Logging into " + serverUrl + " as user admin of realm master", exe.stderrLines().get(0));
 
             // make sure the config file exists, and has the right content
@@ -420,7 +420,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
             KcAdmExec exe = KcAdmExec.execute("config credentials --server " + serverUrl +
                     " --realm master --user admin --password admin --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
 
             // remember the state of config file
             ConfigData config1 = handler.loadConfig();
@@ -430,7 +430,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
 
             exe = KcAdmExec.execute("create --config '" + configFile.getName() + "' clients -s clientId=test-client -o");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             // check changes to config file
             ConfigData config2 = handler.loadConfig();
@@ -444,7 +444,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
 
             exe = KcAdmExec.execute("delete clients/" + client.getId() + " --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             // check changes to config file
             ConfigData config3 = handler.loadConfig();
@@ -472,27 +472,27 @@ public class KcAdmTest extends AbstractAdmCliTest {
         KcAdmExec exe = KcAdmExec.execute("get clients --no-config --server " + serverUrl + " --realm test" +
                 " --user user1 --password userpass --client admin-cli-secret --secret password");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong user password
         exe = KcAdmExec.execute("get clients --no-config --server " + serverUrl + " --realm test" +
                 " --user user1 --password wrong --client admin-cli-secret-direct --secret password");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong client secret
         exe = KcAdmExec.execute("get clients --no-config --server " + serverUrl + " --realm test" +
                 " --user user1 --password userpass --client admin-cli-secret-direct --secret wrong");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Invalid client secret [unauthorized_client]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Invalid client secret [unauthorized_client]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try whole CRUD
@@ -514,9 +514,9 @@ public class KcAdmTest extends AbstractAdmCliTest {
                 " --user user1 --password userpass --client admin-cli-jwt --keystore '" + keystore.getAbsolutePath() + "'" +
                 " --storepass storepass --keypass keypass --alias admin-cli");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Client not allowed for direct access grants [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong user password
@@ -524,9 +524,9 @@ public class KcAdmTest extends AbstractAdmCliTest {
                 " --user user1 --password wrong --client admin-cli-jwt-direct --keystore '" + keystore.getAbsolutePath() + "'" +
                 " --storepass storepass --keypass keypass --alias admin-cli");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Invalid user credentials [invalid_grant]", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try wrong storepass
@@ -534,9 +534,9 @@ public class KcAdmTest extends AbstractAdmCliTest {
                 " --user user1 --password userpass --client admin-cli-jwt-direct --keystore '" + keystore.getAbsolutePath() + "'" +
                 " --storepass wrong --keypass keypass --alias admin-cli");
 
-        assertExitCodeAndStreamSizes(exe, 1, 0, 2);
-        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(0));
-        Assert.assertEquals("error message", "Failed to load private key: Keystore was tampered with, or password was incorrect", exe.stderrLines().get(1));
+        assertExitCodeAndStreamSizes(exe, 1, 0, 2 + additionalLinesGeneratedByTlsWarning);
+        Assert.assertEquals("login message", "Logging into " + serverUrl + " as user user1 of realm test", exe.stderrLines().get(additionalLinesGeneratedByTlsWarning));
+        Assert.assertEquals("error message", "Failed to load private key: Keystore was tampered with, or password was incorrect", exe.stderrLines().get(1 + additionalLinesGeneratedByTlsWarning));
 
 
         // try whole CRUD
@@ -567,8 +567,8 @@ public class KcAdmTest extends AbstractAdmCliTest {
         Assert.assertTrue("admin-cli-keystore.jks exists", keystore.isFile());
 
         testCRUDWithOnTheFlyAuth(serverUrl,
-                "--client admin-cli-jwt --keystore '" + keystore.getAbsolutePath() + "' --storepass storepass --keypass keypass --alias admin-cli", "",
-                "Logging into " + serverUrl + " as service-account-admin-cli-jwt of realm test");
+              "--client admin-cli-jwt --keystore '" + keystore.getAbsolutePath() + "' --storepass storepass --keypass keypass --alias admin-cli", "",
+              "Logging into " + serverUrl + " as service-account-admin-cli-jwt of realm test");
     }
 
     @Test

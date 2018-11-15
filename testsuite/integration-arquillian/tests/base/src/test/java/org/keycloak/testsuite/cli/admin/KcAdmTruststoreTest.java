@@ -21,6 +21,10 @@ import static org.keycloak.testsuite.cli.KcAdmExec.execute;
  */
 public class KcAdmTruststoreTest extends AbstractAdmCliTest {
 
+    {
+        additionalLinesGeneratedByTlsWarning = 0;
+    }
+
     @Test
     public void testTruststore() throws IOException {
 

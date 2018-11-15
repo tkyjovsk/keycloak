@@ -37,24 +37,24 @@ public class KcAdmSessionTest extends AbstractAdmCliTest {
             // create realm
             KcAdmExec exe = execute("create realms --config '" + configFile.getName() + "' -s realm=demorealm -s enabled=true");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
-            Assert.assertTrue(exe.stderrLines().get(0).startsWith("Created "));
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
+            Assert.assertTrue(exe.stderrLines().get(additionalLinesGeneratedByTlsWarning).startsWith("Created "));
 
             // create user
             exe = execute("create users --config '" + configFile.getName() + "' -r demorealm -s username=testuser -s enabled=true -i");
 
-            assertExitCodeAndStreamSizes(exe, 0, 1, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 1, additionalLinesGeneratedByTlsWarning);
             String userId = exe.stdoutLines().get(0);
 
             // add realm admin capabilities to user
             exe = execute("add-roles --config '" + configFile.getName() + "' -r demorealm --uusername testuser --cclientid realm-management --rolename realm-admin");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             // set password for the user
             exe = execute("set-password --config '" + configFile.getName() + "' -r demorealm --username testuser -p password");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
 
             // login as testuser
@@ -64,14 +64,14 @@ public class KcAdmSessionTest extends AbstractAdmCliTest {
             // get realm roles
             exe = execute("get-roles --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             List<ObjectNode> roles = loadJson(exe.stdout(), LIST_OF_JSON);
             Assert.assertTrue("expect two realm roles available", roles.size() == 2);
 
             // create realm role
             exe = execute("create roles --config '" + configFile.getName() + "' -s name=testrole -s 'description=Test role' -o");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             ObjectNode role = loadJson(exe.stdout(), ObjectNode.class);
             Assert.assertEquals("testrole", role.get("name").asText());
             String roleId = role.get("id").asText();
@@ -79,27 +79,27 @@ public class KcAdmSessionTest extends AbstractAdmCliTest {
             // get realm roles again
             exe = execute("get-roles --config '" + configFile.getName() + "'");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             roles = loadJson(exe.stdout(), LIST_OF_JSON);
             Assert.assertTrue("expect three realm roles available", roles.size() == 3);
 
             // create client
             exe = execute("create clients --config '" + configFile.getName() + "' -s clientId=testclient -i");
 
-            assertExitCodeAndStreamSizes(exe, 0, 1, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 1, additionalLinesGeneratedByTlsWarning);
             String idOfClient = exe.stdoutLines().get(0);
 
 
             // create client role
             exe = execute("create clients/" + idOfClient + "/roles --config '" + configFile.getName() + "' -s name=clientrole  -s 'description=Test client role'");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 1);
-            Assert.assertTrue(exe.stderrLines().get(0).startsWith("Created "));
+            assertExitCodeAndStreamSizes(exe, 0, 0, 1 + additionalLinesGeneratedByTlsWarning);
+            Assert.assertTrue(exe.stderrLines().get(additionalLinesGeneratedByTlsWarning).startsWith("Created "));
 
             // make sure client role has been created
             exe = execute("get-roles --config '" + configFile.getName() + "' --cclientid testclient");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             roles = loadJson(exe.stdout(), LIST_OF_JSON);
             Assert.assertTrue("expect one role", roles.size() == 1);
             Assert.assertEquals("clientrole", roles.get(0).get("name").asText());
@@ -107,13 +107,13 @@ public class KcAdmSessionTest extends AbstractAdmCliTest {
             // add created role to user - we are realm admin so we can add role to ourself
             exe = execute("add-roles --config '" + configFile.getName() + "' --uusername testuser --cclientid testclient --rolename clientrole");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
 
             // make sure the roles have been added
             exe = execute("get-roles --config '" + configFile.getName() + "' --uusername testuser --all");
 
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             ObjectNode node = loadJson(exe.stdout(), ObjectNode.class);
             Assert.assertNotNull(node.get("realmMappings"));
 
@@ -144,12 +144,12 @@ public class KcAdmSessionTest extends AbstractAdmCliTest {
             // add a realm role to the user
             exe = execute("add-roles --config '" + configFile.getName() + "' --uusername testuser --rolename testrole");
 
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
 
             // get all roles for the user again
             exe = execute("get-roles --config '" + configFile.getName() + "' --uusername testuser --all");
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
 
             node = loadJson(exe.stdout(), ObjectNode.class);
             Assert.assertNotNull(node.get("realmMappings"));
@@ -160,38 +160,38 @@ public class KcAdmSessionTest extends AbstractAdmCliTest {
 
             // create a group
             exe = execute("create groups --config '" + configFile.getName() + "' -s name=TestUsers -i");
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             String groupId = exe.stdoutLines().get(0);
 
             // create a sub-group
             exe = execute("create groups/" + groupId + "/children --config '" + configFile.getName() + "' -s name=TestPowerUsers -i");
-            assertExitCodeAndStdErrSize(exe, 0, 0);
+            assertExitCodeAndStdErrSize(exe, 0, additionalLinesGeneratedByTlsWarning);
             String subGroupId = exe.stdoutLines().get(0);
 
             // add testuser to TestPowerUsers
             exe = execute("update users/" + userId + "/groups/" + subGroupId + " --config '" + configFile.getName()
                     + "' -s realm=demorealm -s userId=" + userId +  " -s groupId=" + subGroupId + " -n");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             // delete everything
             exe = execute("delete groups/" + subGroupId + " --config '" + configFile.getName() + "'");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             exe = execute("delete groups/" + groupId + " --config '" + configFile.getName() + "'");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             exe = execute("delete clients/" + idOfClient + " --config '" + configFile.getName() + "'");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             exe = execute("delete roles/testrole --config '" + configFile.getName() + "'");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             exe = execute("delete users/" + userId + " --config '" + configFile.getName() + "'");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
 
             // delete realm as well - using initial master realm session still saved in config file
             exe = execute("delete realms/demorealm --config '" + configFile.getName() + "' --realm master");
-            assertExitCodeAndStreamSizes(exe, 0, 0, 0);
+            assertExitCodeAndStreamSizes(exe, 0, 0, additionalLinesGeneratedByTlsWarning);
         }
     }
 }

@@ -89,19 +89,23 @@ public abstract class AbstractAdapterTest extends AbstractAuthTest {
             log.info("Setting redirect-uris in test realm '" + tr.getRealm() + "' as " + (isRelative() ? "" : "non-") + "relative");
 
             modifyClientRedirectUris(tr, "http://localhost:8080", "");
+            modifyClientRedirectUris(tr, "^(/.*/\\*)",
+                  "http://localhost:" + System.getProperty("app.server.http.port", "8280") + "$1",
+                  "http://localhost:" + System.getProperty("auth.server.http.port", "8180") + "$1",
+                  "https://localhost:" + System.getProperty("app.server.https.port", "8643") + "$1",
+                  "https://localhost:" + System.getProperty("auth.server.http.port", "8543") + "$1"
+            );
             modifyClientUrls(tr, "http://localhost:8080", "");
 
             if (isRelative()) {
-                modifyClientRedirectUris(tr, appServerContextRootPage.toString(), "");
                 modifyClientUrls(tr, appServerContextRootPage.toString(), "");
                 modifyClientWebOrigins(tr, "8080", System.getProperty("auth.server.http.port", null));
                 modifySamlMasterURLs(tr, "/", "http://localhost:" + System.getProperty("auth.server.http.port", null) + "/");
                 modifySAMLClientsAttributes(tr, "8080", System.getProperty("auth.server.http.port", "8180"));
             } else {
-                modifyClientRedirectUris(tr, "^(/.*/\\*)", appServerContextRootPage.toString() + "$1");
                 modifyClientUrls(tr, "^(/.*)", appServerContextRootPage.toString() + "$1");
-                modifyClientWebOrigins(tr, "8080", System.getProperty("app.server.http.port", null));
-                modifySamlMasterURLs(tr, "8080", System.getProperty("auth.server.http.port", null));
+                modifyClientWebOrigins(tr, "8080", AUTH_SERVER_PORT);
+                modifySamlMasterURLs(tr, "8080", AUTH_SERVER_PORT);
                 modifySAMLClientsAttributes(tr, "http://localhost:8080",  appServerContextRootPage.toString());
                 modifyClientJWKSUrl(tr, "^(/.*)", appServerContextRootPage.toString() + "$1");
             }
@@ -135,14 +139,17 @@ public abstract class AbstractAdapterTest extends AbstractAuthTest {
         return testContext.isRelativeAdapterTest();
     }
 
-    protected void modifyClientRedirectUris(RealmRepresentation realm, String regex, String replacement) {
+    protected void modifyClientRedirectUris(RealmRepresentation realm, String regex, String... replacement) {
         if (realm.getClients() != null) {
             for (ClientRepresentation client : realm.getClients()) {
                 List<String> redirectUris = client.getRedirectUris();
                 if (redirectUris != null) {
                     List<String> newRedirectUris = new ArrayList<>();
                     for (String uri : redirectUris) {
-                        newRedirectUris.add(uri.replaceAll(regex, replacement));
+                        for (String uriReplacement : replacement) {
+                            newRedirectUris.add(uri.replaceAll(regex, uriReplacement));
+                        }
+
                     }
                     client.setRedirectUris(newRedirectUris);
                 }
