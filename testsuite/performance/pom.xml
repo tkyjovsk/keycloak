@@ -35,13 +35,31 @@
         <server.version>${product.version}</server.version>
         <management.user/>
         <management.user.password/>
+        <jstat>false</jstat>
+        <keycloak.jstat>${jstat}</keycloak.jstat>
+        <infinispan.jstat>${jstat}</infinispan.jstat>
+        <lb.jstat>${jstat}</lb.jstat>
     </properties>
             
     <modules>
         <module>keycloak</module>
-        <module>load-balancer/wildfly-modcluster</module>
-        <module>infinispan</module>
         <module>tests</module>
     </modules>
+    
+    <profiles>
+        <profile>
+            <id>cluster</id>
+            <modules>
+                <module>load-balancer/wildfly-modcluster</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>crossdc</id>
+            <modules>
+                <module>load-balancer/wildfly-modcluster</module>
+                <module>infinispan</module>
+            </modules>
+        </profile>
+    </profiles>
     
 </project>
