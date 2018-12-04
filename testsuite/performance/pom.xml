@@ -40,24 +40,33 @@
         <infinispan.jstat>${jstat}</infinispan.jstat>
         <lb.jstat>${jstat}</lb.jstat>
     </properties>
-            
-    <modules>
-        <module>keycloak</module>
-        <module>tests</module>
-    </modules>
     
     <profiles>
         <profile>
+            <id>singlenode</id>
+            <activation>
+                <activeByDefault/>
+            </activation>
+            <modules>
+                <module>keycloak</module>
+                <module>tests</module>
+            </modules>
+        </profile>
+        <profile>
             <id>cluster</id>
             <modules>
+                <module>keycloak</module>
                 <module>load-balancer/wildfly-modcluster</module>
+                <module>tests</module>
             </modules>
         </profile>
         <profile>
             <id>crossdc</id>
             <modules>
+                <module>keycloak</module>
                 <module>load-balancer/wildfly-modcluster</module>
                 <module>infinispan</module>
+                <module>tests</module>
             </modules>
         </profile>
     </profiles>
