@@ -10,9 +10,10 @@ ENV CONFIGURATION standalone.xml
 ENV LAUNCH_JBOSS_IN_BACKGROUND 1
 ENV PROXY_ADDRESS_FORWARDING false
 ENV JSTAT false
+ENV SADC_OPTIONS ""
 
 USER root
-RUN yum install -y epel-release jq iproute && yum clean all
+RUN yum install -y epel-release jq iproute sysstat && yum clean all
 
 ADD keycloak ./
 ADD *.sh /usr/local/bin/

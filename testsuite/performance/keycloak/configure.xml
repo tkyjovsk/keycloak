@@ -54,6 +54,13 @@
         mkdir -p $JBOSS_LOG_DIR
         jstat -gc -t $JBOSS_PID 1000 > $JBOSS_LOG_DIR/jstat-gc.log &
       fi
+                
+      if [ "$SYSSTAT" = "true" ] ; then 
+        mkdir -p $JBOSS_LOG_DIR
+        echo "Starting sadc (system activity data collector)"
+        /usr/lib64/sa/sadc 1 "$JBOSS_LOG_DIR/sa" & SADC_PID=$! && echo $SADC_PID > $JBOSS_HOME/bin/sadc.pid
+      fi
+
 ]]></replacevalue>
         </replace>
         <touch file="${project.build.directory}/performance-configured"/>

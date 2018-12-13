@@ -421,9 +421,6 @@ case "$OPERATION" in
         ARTIFACTS_DIR="${PROJECT_BUILD_DIRECTORY}/collected-artifacts/${DEPLOYMENT}_${TIMESTAMP}"
         SERVICES=`docker-compose -f $DOCKER_COMPOSE_FILE -p ${PROJECT_NAME} config --services`
 
-        GNUPLOT_SCRIPTS_DIR="$PROJECT_BASEDIR/src/main/gnuplot/jstat"
-        GNUPLOT_COMMON="$GNUPLOT_SCRIPTS_DIR/common.gp"
-
         echo "Collecting service logs."
         rm -rf ${ARTIFACTS_DIR}; mkdir -p ${ARTIFACTS_DIR}
         for SERVICE in ${SERVICES}; do 
@@ -443,17 +440,30 @@ case "$OPERATION" in
                 if [[ $? != 0 ]]; then echo "ERROR collecting from: ${SERVICE}"; rm ${ARTIFACTS_DIR}/${SERVICE}/docker.log; fi
             fi
 
-#             jstat charts
-            if ${JSTAT:-false}; then
+            if ${GNUPLOT:-false}; then
+
+                GNUPLOT_SCRIPTS="$PROJECT_BASEDIR/src/main/gnuplot"
+
+                SYSSTAT_DATAFILE="${ARTIFACTS_DIR}/${SERVICE}/log/sa"
                 JSTAT_DATAFILE="${ARTIFACTS_DIR}/${SERVICE}/log/jstat-gc.log"
-                if [ -f "$JSTAT_DATAFILE" ] && ${GNUPLOT:-false}; then
-                    mkdir -p "${ARTIFACTS_DIR}/${SERVICE}/jstat-charts"
-                    HTML="${ARTIFACTS_DIR}/${SERVICE}/jstat-charts/index.html"
+
+                if ${SYSSTAT:-false} && [ -f "$SYSSTAT_DATAFILE" ]; then
+                    mkdir -p "${ARTIFACTS_DIR}/${SERVICE}/charts/sysstat"
+                    sadf -d -- -u       "${SYSSTAT_DATAFILE}" > "${SYSSTAT_DATAFILE}_u.csv"
+                    sadf -d -- -w       "${SYSSTAT_DATAFILE}" > "${SYSSTAT_DATAFILE}_w.csv"
+                    sadf -d -- -r       "${SYSSTAT_DATAFILE}" > "${SYSSTAT_DATAFILE}_r.csv"
+                    sadf -d -- -b       "${SYSSTAT_DATAFILE}" > "${SYSSTAT_DATAFILE}_b.csv"
+                    sadf -d -- -n DEV   "${SYSSTAT_DATAFILE}" > "${SYSSTAT_DATAFILE}_n.csv"
+                fi
+
+                if ${JSTAT:-false} && [ -f "$JSTAT_DATAFILE" ]; then
+                    mkdir -p "${ARTIFACTS_DIR}/${SERVICE}/charts/jstat"
+                    HTML="${ARTIFACTS_DIR}/${SERVICE}/charts/jstat/index.html"
                     echo "<html><head><title>JStat Charts for $SERVICE</title>" > "$HTML"
                     echo "<style>div.box{ display: -webkit-inline-box }</style></head>" >> "$HTML"
                     echo "<body><h1>JStat Charts for $SERVICE</h1>" >> "$HTML"
                     for GP_SCRIPT in gc-all gc-s0 gc-s1 gc-e gc-o gc-m gc-cc ; do
-                        gnuplot -e "datafile='$JSTAT_DATAFILE'" "$GNUPLOT_COMMON" "$GNUPLOT_SCRIPTS_DIR/${GP_SCRIPT}.gp" > "${ARTIFACTS_DIR}/${SERVICE}/jstat-charts/${GP_SCRIPT}.png"
+                        gnuplot -e "datafile='$JSTAT_DATAFILE'" "$GNUPLOT_SCRIPTS/jstat/common.gp" "$GNUPLOT_SCRIPTS/jstat/${GP_SCRIPT}.gp" > "${ARTIFACTS_DIR}/${SERVICE}/charts/jstat/${GP_SCRIPT}.png"
                         if [ $? == 0 ]; then 
                             echo "<div class='box'>" >> "$HTML"
                             echo "<b>${GP_SCRIPT}</b><br/>" >> "$HTML"
@@ -464,6 +474,7 @@ case "$OPERATION" in
                     echo "</body></html>" >> "$HTML"
                 fi
             fi
+
         done
         if [ -z "$(ls -A ${ARTIFACTS_DIR})" ]; then echo "No logs were collected."; rm -rf ${ARTIFACTS_DIR}; fi
     ;;
