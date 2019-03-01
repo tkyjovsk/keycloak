@@ -41,8 +41,6 @@
         <!--exclude cluster tests by default, enabled by 'auth-server-*-cluster' profiles in tests/pom.xml-->
         <exclude.cluster>**/cluster/**/*Test.java</exclude.cluster>
         <exclude.crossdc>**/crossdc/**/*Test.java</exclude.crossdc>
-        <!-- see include-CORS-tests profile -->
-        <exclude.cors.tests>**/cors/*Test.java</exclude.cors.tests>
     </properties>
     
     <dependencies>
@@ -183,7 +181,6 @@
                         <exclude>${exclude.client}</exclude>
                         <exclude>${exclude.cluster}</exclude>
                         <exclude>${exclude.crossdc}</exclude>
-                        <exclude>${exclude.cors.tests}</exclude>
                     </excludes>
                     <systemPropertyVariables>
                         <com.mchange.v2.c3p0.VMID>testsuiteVmId</com.mchange.v2.c3p0.VMID>
@@ -655,9 +652,9 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <requireProperty>	
-                                    <message>When running fuse tests 'additional.fuse.repos' is expected to be set.</message>	
-                                    <property>additional.fuse.repos</property>	
+                                <requireProperty>
+                                    <message>When running fuse tests 'additional.fuse.repos' is expected to be set.</message>
+                                    <property>additional.fuse.repos</property>
                                 </requireProperty>
                             </rules>
                         </configuration>
@@ -730,9 +727,9 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <requireProperty>	
-                                    <message>When running fuse tests 'additional.fuse.repos' is expected to be set.</message>	
-                                    <property>additional.fuse.repos</property>	
+                                <requireProperty>
+                                    <message>When running fuse tests 'additional.fuse.repos' is expected to be set.</message>
+                                    <property>additional.fuse.repos</property>
                                 </requireProperty>
                             </rules>
                         </configuration>
@@ -769,25 +766,6 @@
                 <skip.copy.auth.crossdc.nodes>false</skip.copy.auth.crossdc.nodes>
                 <exclude.crossdc>-</exclude.crossdc>
                 <surefire.memory.settings>-Xms512m -Xmx1024m -XX:MetaspaceSize=96m -XX:MaxMetaspaceSize=256m</surefire.memory.settings>
-            </properties>
-        </profile>
-        <profile>
-            <id>include-CORS-tests</id>
-            <!--
-            If you want to run CORS tests it is necessary to put
-
-            127.0.0.1 localhost-auth
-            127.0.0.1 localhost-db
-
-            to your /etc/hosts file
-            -->
-            <activation>
-                <property>
-                    <name>includeCorsTests</name>
-                </property>
-            </activation>
-            <properties>
-                <exclude.cors.tests>-</exclude.cors.tests>
             </properties>
         </profile>
     </profiles>
