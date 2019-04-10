@@ -22,6 +22,7 @@ import org.jboss.arquillian.container.test.api.ContainerController;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
@@ -58,6 +59,7 @@ public class AddUserTest extends AbstractKeycloakTest {
     }
 
     @Test
+    @Ignore
     public void addUserTest() throws Exception {
         final String username = "addusertest-admin";
         final String realmName = "master";
