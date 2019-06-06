@@ -275,38 +275,30 @@ Assumed you downloaded `fuse-karaf-7.3.0.fuse-730065-redhat-00002.zip`
 ### DB migration test
 
 This test will:
- - start Keycloak 1.9.8 (replace with the other version if needed)
+ - start MySQL DB on docker container. Docker on your laptop is a requirement for this test. 
+ - start Keycloak 4.8.3.Final (replace with the other version if needed)
  - import realm and some data to MySQL DB
- - stop Keycloak 1.9.8
- - start latest Keycloak, which automatically updates DB from 1.9.8
+ - stop Keycloak 4.8.3.Final
+ - start latest Keycloak, which automatically updates DB from 4.8.3.Final
  - Do some test that data are correct
+ - Stop MySQL DB docker container. In case of test failure, the MySQL container is not stopped, so you can manually inspect database.
  
 
-1) Prepare MySQL DB and ensure that MySQL DB is empty. See [../../docs/tests-db.md](../../docs/tests-db.md) for some hints for locally prepare Docker MySQL image.
+Run the test (Update according to your DB connection, versions etc):
 
-2) Run the test (Update according to your DB connection, versions etc):
-
-
-    export DB_HOST=localhost
-
-    mvn -f testsuite/integration-arquillian/pom.xml \
-      clean install \
-      -Pauth-server-wildfly,jpa,clean-jpa,auth-server-migration,test-70-migration \
-      -Dtest=MigrationTest \
-      -Dmigration.mode=auto \
-      -Djdbc.mvn.groupId=mysql \
-      -Djdbc.mvn.artifactId=mysql-connector-java \
-      -Djdbc.mvn.version=8.0.12 \
-      -Djdbc.mvn.version.legacy=5.1.38 \
-      -Dkeycloak.connectionsJpa.url=jdbc:mysql://$DB_HOST/keycloak \
-      -Dkeycloak.connectionsJpa.user=keycloak \
-      -Dkeycloak.connectionsJpa.password=keycloak
+    export OLD_KEYCLOAK_VERSION=4.8.3.Final
+    mvn -B -f testsuite/integration-arquillian/pom.xml clean install -Pjpa,auth-server-wildfly,db-mysql,auth-server-migration \
+        -Dauth.server.jboss.startup.timeout=900 \
+        -Dtest=MigrationTest \
+        -Dmigration.mode=auto \
+        -Dmigrated.auth.server.version=$OLD_KEYCLOAK_VERSION \
+        -Dprevious.product.unpacked.folder.name=keycloak-$OLD_KEYCLOAK_VERSION \
+        -Dmigration.import.file.name=migration-realm-$OLD_KEYCLOAK_VERSION.json \
+        -Dauth.server.ssl.required=false \
+        -Djdbc.mvn.version.legacy=5.1.38 \
+        -Djdbc.mvn.groupId=mysql -Djdbc.mvn.artifactId=mysql-connector-java -Djdbc.mvn.version=8.0.12
       
-The profile "test-7X-migration" indicates from which version you want to test migration. The valid values are:
-* test-70-migration - indicates migration from RHSSO 7.0 (Equivalent to Keycloak 1.9.8.Final)
-* test-71-migration - indicates migration from RHSSO 7.1 (Equivalent to Keycloak 2.5.5.Final)
-* test-72-migration - indicates migration from RHSSO 7.2 (Equivalent to Keycloak 3.4.3.Final)
-* test-73-migration - indicates migration from RHSSO 7.3 (Equivalent to Keycloak 4.8.3.Final)
+For the available versions of old keycloak server, you can take a look to [this directory](tests/base/src/test/resources/migration-test) .
       
 ### DB migration test with manual mode
       

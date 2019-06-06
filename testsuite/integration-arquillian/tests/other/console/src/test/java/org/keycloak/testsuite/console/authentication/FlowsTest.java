@@ -244,13 +244,13 @@ public class FlowsTest extends AbstractConsoleTest {
         assertAlertSuccess();
         flowsPage.table().changeRequirement("OTP Form", FlowsTable.RequirementOption.DISABLED);
         assertAlertSuccess();
-        flowsPage.table().changeRequirement("OTP Form", FlowsTable.RequirementOption.OPTIONAL);
+        flowsPage.table().changeRequirement("OTP Form", FlowsTable.RequirementOption.CONDITIONAL);
         assertAlertSuccess();
 
         //UI
         List<String> expectedOrder = new ArrayList<>();
         Collections.addAll(expectedOrder,"DISABLED", "ALTERNATIVE", "ALTERNATIVE",
-                                         "ALTERNATIVE", "REQUIRED", "OPTIONAL");
+                                         "ALTERNATIVE", "REQUIRED", "CONDITIONAL");
         assertTrue(expectedOrder.containsAll(flowsPage.table().getFlowsAliasesWithRequirements().values()));
         
         //REST:

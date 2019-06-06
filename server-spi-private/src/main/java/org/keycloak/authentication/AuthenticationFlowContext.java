@@ -17,13 +17,17 @@
 
 package org.keycloak.authentication;
 
+import org.keycloak.credential.CredentialModel;
 import org.keycloak.forms.login.LoginFormsProvider;
+import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This interface encapsulates information about an execution in an AuthenticationFlow.  It is also used to set
@@ -48,6 +52,23 @@ public interface AuthenticationFlowContext extends AbstractAuthenticationFlowCon
      * @param user
      */
     void setUser(UserModel user);
+
+    /**
+     * Gets the credential currently selected in this flow
+     *
+     * @return
+     */
+    String getSelectedCredentialId();
+
+    /**
+     * Sets a selected credential for this flow
+     * @param credentialModel
+     */
+    void setSelectedCredentialId(String credentialModel);
+
+    List<AuthenticationSelectionOption> getAuthenticationSelections();
+
+    void setAuthenticationSelections(List<AuthenticationSelectionOption>  credentialAuthExecMap);
 
     /**
      * Clear the user from the flow.

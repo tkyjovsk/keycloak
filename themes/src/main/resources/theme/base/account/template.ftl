@@ -69,8 +69,8 @@
             <#if message?has_content>
                 <div class="alert alert-${message.type}">
                     <#if message.type=='success' ><span class="pficon pficon-ok"></span></#if>
-                    <#if message.type=='error' ><span class="pficon pficon-error-octagon"></span><span class="pficon pficon-error-exclamation"></span></#if>
-                    ${kcSanitize(message.summary)?no_esc}
+                    <#if message.type = 'error'><span class="pficon-layered" ng-show="notification.type == 'danger'"><span class="pficon pficon-error-octagon"></span><span class="pficon pficon-error-exclamation"></span></span></#if>
+                    <span class="kc-feedback-text">${kcSanitize(message.summary)?no_esc}</span>
                 </div>
             </#if>
 

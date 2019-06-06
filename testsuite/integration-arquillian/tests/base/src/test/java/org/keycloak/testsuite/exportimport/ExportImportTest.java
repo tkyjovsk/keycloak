@@ -135,13 +135,14 @@ public class ExportImportTest extends AbstractKeycloakTest {
         String targetDirPath = testingClient.testing().exportImport().getExportImportTestDirectory() + File.separator + "dirRealmExport";
         DirExportProvider.recursiveDeleteDir(new File(targetDirPath));
         testingClient.testing().exportImport().setDir(targetDirPath);
-        testingClient.testing().exportImport().setUsersPerFile(3);
+        testingClient.testing().exportImport().setUsersPerFile(5);
 
         testRealmExportImport();
 
-        // There should be 3 files in target directory (1 realm, 4 user)
+        // There should be 4 files in target directory (1 realm, 12 users, 5 users per file)
+        // (+ additional user service-account-test-app-authz that should not be there ???)
         File[] files = new File(targetDirPath).listFiles();
-        assertEquals(5, files.length);
+        assertEquals(4, files.length);
     }
 
     @Test

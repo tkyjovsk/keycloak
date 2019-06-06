@@ -49,7 +49,7 @@ public abstract class AbstractAuthenticationTest extends AbstractKeycloakTest {
     static final String REALM_NAME = "test";
 
     static final String REQUIRED = "REQUIRED";
-    static final String OPTIONAL = "OPTIONAL";
+    static final String CONDITIONAL = "CONDITIONAL";
     static final String DISABLED = "DISABLED";
     static final String ALTERNATIVE = "ALTERNATIVE";
 

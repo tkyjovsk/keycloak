@@ -31,7 +31,6 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleMappingResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.common.util.Base64;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
@@ -39,6 +38,8 @@ import org.keycloak.models.Constants;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.credential.PasswordCredentialModel;
+import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -80,6 +81,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -207,16 +209,10 @@ public class UserTest extends AbstractAdminTest {
         user.setUsername("user_creds");
         user.setEmail("email@localhost");
 
-        CredentialRepresentation hashedPassword = new CredentialRepresentation();
-        hashedPassword.setAlgorithm("my-algorithm");
-        hashedPassword.setCounter(11);
+        PasswordCredentialModel pcm = PasswordCredentialModel.createFromValues("my-algorithm", "theSalt".getBytes(), 22, "ABC");
+        CredentialRepresentation hashedPassword = ModelToRepresentation.toRepresentation(pcm);
         hashedPassword.setCreatedDate(1001l);
-        hashedPassword.setDevice("deviceX");
-        hashedPassword.setDigits(6);
-        hashedPassword.setHashIterations(22);
-        hashedPassword.setHashedSaltedValue("ABC");
-        hashedPassword.setPeriod(99);
-        hashedPassword.setSalt(Base64.encodeBytes("theSalt".getBytes()));
+        hashedPassword.setUserLabel("deviceX");
         hashedPassword.setType(CredentialRepresentation.PASSWORD);
 
         user.setCredentials(Arrays.asList(hashedPassword));
@@ -224,16 +220,14 @@ public class UserTest extends AbstractAdminTest {
         createUser(user);
 
         CredentialModel credentialHashed = fetchCredentials("user_creds");
+        PasswordCredentialModel pcmh = PasswordCredentialModel.createFromCredentialModel(credentialHashed);
         assertNotNull("Expecting credential", credentialHashed);
-        assertEquals("my-algorithm", credentialHashed.getAlgorithm());
-        assertEquals(11, credentialHashed.getCounter());
+        assertEquals("my-algorithm", pcmh.getPasswordCredentialData().getAlgorithm());
         assertEquals(Long.valueOf(1001), credentialHashed.getCreatedDate());
-        assertEquals("deviceX", credentialHashed.getDevice());
-        assertEquals(6, credentialHashed.getDigits());
-        assertEquals(22, credentialHashed.getHashIterations());
-        assertEquals("ABC", credentialHashed.getValue());
-        assertEquals(99, credentialHashed.getPeriod());
-        assertEquals("theSalt", new String(credentialHashed.getSalt()));
+        assertEquals("deviceX", credentialHashed.getUserLabel());
+        assertEquals(22, pcmh.getPasswordCredentialData().getHashIterations());
+        assertEquals("ABC", pcmh.getPasswordSecretData().getValue());
+        assertEquals("theSalt", new String(pcmh.getPasswordSecretData().getSalt()));
         assertEquals(CredentialRepresentation.PASSWORD, credentialHashed.getType());
     }
     
@@ -241,13 +235,12 @@ public class UserTest extends AbstractAdminTest {
     public void updateUserWithHashedCredentials(){
         String userId = createUser("user_hashed_creds", "user_hashed_creds@localhost");
 
-        CredentialRepresentation hashedPassword = new CredentialRepresentation();
-        hashedPassword.setAlgorithm("pbkdf2-sha256");
-        hashedPassword.setCreatedDate(1001l);
-        hashedPassword.setHashIterations(27500);
-        hashedPassword.setHashedSaltedValue("uskEPZWMr83pl2mzNB95SFXfIabe2UH9ClENVx/rrQqOjFEjL2aAOGpWsFNNF3qoll7Qht2mY5KxIDm3Rnve2w==");
-        hashedPassword.setSalt("u1VXYxqVfWOzHpF2bGSLyA==");
-        hashedPassword.setType(CredentialRepresentation.PASSWORD);
+        byte[] salt = new byte[]{-69,85,87,99,26,-107,125,99,-77,30,-111,118,108,100,-117,-56};
+
+        PasswordCredentialModel credentialModel = PasswordCredentialModel.createFromValues("pbkdf2-sha256", salt,
+                27500, "uskEPZWMr83pl2mzNB95SFXfIabe2UH9ClENVx/rrQqOjFEjL2aAOGpWsFNNF3qoll7Qht2mY5KxIDm3Rnve2w==");
+        credentialModel.setCreatedDate(1001l);
+        CredentialRepresentation hashedPassword = ModelToRepresentation.toRepresentation(credentialModel);
         
         UserRepresentation userRepresentation = new UserRepresentation();
         userRepresentation.setCredentials(Collections.singletonList(hashedPassword));
@@ -280,9 +273,10 @@ public class UserTest extends AbstractAdminTest {
 
         CredentialModel credential = fetchCredentials("user_rawpw");
         assertNotNull("Expecting credential", credential);
-        assertEquals(PasswordPolicy.HASH_ALGORITHM_DEFAULT, credential.getAlgorithm());
-        assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, credential.getHashIterations());
-        assertNotEquals("ABCD", credential.getValue());
+        PasswordCredentialModel pcm = PasswordCredentialModel.createFromCredentialModel(credential);
+        assertEquals(PasswordPolicy.HASH_ALGORITHM_DEFAULT, pcm.getPasswordCredentialData().getAlgorithm());
+        assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, pcm.getPasswordCredentialData().getHashIterations());
+        assertNotEquals("ABCD", pcm.getPasswordSecretData().getValue());
         assertEquals(CredentialRepresentation.PASSWORD, credential.getType());
     }
 
@@ -1265,11 +1259,12 @@ public class UserTest extends AbstractAdminTest {
 
         String id = createUser(user);
 
-        CredentialModel credential = fetchCredentials("user_rawpw");
+        PasswordCredentialModel credential = PasswordCredentialModel
+                .createFromCredentialModel(fetchCredentials("user_rawpw"));
         assertNotNull("Expecting credential", credential);
-        assertEquals(PasswordPolicy.HASH_ALGORITHM_DEFAULT, credential.getAlgorithm());
-        assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, credential.getHashIterations());
-        assertNotEquals("ABCD", credential.getValue());
+        assertEquals(PasswordPolicy.HASH_ALGORITHM_DEFAULT, credential.getPasswordCredentialData().getAlgorithm());
+        assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, credential.getPasswordCredentialData().getHashIterations());
+        assertNotEquals("ABCD", credential.getPasswordSecretData().getValue());
         assertEquals(CredentialRepresentation.PASSWORD, credential.getType());
 
         UserResource userResource = realm.users().get(id);
@@ -1282,11 +1277,12 @@ public class UserTest extends AbstractAdminTest {
 
         updateUser(userResource, userRep);
 
-        CredentialModel updatedCredential = fetchCredentials("user_rawpw");
+        PasswordCredentialModel updatedCredential = PasswordCredentialModel
+                .createFromCredentialModel(fetchCredentials("user_rawpw"));
         assertNotNull("Expecting credential", updatedCredential);
-        assertEquals(PasswordPolicy.HASH_ALGORITHM_DEFAULT, updatedCredential.getAlgorithm());
-        assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, updatedCredential.getHashIterations());
-        assertNotEquals("EFGH", updatedCredential.getValue());
+        assertEquals(PasswordPolicy.HASH_ALGORITHM_DEFAULT, updatedCredential.getPasswordCredentialData().getAlgorithm());
+        assertEquals(PasswordPolicy.HASH_ITERATIONS_DEFAULT, updatedCredential.getPasswordCredentialData().getHashIterations());
+        assertNotEquals("EFGH", updatedCredential.getPasswordSecretData().getValue());
         assertEquals(CredentialRepresentation.PASSWORD, updatedCredential.getType());
     }
 

@@ -83,9 +83,15 @@ public interface UserResource {
     @Path("logout")
     public void logout();
 
-    @PUT
-    @Path("remove-totp")
-    public void removeTotp();
+
+
+    @GET
+    @Path("credentials")
+    List<CredentialRepresentation> credentials();
+
+    @DELETE
+    @Path("credentials/{credentialId}")
+    void removeCredential(@PathParam("credentialId")String credentialId);
 
     /**
      * Disables or deletes all credentials for specific types.
