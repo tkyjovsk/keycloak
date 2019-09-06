@@ -93,6 +93,11 @@ if $STRESS_TEST_PROVISIONING; then cat <<EOM
 EOM
 fi
 
+mkdir -p "$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/"
+log_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-log.csv"
+result_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-result.csv"
+echo "Iteration,Users per Second,Test Result" > $log_file
+
 users_per_sec_max=0
 
 case "${STRESS_TEST_ALGORITHM}" in
@@ -115,6 +120,8 @@ EOM
             echo 
 
             run_test $@
+
+            echo "$(( i+1 )),$users_per_sec,$([ $test_result == 0 ] && echo 'Passed' || echo 'Failed')" >> $log_file
 
             if [[ $test_result == 0 ]]; then 
                 users_per_sec_max=$users_per_sec
@@ -151,6 +158,8 @@ EOM
 
             run_test $@
 
+            echo "$(( i+1 )),$users_per_sec,$([ $test_result == 0 ] && echo 'Passed' || echo 'Failed')" >> $log_file
+
             if [[ $test_result == 0 ]]; then 
                 users_per_sec_max=$users_per_sec
                 echo "INFO: Last iteration succeeded. Continuing with the upper half of the interval."
@@ -175,5 +184,6 @@ echo "Maximal load with passing test: $users_per_sec_max users per second"
 
 if ! $DRY_RUN; then # Generate a Jenkins Plot Plugin-compatible data file
     mkdir -p "$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target"
-    echo "YVALUE=$users_per_sec_max" > "$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-result.properties"
+    echo "Users per Second Maximum" > $result_file
+    echo "$users_per_sec_max" >> $result_file
 fi
