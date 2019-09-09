@@ -67,6 +67,12 @@ function run_test {
 
 }
 
+function log_test_result {
+    echo "$(( i+1 )),$users_per_sec,$([ $test_result == 0 ] && echo 'Passed' || echo 'Failed')" >> $csv_log_file
+    report_index="`cd $KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target; ls -d -t gatling/* | head -1`/index.html"
+    echo "<tr><td>$(( i+1 ))</td><td>$users_per_sec</td><td>$([ $test_result == 0 ] && echo 'Passed' || echo 'Failed')</td><td><a href=\"$report_index\">Gatling report</a></td></tr>" >> $html_log_file
+}
+
 cat <<EOM
 Stress Test Summary:
 
@@ -94,9 +100,11 @@ EOM
 fi
 
 mkdir -p "$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/"
-log_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-log.csv"
-result_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-result.csv"
-echo "Iteration,Users per Second,Test Result" > $log_file
+csv_log_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-log.csv"
+html_log_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-log.html"
+csv_result_file="$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target/stress-test-result.csv"
+echo "Iteration,Users per Second,Test Result" > $csv_log_file
+echo "<table><tr><th>Iteration</th><th>Users per Second</th><th>Test Result</th><th>Links</th></tr>" > $html_log_file
 
 users_per_sec_max=0
 
@@ -120,8 +128,7 @@ EOM
             echo 
 
             run_test $@
-
-            echo "$(( i+1 )),$users_per_sec,$([ $test_result == 0 ] && echo 'Passed' || echo 'Failed')" >> $log_file
+            log_test_result
 
             if [[ $test_result == 0 ]]; then 
                 users_per_sec_max=$users_per_sec
@@ -157,8 +164,7 @@ EOM
             if [[ `bc<<<"scale=10; $interval_size < 0"` == 1 ]]; then echo "ERROR: Invalid state: lower_bound > upper_bound. Stopping the loop."; exit 1; fi
 
             run_test $@
-
-            echo "$(( i+1 )),$users_per_sec,$([ $test_result == 0 ] && echo 'Passed' || echo 'Failed')" >> $log_file
+            log_test_result
 
             if [[ $test_result == 0 ]]; then 
                 users_per_sec_max=$users_per_sec
@@ -180,10 +186,12 @@ EOM
 
 esac
 
+echo "</table>" >> $html_log_file
+
 echo "Maximal load with passing test: $users_per_sec_max users per second"
 
 if ! $DRY_RUN; then # Generate a Jenkins Plot Plugin-compatible data file
     mkdir -p "$KEYCLOAK_PROJECT_HOME/testsuite/performance/tests/target"
-    echo "Users per Second Maximum" > $result_file
-    echo "$users_per_sec_max" >> $result_file
+    echo "Users per Second Maximum" > $csv_result_file
+    echo "$users_per_sec_max" >> $csv_result_file
 fi
