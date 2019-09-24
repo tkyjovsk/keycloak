@@ -21,6 +21,7 @@ import org.jboss.arquillian.graphene.page.Page;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.keycloak.common.Profile;
 import org.keycloak.models.utils.SessionTimeoutHelper;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.testsuite.AbstractAuthTest;
@@ -84,6 +85,7 @@ public class NodejsAdapterTest extends AbstractAuthTest {
 
     @Override
     public void addTestRealms(List<RealmRepresentation> testRealms) {
+        enableFeature(Profile.Feature.UPLOAD_SCRIPTS);
         testRealms.add(exampleRealm);
     }
 
