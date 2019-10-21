@@ -31,16 +31,14 @@ import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.requiredactions.WebAuthnRegisterFactory;
 import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.UriUtils;
-import org.keycloak.credential.WebAuthnCredentialModel;
+import org.keycloak.credential.WebAuthnCredentialModelInput;
 import org.keycloak.events.Errors;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.forms.login.freemarker.model.WebAuthnAuthenticatorsBean;
-import org.keycloak.models.AuthenticatorConfigModel;
-import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.models.WebAuthnPolicy;
+import org.keycloak.models.credential.WebAuthnCredentialModel;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -70,7 +68,7 @@ public class WebAuthnAuthenticator implements Authenticator {
         boolean isUserIdentified = false;
         if (user != null) {
             // in 2 Factor Scenario where the user has already been identified
-            WebAuthnAuthenticatorsBean authenticators = new WebAuthnAuthenticatorsBean(user);
+            WebAuthnAuthenticatorsBean authenticators = new WebAuthnAuthenticatorsBean(context.getSession(), context.getRealm(), user);
             if (authenticators.getAuthenticators().isEmpty()) {
                 // require the user to register webauthn authenticator
                 return;
@@ -87,7 +85,7 @@ public class WebAuthnAuthenticator implements Authenticator {
         String userVerificationRequirement = context.getRealm().getWebAuthnPolicy().getUserVerificationRequirement();
         form.setAttribute(WebAuthnConstants.USER_VERIFICATION, userVerificationRequirement);
 
-        context.challenge(form.createForm("webauthn-authenticate.ftl"));
+        context.challenge(form.createLoginWebAuthn());
     }
 
     public void action(AuthenticationFlowContext context) {
@@ -151,7 +149,7 @@ public class WebAuthnAuthenticator implements Authenticator {
                 isUVFlagChecked
         );
 
-        WebAuthnCredentialModel cred = new WebAuthnCredentialModel();
+        WebAuthnCredentialModelInput cred = new WebAuthnCredentialModelInput();
         cred.setAuthenticationContext(authenticationContext);
 
         boolean result = false;
@@ -184,7 +182,7 @@ public class WebAuthnAuthenticator implements Authenticator {
     }
 
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
-        return session.userCredentialManager().isConfiguredFor(realm, user, WebAuthnCredentialModel.WEBAUTHN_CREDENTIAL_TYPE);
+        return session.userCredentialManager().isConfiguredFor(realm, user, WebAuthnCredentialModel.TYPE);
     }
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {

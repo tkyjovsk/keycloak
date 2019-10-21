@@ -34,18 +34,20 @@ import static org.keycloak.testsuite.broker.BrokerTestTools.waitForPage;
  * Especially for re-authentication of user, which is linking to IDP broker, it uses "Password Form" authenticator instead of default IdpUsernamePasswordForm.
  * It tests various variants with OTP( Conditional OTP, Password-or-OTP) .
  *
- * TODO: in latest master, the KcOidcBrokerTest is final class. This class will need to be changed to extend from AbstractBrokerTest
- *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
-public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
+public class KcOidcFirstBrokerLoginNewAuthTest extends AbstractInitializedBaseBrokerTest {
 
     @Page
     PasswordPage passwordPage;
 
+    @Override
+    protected BrokerConfiguration getBrokerConfiguration() {
+        return KcOidcBrokerConfiguration.INSTANCE;
+    }
 
-    // TODO: This can be uncommented once we rebase to latest master and there won't be a need to explicitly call it before each method declared on this class
-    // @Before
+
+    @Before
     public void disableReviewProfileBeforeTest() {
         updateExecutions(AbstractBrokerTest::disableUpdateProfileOnFirstLogin);
     }
@@ -56,10 +58,7 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
      */
     @Test
     public void testReAuthenticateWithPasswordAndConditionalOTP_otpNotRequested() {
-        // TODO: Change disableReviewProfileBeforeTest() to default method and remove this
-        disableReviewProfileBeforeTest();
-
-        testingClient.server(bc.consumerRealmName()).run(configureBrokerFlowToReAuthenticationWithPasswordForm(bc.getIDPAlias(), "first broker login with password form"));
+        configureBrokerFlowToReAuthenticationWithPasswordForm(bc.getIDPAlias(), "first broker login with password form");
 
         String consumerRealmUserId = createUser("consumer");
         loginWithBrokerAndConfirmLinkAccount();
@@ -84,10 +83,7 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
      */
     @Test
     public void testReAuthenticateWithPasswordAndConditionalOTP_otpRequested() {
-        // TODO: Change disableReviewProfileBeforeTest() to default method and remove this
-        disableReviewProfileBeforeTest();
-
-        testingClient.server(bc.consumerRealmName()).run(configureBrokerFlowToReAuthenticationWithPasswordForm(bc.getIDPAlias(), "first broker login with password form"));
+        configureBrokerFlowToReAuthenticationWithPasswordForm(bc.getIDPAlias(), "first broker login with password form");
 
         // Create user and link him with TOTP
         String consumerRealmUserId = createUser("consumer");
@@ -113,10 +109,7 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
      */
     @Test
     public void testReAuthenticateWithPasswordOrOTP_otpNotConfigured_passwordUsed() {
-        // TODO: Change disableReviewProfileBeforeTest() to default method and remove this
-        disableReviewProfileBeforeTest();
-
-        testingClient.server(bc.consumerRealmName()).run(configureBrokerFlowToReAuthenticationWithPasswordOrTotp(bc.getIDPAlias(), "first broker login with password or totp"));
+        configureBrokerFlowToReAuthenticationWithPasswordOrTotp(bc.getIDPAlias(), "first broker login with password or totp");
 
         String consumerRealmUserId = createUser("consumer");
 
@@ -140,10 +133,7 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
      */
     @Test
     public void testReAuthenticateWithPasswordOrOTP_otpConfigured_passwordUsed() {
-        // TODO: Change disableReviewProfileBeforeTest() to default method and remove this
-        disableReviewProfileBeforeTest();
-
-        testingClient.server(bc.consumerRealmName()).run(configureBrokerFlowToReAuthenticationWithPasswordOrTotp(bc.getIDPAlias(), "first broker login with password or totp"));
+        configureBrokerFlowToReAuthenticationWithPasswordOrTotp(bc.getIDPAlias(), "first broker login with password or totp");
 
         // Create user and link him with TOTP
         String consumerRealmUserId = createUser("consumer");
@@ -164,13 +154,13 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
         assertUserAuthenticatedInConsumer(consumerRealmUserId);
     }
 
-
+    /**
+     * Tests the firstBrokerLogin flow configured to re-authenticate with PasswordForm OR TOTP.
+     * TOTP is configured for the user and he selects it to authenticate. Password is not used.
+     */
     @Test
     public void testReAuthenticateWithPasswordOrOTP_otpConfigured_otpUsed() {
-        // TODO: Change disableReviewProfileBeforeTest() to default method and remove this
-        disableReviewProfileBeforeTest();
-
-        testingClient.server(bc.consumerRealmName()).run(configureBrokerFlowToReAuthenticationWithPasswordOrTotp(bc.getIDPAlias(), "first broker login with password or totp"));
+        configureBrokerFlowToReAuthenticationWithPasswordOrTotp(bc.getIDPAlias(), "first broker login with password or totp");
 
         // Create user and link him with TOTP
         String consumerRealmUserId = createUser("consumer");
@@ -200,10 +190,7 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
      */
     @Test
     public void testBackButtonWithOTPEnabled() {
-        // TODO: Change disableReviewProfileBeforeTest() to default method and remove this
-        disableReviewProfileBeforeTest();
-
-        testingClient.server(bc.consumerRealmName()).run(configureBrokerFlowToReAuthenticationWithPasswordForm(bc.getIDPAlias(), "first broker login with password form"));
+        configureBrokerFlowToReAuthenticationWithPasswordForm(bc.getIDPAlias(), "first broker login with password form");
 
         // Create user and link him with TOTP
         String consumerRealmUserId = createUser("consumer");
@@ -256,7 +243,7 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
 
         // Login. TOTP will be required at login time.
         driver.navigate().to(getAccountUrl(bc.consumerRealmName()));
-        accountLoginPage.login(username, "password");
+        loginPage.login(username, "password");
 
         totpPage.assertCurrent();
         String totpSecret = totpPage.getTotpSecret();
@@ -291,15 +278,20 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
 
     // Configure the variant of firstBrokerLogin flow, which will use PasswordForm instead of IdpUsernamePasswordForm.
     // In other words, the form with password-only instead of username/password.
-    private static RunOnServer configureBrokerFlowToReAuthenticationWithPasswordForm(String idpAlias, String newFlowAlias) {
-        return (session -> {
+    private void configureBrokerFlowToReAuthenticationWithPasswordForm(String idpAlias, String newFlowAlias) {
+        testingClient.server(bc.consumerRealmName()).run(session -> {
             // Copy existing firstBrokerLogin flow
             RealmModel appRealm = session.getContext().getRealm();
             AuthenticationFlowModel existingFBLFlow = appRealm.getFlowByAlias(DefaultAuthenticationFlows.FIRST_BROKER_LOGIN_FLOW);
 
             AuthenticationFlowModel newFBLFlow = AuthenticationManagementResource.copyFlow(appRealm, existingFBLFlow, newFlowAlias);
+        });
 
-            //
+
+        testingClient.server(bc.consumerRealmName()).run(session -> {
+            RealmModel appRealm = session.getContext().getRealm();
+            AuthenticationFlowModel newFBLFlow = appRealm.getFlowByAlias(newFlowAlias);
+
             AuthenticationFlowModel reauthenticateSubflow = appRealm.getFlowByAlias(newFlowAlias + " Verify Existing Account by Re-authentication");
             List<AuthenticationExecutionModel> executions = appRealm.getAuthenticationExecutions(reauthenticateSubflow.getId());
 
@@ -338,15 +330,19 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends KcOidcBrokerTest {
 
     // Configure the variant of firstBrokerLogin flow, which will allow to reauthenticate user with password OR totp
     // TOTP will be available just if configured for the user
-    private static RunOnServer configureBrokerFlowToReAuthenticationWithPasswordOrTotp(String idpAlias, String newFlowAlias) {
-        return (session -> {
+    private void configureBrokerFlowToReAuthenticationWithPasswordOrTotp(String idpAlias, String newFlowAlias) {
+        testingClient.server(bc.consumerRealmName()).run(session -> {
             // Copy existing firstBrokerLogin flow
             RealmModel appRealm = session.getContext().getRealm();
             AuthenticationFlowModel existingFBLFlow = appRealm.getFlowByAlias(DefaultAuthenticationFlows.FIRST_BROKER_LOGIN_FLOW);
 
             AuthenticationFlowModel newFBLFlow = AuthenticationManagementResource.copyFlow(appRealm, existingFBLFlow, newFlowAlias);
+        });
 
-            //
+        testingClient.server(bc.consumerRealmName()).run(session -> {
+            RealmModel appRealm = session.getContext().getRealm();
+            AuthenticationFlowModel newFBLFlow = appRealm.getFlowByAlias(newFlowAlias);
+
             AuthenticationFlowModel reauthenticateSubflow = appRealm.getFlowByAlias(newFlowAlias + " Verify Existing Account by Re-authentication");
             List<AuthenticationExecutionModel> executions = appRealm.getAuthenticationExecutions(reauthenticateSubflow.getId());
 

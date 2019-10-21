@@ -495,6 +495,11 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     @Override
+    public Response createLoginWebAuthn() {
+        return createResponse(LoginFormsPages.LOGIN_WEBAUTHN);
+    }
+
+    @Override
     public Response createRegistration() {
         return createResponse(LoginFormsPages.REGISTER);
     }

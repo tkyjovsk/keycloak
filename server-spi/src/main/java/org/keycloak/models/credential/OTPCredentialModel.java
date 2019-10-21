@@ -1,13 +1,12 @@
 package org.keycloak.models.credential;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.common.util.Time;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.models.credential.dto.OTPCredentialData;
 import org.keycloak.models.credential.dto.OTPSecretData;
 import org.keycloak.models.OTPPolicy;
 import org.keycloak.models.RealmModel;
+import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
 
@@ -58,10 +57,9 @@ public class OTPCredentialModel extends CredentialModel {
     }
 
     public static OTPCredentialModel createFromCredentialModel(CredentialModel credentialModel) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            OTPCredentialData credentialData = objectMapper.readValue(credentialModel.getCredentialData(), OTPCredentialData.class);
-            OTPSecretData secretData = objectMapper.readValue(credentialModel.getSecretData(), OTPSecretData.class);
+            OTPCredentialData credentialData = JsonSerialization.readValue(credentialModel.getCredentialData(), OTPCredentialData.class);
+            OTPSecretData secretData = JsonSerialization.readValue(credentialModel.getSecretData(), OTPSecretData.class);
 
             OTPCredentialModel otpCredentialModel = new OTPCredentialModel(credentialData, secretData);
             otpCredentialModel.setUserLabel(credentialModel.getUserLabel());
@@ -78,10 +76,9 @@ public class OTPCredentialModel extends CredentialModel {
     }
 
     public void updateCounter(int counter) {
-        ObjectMapper objectMapper = new ObjectMapper();
         credentialData.setCounter(counter);
         try {
-            setCredentialData(objectMapper.writeValueAsString(credentialData));
+            setCredentialData(JsonSerialization.writeValueAsString(credentialData));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -96,13 +93,12 @@ public class OTPCredentialModel extends CredentialModel {
     }
 
     private void fillCredentialModelFields(){
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            setCredentialData(objectMapper.writeValueAsString(credentialData));
-            setSecretData(objectMapper.writeValueAsString(secretData));
+            setCredentialData(JsonSerialization.writeValueAsString(credentialData));
+            setSecretData(JsonSerialization.writeValueAsString(secretData));
             setType(TYPE);
             setCreatedDate(Time.currentTimeMillis());
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

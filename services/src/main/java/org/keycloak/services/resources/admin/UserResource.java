@@ -80,6 +80,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -565,14 +566,7 @@ public class UserResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public void disableCredentialType(List<String> credentialTypes) {
-        //TODO this is currently useless. To be replaced by a function to delete credentials
-        /*auth.users().requireManage(user);
-        if (credentialTypes == null) return;
-        for (String type : credentialTypes) {
-            session.userCredentialManager().disableCredentialType(realm, user, type);
-
-        }
-    */
+        throw new NotSupportedException("Not supported to disable credentials. Only credentials removal is supported");
     }
 
     /**
@@ -653,7 +647,7 @@ public class UserResource {
     }
 
     /**
-     * Move a credential to a position behind another credential
+     * Move a credential to a first position in the credentials list of the user
      * @param credentialId The credential to move
      */
     @Path("credentials/{credentialId}/moveToFirst")

@@ -193,7 +193,7 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
 
     @Test
     public void testSwitchExecutionNotAllowedWithRequiredPasswordAndAlternativeOTP() {
-        testingClient.server("test").run(configureBrowserFlowWithRequiredPasswordFormAndAlternativeOTP("browser - copy 1"));
+        configureBrowserFlowWithRequiredPasswordFormAndAlternativeOTP("browser - copy 1");
 
         try {
             loginUsernameOnlyPage.open();
@@ -229,7 +229,7 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
     public void testSocialProvidersPresentOnLoginUsernameOnlyPageIfConfigured() {
         String testRealm = "test";
         // Test setup - Configure the testing Keycloak instance with UsernameForm & PasswordForm (both REQUIRED) and OTPFormAuthenticator (ALTERNATIVE)
-        testingClient.server(testRealm).run(configureBrowserFlowWithRequiredPasswordFormAndAlternativeOTP("browser - copy 1"));
+        configureBrowserFlowWithRequiredPasswordFormAndAlternativeOTP("browser - copy 1");
 
         try {
             SocialLoginTest socialLoginTest = new SocialLoginTest();
@@ -264,13 +264,18 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
     // PasswordForm: REQUIRED
     // OTPFormAuthenticator: ALTERNATIVE
     // In reality, the configuration of the flow like this doesn't have much sense, but nothing prevents administrator to configure it at this moment
-    private static RunOnServer configureBrowserFlowWithRequiredPasswordFormAndAlternativeOTP(String newFlowAlias) {
-        return (session -> {
+    private void configureBrowserFlowWithRequiredPasswordFormAndAlternativeOTP(String newFlowAlias) {
+        testingClient.server("test").run(session -> {
             // Copy existing browser flow
             RealmModel appRealm = session.getContext().getRealm();
             AuthenticationFlowModel existingBrowserFlow = appRealm.getFlowByAlias(DefaultAuthenticationFlows.BROWSER_FLOW);
 
             AuthenticationFlowModel newBrowserFlow = AuthenticationManagementResource.copyFlow(appRealm, existingBrowserFlow, newFlowAlias);
+        });
+
+        testingClient.server("test").run(session -> {
+            RealmModel appRealm = session.getContext().getRealm();
+            AuthenticationFlowModel newBrowserFlow = appRealm.getFlowByAlias(newFlowAlias);
 
             //
             AuthenticationFlowModel formSubflow = appRealm.getFlowByAlias(newFlowAlias + " forms");

@@ -1,10 +1,9 @@
 package org.keycloak.models.credential;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.models.credential.dto.PasswordCredentialData;
 import org.keycloak.models.credential.dto.PasswordSecretData;
+import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
 
@@ -22,29 +21,26 @@ public class PasswordCredentialModel extends CredentialModel {
     }
 
     public static PasswordCredentialModel createFromValues(String algorithm, byte[] salt, int hashIterations, String encodedPassword){
-        ObjectMapper objectMapper = new ObjectMapper();
         PasswordCredentialData credentialData = new PasswordCredentialData(hashIterations, algorithm);
         PasswordSecretData secretData = new PasswordSecretData(encodedPassword, salt);
 
         PasswordCredentialModel passwordCredentialModel = new PasswordCredentialModel(credentialData, secretData);
 
         try {
-            passwordCredentialModel.setCredentialData(objectMapper.writeValueAsString(credentialData));
-            passwordCredentialModel.setSecretData(objectMapper.writeValueAsString(secretData));
+            passwordCredentialModel.setCredentialData(JsonSerialization.writeValueAsString(credentialData));
+            passwordCredentialModel.setSecretData(JsonSerialization.writeValueAsString(secretData));
             passwordCredentialModel.setType(TYPE);
             return passwordCredentialModel;
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static PasswordCredentialModel createFromCredentialModel(CredentialModel credentialModel) {
-        ObjectMapper objectMapper = new ObjectMapper();
-
         try {
-            PasswordCredentialData credentialData = objectMapper.readValue(credentialModel.getCredentialData(),
+            PasswordCredentialData credentialData = JsonSerialization.readValue(credentialModel.getCredentialData(),
                     PasswordCredentialData.class);
-            PasswordSecretData secretData = objectMapper.readValue(credentialModel.getSecretData(), PasswordSecretData.class);
+            PasswordSecretData secretData = JsonSerialization.readValue(credentialModel.getSecretData(), PasswordSecretData.class);
 
             PasswordCredentialModel passwordCredentialModel = new PasswordCredentialModel(credentialData, secretData);
             passwordCredentialModel.setCreatedDate(credentialModel.getCreatedDate());

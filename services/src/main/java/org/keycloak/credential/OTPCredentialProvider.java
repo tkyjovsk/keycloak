@@ -89,6 +89,7 @@ public class OTPCredentialProvider implements CredentialProvider<OTPCredentialMo
 
     @Override
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
+        if (!supportsCredentialType(credentialType)) return false;
         return !getCredentialStore().getStoredCredentialsByType(realm, user, credentialType).isEmpty();
     }
 

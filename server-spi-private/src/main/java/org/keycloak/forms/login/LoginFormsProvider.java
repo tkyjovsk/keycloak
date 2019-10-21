@@ -66,6 +66,8 @@ public interface LoginFormsProvider extends Provider {
 
     Response createLoginTotp();
 
+    Response createLoginWebAuthn();
+
     Response createRegistration();
 
     Response createInfoPage();

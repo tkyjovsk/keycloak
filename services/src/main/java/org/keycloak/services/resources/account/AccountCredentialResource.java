@@ -46,74 +46,76 @@ public class AccountCredentialResource {
         realm = session.getContext().getRealm();
     }
 
-    @GET
-    @NoCache
-    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<CredentialRepresentation> credentials(){
-        auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
-        List<CredentialModel> models = session.userCredentialManager().getStoredCredentials(realm, user);
-        models.forEach(c -> c.setSecretData(null));
-        return models.stream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
-    }
-
-
-    @GET
-    @Path("registrators")
-    @NoCache
-    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<String> getCredentialRegistrators(){
-        auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
-
-        return session.getContext().getRealm().getRequiredActionProviders().stream()
-                .map(RequiredActionProviderModel::getProviderId)
-                .filter(providerId ->  session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Remove a credential for a user
-     *
-     */
-    @Path("{credentialId}")
-    @DELETE
-    @NoCache
-    public void removeCredential(final @PathParam("credentialId") String credentialId) {
-        auth.require(AccountRoles.MANAGE_ACCOUNT);
-        session.userCredentialManager().removeStoredCredential(realm, user, credentialId);
-    }
-
-    /**
-     * Update a credential label for a user
-     */
-    @PUT
-    @Consumes(javax.ws.rs.core.MediaType.TEXT_PLAIN)
-    @Path("{credentialId}/label")
-    public void setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
-        auth.require(AccountRoles.MANAGE_ACCOUNT);
-        session.userCredentialManager().updateCredentialLabel(realm, user, credentialId, userLabel);
-    }
-
-    /**
-     * Move a credential to a position behind another credential
-     * @param credentialId The credential to move
-     */
-    @Path("{credentialId}/moveToFirst")
-    @POST
-    public void moveToFirst(final @PathParam("credentialId") String credentialId){
-        moveCredentialAfter(credentialId, null);
-    }
-
-    /**
-     * Move a credential to a position behind another credential
-     * @param credentialId The credential to move
-     * @param newPreviousCredentialId The credential that will be the previous element in the list. If set to null, the moved credential will be the first element in the list.
-     */
-    @Path("{credentialId}/moveAfter/{newPreviousCredentialId}")
-    @POST
-    public void moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId){
-        auth.require(AccountRoles.MANAGE_ACCOUNT);
-        session.userCredentialManager().moveCredentialTo(realm, user, credentialId, newPreviousCredentialId);
-    }
+    // TODO: This is kept here for now and commented. The endpoints will be added by team cheetah during work on account console.
+    // This is here just to show what logic will need to be called in the new endpoints. We may need to remove it and/or change it
+//    @GET
+//    @NoCache
+//    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+//    public List<CredentialRepresentation> credentials(){
+//        auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
+//        List<CredentialModel> models = session.userCredentialManager().getStoredCredentials(realm, user);
+//        models.forEach(c -> c.setSecretData(null));
+//        return models.stream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
+//    }
+//
+//
+//    @GET
+//    @Path("registrators")
+//    @NoCache
+//    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+//    public List<String> getCredentialRegistrators(){
+//        auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
+//
+//        return session.getContext().getRealm().getRequiredActionProviders().stream()
+//                .map(RequiredActionProviderModel::getProviderId)
+//                .filter(providerId ->  session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
+//                .collect(Collectors.toList());
+//    }
+//
+//    /**
+//     * Remove a credential for a user
+//     *
+//     */
+//    @Path("{credentialId}")
+//    @DELETE
+//    @NoCache
+//    public void removeCredential(final @PathParam("credentialId") String credentialId) {
+//        auth.require(AccountRoles.MANAGE_ACCOUNT);
+//        session.userCredentialManager().removeStoredCredential(realm, user, credentialId);
+//    }
+//
+//    /**
+//     * Update a credential label for a user
+//     */
+//    @PUT
+//    @Consumes(javax.ws.rs.core.MediaType.TEXT_PLAIN)
+//    @Path("{credentialId}/label")
+//    public void setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
+//        auth.require(AccountRoles.MANAGE_ACCOUNT);
+//        session.userCredentialManager().updateCredentialLabel(realm, user, credentialId, userLabel);
+//    }
+//
+//    /**
+//     * Move a credential to a position behind another credential
+//     * @param credentialId The credential to move
+//     */
+//    @Path("{credentialId}/moveToFirst")
+//    @POST
+//    public void moveToFirst(final @PathParam("credentialId") String credentialId){
+//        moveCredentialAfter(credentialId, null);
+//    }
+//
+//    /**
+//     * Move a credential to a position behind another credential
+//     * @param credentialId The credential to move
+//     * @param newPreviousCredentialId The credential that will be the previous element in the list. If set to null, the moved credential will be the first element in the list.
+//     */
+//    @Path("{credentialId}/moveAfter/{newPreviousCredentialId}")
+//    @POST
+//    public void moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId){
+//        auth.require(AccountRoles.MANAGE_ACCOUNT);
+//        session.userCredentialManager().moveCredentialTo(realm, user, credentialId, newPreviousCredentialId);
+//    }
 
     @GET
     @Path("password")
