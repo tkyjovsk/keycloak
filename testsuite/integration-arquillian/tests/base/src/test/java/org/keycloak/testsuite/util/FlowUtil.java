@@ -164,7 +164,7 @@ public class FlowUtil {
         return this;
     }
 
-    public FlowUtil defineAsFlow() {
+    public FlowUtil defineAsResetCredentialsFlow() {
         realm.setResetCredentialsFlow(currentFlow);
         return this;
     }
@@ -239,7 +239,7 @@ public class FlowUtil {
 
     public FlowUtil removeExecution(int index) {
         List<AuthenticationExecutionModel> executions = getExecutions();
-        realm.removeAuthenticatorExecution(executions.remove(0));
+        realm.removeAuthenticatorExecution(executions.remove(index));
 
         return this;
     }

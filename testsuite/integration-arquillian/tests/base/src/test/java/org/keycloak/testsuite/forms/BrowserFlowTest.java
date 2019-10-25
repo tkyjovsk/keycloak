@@ -312,7 +312,7 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
         return passwordPage.isCurrent();
     }
 
-    // A conditional block without conditional block should automatically be disabled
+    // A conditional flow without conditional block should automatically be disabled
     @Test
     public void testFlowDisabledWhenConditionalBlockIsMissing() {
         try {
@@ -348,7 +348,7 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
     }
 
     // Configure a conditional block in a non-conditional sub-flow
-    // In such case, the whole sub-flow should be disabled
+    // In such case, the flow is evaluated and the conditional block is considered as disabled
     @Test
     public void testConditionalBlockInNonConditionalFlow() {
         try {
@@ -427,35 +427,6 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
                                 .addAuthenticatorExecution(Requirement.REQUIRED, ConditionalBlockRoleAuthenticatorFactory.PROVIDER_ID,
                                         config -> config.getConfig().put("condUserRole", requiredRole))
                                 .addAuthenticatorExecution(Requirement.REQUIRED, OTPFormAuthenticatorFactory.PROVIDER_ID)
-                        )
-                )
-                .defineAsBrowserFlow()
-        );
-    }
-
-    @Test
-    public void testAlternativeSubFlowWithAlwaysValidatingExecutor() {
-        configureBrowserFlowSubFlowWithAlwaysValidatingExecutor();
-        try {
-            loginUsernameOnlyPage.open();
-            loginUsernameOnlyPage.login("user-with-one-configured-otp");
-        } finally {
-            testingClient.server("test").run(setBrowserFlowToRealm());
-        }
-    }
-
-    private void configureBrowserFlowSubFlowWithAlwaysValidatingExecutor() {
-        String newFlowAlias = "Browser - altflow validatingexecutor";
-        testingClient.server("test").run(session -> FlowUtil.inCurrentRealm(session).copyBrowserFlow(newFlowAlias));
-        testingClient.server("test").run(session -> FlowUtil.inCurrentRealm(session)
-                .selectFlow(newFlowAlias)
-                .inForms(forms -> forms
-                        .clear()
-                        .addAuthenticatorExecution(Requirement.REQUIRED, UsernameFormFactory.PROVIDER_ID)
-                        .addSubFlowExecution(Requirement.REQUIRED, subFlow -> subFlow
-                                .addSubFlowExecution(Requirement.ALTERNATIVE, altFlow -> altFlow
-                                        .addAuthenticatorExecution(Requirement.REQUIRED, CookieAuthenticatorFactory.PROVIDER_ID)
-                                        .addAuthenticatorExecution(Requirement.REQUIRED, "identity-provider-redirector"))
                         )
                 )
                 .defineAsBrowserFlow()
