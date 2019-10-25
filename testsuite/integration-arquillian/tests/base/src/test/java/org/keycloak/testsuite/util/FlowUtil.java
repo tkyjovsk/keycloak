@@ -30,7 +30,6 @@ public class FlowUtil {
 
         public FlowUtilException(String message) {
             super(message);
-            System.out.println("** FPX ** " + message);
         }
     }
 
