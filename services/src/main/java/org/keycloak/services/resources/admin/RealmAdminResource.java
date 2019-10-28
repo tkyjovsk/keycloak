@@ -1154,6 +1154,7 @@ public class RealmAdminResource {
     public List<String> getCredentialRegistrators(){
         auth.realm().requireViewRealm();
         return session.getContext().getRealm().getRequiredActionProviders().stream()
+                .filter(ra -> ra.isEnabled())
                 .map(RequiredActionProviderModel::getProviderId)
                 .filter(providerId ->  session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
                 .collect(Collectors.toList());
