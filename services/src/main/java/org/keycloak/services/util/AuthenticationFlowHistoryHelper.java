@@ -18,14 +18,20 @@
 
 package org.keycloak.services.util;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.jboss.logging.Logger;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * Used to track executions visited by user during authentication. Useful for form "back" button
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticationFlowHistoryHelper {
+
+    private static final Logger log = Logger.getLogger(AuthenticationFlowHistoryHelper.class);
 
     /**
      * Authentication session note with the list of IDs of successful authentication action executions.
@@ -42,7 +48,20 @@ public class AuthenticationFlowHistoryHelper {
     private static final Pattern PATTERN = Pattern.compile(DELIMITER);
 
 
-    public static void pushLastSuccessfulExecution(AuthenticationSessionModel authenticationSession, String executionId) {
+    /**
+     * Push executionId to the history if it's not already there
+     *
+     * @param authenticationSession
+     * @param executionId
+     */
+    public static void pushExecution(AuthenticationSessionModel authenticationSession, String executionId) {
+        if (containsExecution(authenticationSession, executionId)) {
+            log.tracef("Not adding execution %s to authentication session. Execution is already there", executionId);
+            return;
+        }
+
+        log.tracef("Adding execution %s to authentication session.", executionId);
+
         String history = authenticationSession.getAuthNote(SUCCESSFUL_ACTION_EXECUTIONS);
 
         history = (history == null) ? executionId : history + DELIMITER + executionId;
@@ -50,12 +69,24 @@ public class AuthenticationFlowHistoryHelper {
     }
 
 
-    public static boolean hasLastSuccessfulExecution(AuthenticationSessionModel authenticationSession) {
+    /**
+     * Check if there is any executionId in the history
+     *
+     * @param authenticationSession
+     * @return
+     */
+    public static boolean hasExecution(AuthenticationSessionModel authenticationSession) {
         return authenticationSession.getAuthNote(SUCCESSFUL_ACTION_EXECUTIONS) != null;
     }
 
 
-    public static String pullLastSuccessfulExecution(AuthenticationSessionModel authenticationSession) {
+    /**
+     * Return the last executionId from the history and remove it from the history.
+     *
+     * @param authenticationSession
+     * @return
+     */
+    public static String pullExecution(AuthenticationSessionModel authenticationSession) {
         String history = authenticationSession.getAuthNote(SUCCESSFUL_ACTION_EXECUTIONS);
 
         if (history == null) {
@@ -73,7 +104,21 @@ public class AuthenticationFlowHistoryHelper {
             authenticationSession.setAuthNote(SUCCESSFUL_ACTION_EXECUTIONS, newHistory);
         }
 
+        log.tracef("Returning to execution %s in the authentication session.", lastActionExecutionId);
+
         return lastActionExecutionId;
+    }
+
+
+    private static boolean containsExecution(AuthenticationSessionModel authenticationSession, String executionId) {
+        String history = authenticationSession.getAuthNote(SUCCESSFUL_ACTION_EXECUTIONS);
+
+        if (history == null) {
+            return false;
+        }
+
+        String[] splits = PATTERN.split(history);
+        return Arrays.asList(splits).contains(executionId);
     }
 
 }
