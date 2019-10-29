@@ -51,7 +51,7 @@ public abstract class LanguageComboboxAwarePage extends AbstractPage {
     }
 
 
-    // If false, we don't expect form "Back" button. If true, we expect that it is available on the page
+    // If false, we don't expect form "Back" button available on the page. If true, we expect that it is available on the page
     public void assertBackButtonAvailability(boolean expectedAvailability) {
         try {
             driver.findElement(By.id("kc-back"));

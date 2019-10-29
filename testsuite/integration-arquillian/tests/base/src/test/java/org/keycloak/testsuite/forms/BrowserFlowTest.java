@@ -30,6 +30,7 @@ import org.keycloak.testsuite.AbstractTestRealmKeycloakTest;
 import org.keycloak.testsuite.ActionURIUtils;
 import org.keycloak.testsuite.auth.page.login.OneTimeCode;
 import org.keycloak.testsuite.broker.SocialLoginTest;
+import org.keycloak.testsuite.client.KeycloakTestingClient;
 import org.keycloak.testsuite.model.ClientModelTest;
 import org.keycloak.testsuite.pages.ErrorPage;
 import org.keycloak.testsuite.pages.LoginPage;
@@ -41,7 +42,6 @@ import org.keycloak.testsuite.runonserver.RunOnServerDeployment;
 import org.keycloak.testsuite.util.FlowUtil;
 import org.keycloak.testsuite.util.OAuthClient;
 import org.keycloak.testsuite.util.URLUtils;
-import org.keycloak.testsuite.util.WaitUtils;
 import org.openqa.selenium.WebDriver;
 
 import java.util.Arrays;
@@ -286,6 +286,10 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
     }
 
     private void configureBrowserFlowWithAlternativeCredentials() {
+        configureBrowserFlowWithAlternativeCredentials(testingClient);
+    }
+
+    static void configureBrowserFlowWithAlternativeCredentials(KeycloakTestingClient testingClient) {
         final String newFlowAlias = "browser - alternative";
         testingClient.server("test").run(session -> FlowUtil.inCurrentRealm(session).copyBrowserFlow(newFlowAlias));
         testingClient.server("test").run(session -> FlowUtil.inCurrentRealm(session)
@@ -567,7 +571,7 @@ public class BrowserFlowTest extends AbstractTestRealmKeycloakTest {
         );
     }
 
-    private static RunOnServer setBrowserFlowToRealm() {
+    static RunOnServer setBrowserFlowToRealm() {
         return session -> {
             RealmModel appRealm = session.getContext().getRealm();
             AuthenticationFlowModel existingBrowserFlow = appRealm.getFlowByAlias(DefaultAuthenticationFlows.BROWSER_FLOW);

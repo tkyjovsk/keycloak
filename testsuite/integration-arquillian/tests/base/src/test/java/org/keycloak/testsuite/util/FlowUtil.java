@@ -70,6 +70,10 @@ public class FlowUtil {
         return copyFlow(DefaultAuthenticationFlows.BROWSER_FLOW, newFlowAlias);
     }
 
+    public FlowUtil copyResetCredentialsFlow(String newFlowAlias) {
+        return copyFlow(DefaultAuthenticationFlows.RESET_CREDENTIALS_FLOW, newFlowAlias);
+    }
+
     public FlowUtil copyFirstBrokerLoginFlow(String newFlowAlias) {
         return copyFlow(DefaultAuthenticationFlows.FIRST_BROKER_LOGIN_FLOW, newFlowAlias);
     }

@@ -27,12 +27,19 @@ public class PasswordPage extends CredentialsComboboxPage {
     @FindBy(className = "alert-error")
     private WebElement loginErrorMessage;
 
+    @FindBy(linkText = "Forgot Password?")
+    private WebElement resetPasswordLink;
+
 
     public void login(String password) {
         passwordInput.clear();
         passwordInput.sendKeys(password);
 
         submitButton.click();
+    }
+
+    public void clickResetPassword() {
+        resetPasswordLink.click();
     }
 
     public String getPassword() {

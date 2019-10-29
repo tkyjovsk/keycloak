@@ -106,9 +106,10 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         if (inputData.containsKey("back")) {
             AuthenticationSessionModel authSession = processor.getAuthenticationSession();
 
-            if (AuthenticationFlowHistoryHelper.hasExecution(authSession)) {
+            AuthenticationFlowHistoryHelper history = new AuthenticationFlowHistoryHelper(processor);
+            if (history.hasAnyExecution()) {
 
-                String executionId = AuthenticationFlowHistoryHelper.pullExecution(authSession);
+                String executionId = history.pullExecution();
                 AuthenticationExecutionModel lastActionExecution = processor.getRealm().getAuthenticationExecutionById(executionId);
 
                 logger.debugf("Moving back to authentication execution '%s'", lastActionExecution.getAuthenticator());
@@ -143,7 +144,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
 
             // In case that new execution is a flow, we will add the 1st item from the selection (preferred credential) to the history, so when later click "back", we will return to it.
             if (model.isAuthenticatorFlow()) {
-                AuthenticationFlowHistoryHelper.pushExecution(processor.getAuthenticationSession(), selectionOptions.get(0).getAuthExecId());
+                new AuthenticationFlowHistoryHelper(processor).pushExecution(selectionOptions.get(0).getAuthExecId());
             }
 
             Response response = processSingleFlowExecutionModel(model, selectedCredentialId, false);
@@ -526,7 +527,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             case SUCCESS:
                 logger.debugv("authenticator SUCCESS: {0}", execution.getAuthenticator());
                 if (isAction) {
-                    AuthenticationFlowHistoryHelper.pushExecution(processor.getAuthenticationSession(), execution.getId());
+                    new AuthenticationFlowHistoryHelper(processor).pushExecution(execution.getId());
                 }
 
                 processor.getAuthenticationSession().setExecutionStatus(execution.getId(), AuthenticationSessionModel.ExecutionStatus.SUCCESS);
