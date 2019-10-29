@@ -106,9 +106,9 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         if (inputData.containsKey("back")) {
             AuthenticationSessionModel authSession = processor.getAuthenticationSession();
 
-            if (AuthenticationFlowHistoryHelper.hasLastSuccessfulExecution(authSession)) {
+            if (AuthenticationFlowHistoryHelper.hasExecution(authSession)) {
 
-                String executionId = AuthenticationFlowHistoryHelper.pullLastSuccessfulExecution(authSession);
+                String executionId = AuthenticationFlowHistoryHelper.pullExecution(authSession);
                 AuthenticationExecutionModel lastActionExecution = processor.getRealm().getAuthenticationExecutionById(executionId);
 
                 logger.debugf("Moving back to authentication execution '%s'", lastActionExecution.getAuthenticator());
@@ -130,14 +130,22 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         // check if the user has switched to a new authentication execution, and if so switch to it.
         if (authExecId != null && !authExecId.isEmpty()) {
 
+            List<AuthenticationSelectionOption> selectionOptions = createAuthenticationSelectionList(model);
+
             // Check if switch to the requested authentication execution is allowed
-            createAuthenticationSelectionList(model).stream()
+            selectionOptions.stream()
                     .filter(authSelectionOption -> authExecId.equals(authSelectionOption.getAuthExecId()))
                     .findFirst()
                     .orElseThrow(() -> new AuthenticationFlowException("Requested authentication execution is not allowed", AuthenticationFlowError.INTERNAL_ERROR)
             );
 
             model = processor.getRealm().getAuthenticationExecutionById(authExecId);
+
+            // In case that new execution is a flow, we will add the 1st item from the selection (preferred credential) to the history, so when later click "back", we will return to it.
+            if (model.isAuthenticatorFlow()) {
+                AuthenticationFlowHistoryHelper.pushExecution(processor.getAuthenticationSession(), selectionOptions.get(0).getAuthExecId());
+            }
+
             Response response = processSingleFlowExecutionModel(model, selectedCredentialId, false);
             if (response == null) {
                 processor.getAuthenticationSession().removeAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION);
@@ -518,7 +526,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             case SUCCESS:
                 logger.debugv("authenticator SUCCESS: {0}", execution.getAuthenticator());
                 if (isAction) {
-                    AuthenticationFlowHistoryHelper.pushLastSuccessfulExecution(processor.getAuthenticationSession(), execution.getId());
+                    AuthenticationFlowHistoryHelper.pushExecution(processor.getAuthenticationSession(), execution.getId());
                 }
 
                 processor.getAuthenticationSession().setExecutionStatus(execution.getId(), AuthenticationSessionModel.ExecutionStatus.SUCCESS);

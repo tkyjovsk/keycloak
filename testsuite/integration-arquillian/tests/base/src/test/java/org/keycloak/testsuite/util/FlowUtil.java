@@ -1,5 +1,6 @@
 package org.keycloak.testsuite.util;
 
+import org.keycloak.authentication.AuthenticationFlow;
 import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticationExecutionModel.Requirement;
 import org.keycloak.models.AuthenticationFlowModel;
@@ -177,7 +178,7 @@ public class FlowUtil {
     }
 
     public FlowUtil addSubFlowExecution(Requirement requirement, Consumer<FlowUtil> flowInitializer) {
-        return addSubFlowExecution("sf" + rand.nextInt(), "basic-flow", requirement, flowInitializer);
+        return addSubFlowExecution("sf" + rand.nextInt(), AuthenticationFlow.BASIC_FLOW, requirement, flowInitializer);
     }
 
     public FlowUtil addSubFlowExecution(String alias, String providerId, Requirement requirement, Consumer<FlowUtil> flowInitializer) {

@@ -53,6 +53,6 @@ public class AuthenticationContextBean {
             return false;
         }
 
-        return actionUri != null && AuthenticationFlowHistoryHelper.hasLastSuccessfulExecution(context.getAuthenticationSession());
+        return actionUri != null && AuthenticationFlowHistoryHelper.hasExecution(context.getAuthenticationSession());
     }
 }
