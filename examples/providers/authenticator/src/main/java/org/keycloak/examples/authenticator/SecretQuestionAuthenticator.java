@@ -21,7 +21,10 @@ import org.jboss.resteasy.spi.HttpResponse;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.authentication.CredentialValidator;
 import org.keycloak.common.util.ServerCookie;
+import org.keycloak.credential.CredentialProvider;
+import org.keycloak.forms.login.freemarker.model.AuthenticationContextBean;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -38,7 +41,7 @@ import java.net.URI;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public class SecretQuestionAuthenticator implements Authenticator {
+public class SecretQuestionAuthenticator implements Authenticator, CredentialValidator<SecretQuestionCredentialProvider> {
 
     public static final String CREDENTIAL_TYPE = "secret_question";
 
@@ -57,17 +60,15 @@ public class SecretQuestionAuthenticator implements Authenticator {
             context.success();
             return;
         }
-        Response challenge = context.form().createForm("secret-question.ftl");
+        Response challenge = context.form()
+                .createForm("secret-question.ftl");
         context.challenge(challenge);
     }
 
     @Override
     public void action(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
-        if (formData.containsKey("cancel")) {
-            context.cancelLogin();
-            return;
-        }
+
         boolean validated = validateAnswer(context);
         if (!validated) {
             Response challenge =  context.form()
@@ -107,10 +108,15 @@ public class SecretQuestionAuthenticator implements Authenticator {
     protected boolean validateAnswer(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         String secret = formData.getFirst("secret_answer");
-        UserCredentialModel input = new UserCredentialModel();
-        input.setType(SecretQuestionCredentialProvider.SECRET_QUESTION);
-        input.setValue(secret);
-        return context.getSession().userCredentialManager().isValid(context.getRealm(), context.getUser(), input);
+        String credentialId = context.getSelectedCredentialId();
+        if (credentialId == null || credentialId.isEmpty()) {
+            credentialId = getCredentialProvider(context.getSession())
+                    .getDefaultCredential(context.getSession(), context.getRealm(), context.getUser()).getId();
+            context.setSelectedCredentialId(credentialId);
+        }
+
+        UserCredentialModel input = new UserCredentialModel(credentialId, getType(context.getSession()), secret);
+        return getCredentialProvider(context.getSession()).isValid(context.getRealm(), context.getUser(), input);
     }
 
     @Override
@@ -120,7 +126,7 @@ public class SecretQuestionAuthenticator implements Authenticator {
 
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
-        return session.userCredentialManager().isConfiguredFor(realm, user, SecretQuestionCredentialProvider.SECRET_QUESTION);
+        return getCredentialProvider(session).isConfiguredFor(realm, user, getType(session));
     }
 
     @Override
@@ -131,5 +137,10 @@ public class SecretQuestionAuthenticator implements Authenticator {
     @Override
     public void close() {
 
+    }
+
+    @Override
+    public SecretQuestionCredentialProvider getCredentialProvider(KeycloakSession session) {
+        return (SecretQuestionCredentialProvider)session.getProvider(CredentialProvider.class, "secret-question");
     }
 }
