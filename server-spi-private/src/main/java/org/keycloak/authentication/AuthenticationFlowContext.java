@@ -86,6 +86,11 @@ public interface AuthenticationFlowContext extends AbstractAuthenticationFlowCon
     AuthenticationSessionModel getAuthenticationSession();
 
     /**
+     * @return current flow path (EG. authenticate, reset-credentials)
+     */
+    String getFlowPath();
+
+    /**
      * Create a Freemarker form builder that presets the user, action URI, and a generated access code
      *
      * @return

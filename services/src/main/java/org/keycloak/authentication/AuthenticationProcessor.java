@@ -241,6 +241,10 @@ public class AuthenticationProcessor {
         return request;
     }
 
+    public String getFlowPath() {
+        return flowPath;
+    }
+
     public void setAutheticatedUser(UserModel user) {
         UserModel previousUser = getAuthenticationSession().getAuthenticatedUser();
         if (previousUser != null && !user.getId().equals(previousUser.getId()))
@@ -444,6 +448,11 @@ public class AuthenticationProcessor {
         @Override
         public AuthenticationSessionModel getAuthenticationSession() {
             return AuthenticationProcessor.this.getAuthenticationSession();
+        }
+
+        @Override
+        public String getFlowPath() {
+            return AuthenticationProcessor.this.getFlowPath();
         }
 
         @Override
