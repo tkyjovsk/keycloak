@@ -88,7 +88,17 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
             return;
         }
         OTPCredentialProvider otpCredentialProvider = (OTPCredentialProvider) context.getSession().getProvider(CredentialProvider.class, "keycloak-otp");
-        otpCredentialProvider.createCredential(context.getRealm(), context.getUser(), credentialModel);
+        CredentialModel createdCredential = otpCredentialProvider.createCredential(context.getRealm(), context.getUser(), credentialModel);
+        UserCredentialModel credential = new UserCredentialModel(createdCredential.getId(), otpCredentialProvider.getType(), challengeResponse);
+        //If the type is HOTP, call verify once to consume the OTP used for registration and increase the counter.
+        if (OTPCredentialModel.HOTP.equals(credentialModel.getOTPCredentialData().getSubType()) && !otpCredentialProvider.isValid(context.getRealm(), context.getUser(), credential)) {
+            Response challenge = context.form()
+                    .setAttribute("mode", mode)
+                    .setError(Messages.INVALID_TOTP)
+                    .createResponse(UserModel.RequiredAction.CONFIGURE_TOTP);
+            context.challenge(challenge);
+            return;
+        }
         context.success();
     }
 
