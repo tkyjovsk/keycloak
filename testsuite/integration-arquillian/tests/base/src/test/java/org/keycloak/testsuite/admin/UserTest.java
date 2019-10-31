@@ -31,6 +31,7 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleMappingResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.common.util.Base64;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
@@ -71,6 +72,7 @@ import org.keycloak.testsuite.util.OAuthClient;
 import org.keycloak.testsuite.util.RealmBuilder;
 import org.keycloak.testsuite.util.RoleBuilder;
 import org.keycloak.testsuite.util.UserBuilder;
+import org.keycloak.util.JsonSerialization;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
@@ -218,6 +220,47 @@ public class UserTest extends AbstractAdminTest {
         user.setCredentials(Arrays.asList(hashedPassword));
 
         createUser(user);
+
+        CredentialModel credentialHashed = fetchCredentials("user_creds");
+        PasswordCredentialModel pcmh = PasswordCredentialModel.createFromCredentialModel(credentialHashed);
+        assertNotNull("Expecting credential", credentialHashed);
+        assertEquals("my-algorithm", pcmh.getPasswordCredentialData().getAlgorithm());
+        assertEquals(Long.valueOf(1001), credentialHashed.getCreatedDate());
+        assertEquals("deviceX", credentialHashed.getUserLabel());
+        assertEquals(22, pcmh.getPasswordCredentialData().getHashIterations());
+        assertEquals("ABC", pcmh.getPasswordSecretData().getValue());
+        assertEquals("theSalt", new String(pcmh.getPasswordSecretData().getSalt()));
+        assertEquals(CredentialRepresentation.PASSWORD, credentialHashed.getType());
+    }
+
+
+    @Test
+    public void createUserWithDeprecatedCredentialsFormat() throws IOException {
+        UserRepresentation user = new UserRepresentation();
+        user.setUsername("user_creds");
+        user.setEmail("email@localhost");
+
+        PasswordCredentialModel pcm = PasswordCredentialModel.createFromValues("my-algorithm", "theSalt".getBytes(), 22, "ABC");
+        //CredentialRepresentation hashedPassword = ModelToRepresentation.toRepresentation(pcm);
+        String deprecatedCredential = "{\n" +
+                "      \"type\" : \"password\",\n" +
+                "      \"hashedSaltedValue\" : \"" + pcm.getPasswordSecretData().getValue() + "\",\n" +
+                "      \"salt\" : \"" + Base64.encodeBytes(pcm.getPasswordSecretData().getSalt()) + "\",\n" +
+                "      \"hashIterations\" : " + pcm.getPasswordCredentialData().getHashIterations() + ",\n" +
+                "      \"algorithm\" : \"" + pcm.getPasswordCredentialData().getAlgorithm() + "\"\n" +
+                "    }";
+
+        CredentialRepresentation deprecatedHashedPassword = JsonSerialization.readValue(deprecatedCredential, CredentialRepresentation.class);
+        Assert.assertNotNull(deprecatedHashedPassword.getHashedSaltedValue());
+        Assert.assertNull(deprecatedHashedPassword.getCredentialData());
+
+        deprecatedHashedPassword.setCreatedDate(1001l);
+        deprecatedHashedPassword.setUserLabel("deviceX");
+        deprecatedHashedPassword.setType(CredentialRepresentation.PASSWORD);
+
+        user.setCredentials(Arrays.asList(deprecatedHashedPassword));
+
+        createUser(user, false);
 
         CredentialModel credentialHashed = fetchCredentials("user_creds");
         PasswordCredentialModel pcmh = PasswordCredentialModel.createFromCredentialModel(credentialHashed);

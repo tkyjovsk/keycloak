@@ -885,6 +885,8 @@ public class RepresentationToModel {
             for (CredentialRepresentation cred : user.getCredentials()) {
                 try {
                     if ((cred.getCredentialData() == null || cred.getSecretData() == null) && cred.getValue() == null) {
+                        logger.warnf("Using deprecated 'credentials' format in JSON representation for user '%s'. It will be removed in future versions", user.getUsername());
+
                         if (PasswordCredentialModel.TYPE.equals(cred.getType()) || PasswordCredentialModel.PASSWORD_HISTORY.equals(cred.getType())) {
                             PasswordCredentialData credentialData = new PasswordCredentialData(cred.getHashIterations(), cred.getAlgorithm());
                             cred.setCredentialData(JsonSerialization.writeValueAsString(credentialData));
@@ -1685,7 +1687,6 @@ public class RepresentationToModel {
 
     public static UserModel createUser(KeycloakSession session, RealmModel newRealm, UserRepresentation userRep) {
         convertDeprecatedSocialProviders(userRep);
-        convertDeprecatedCredentialsFormat(userRep);
 
         // Import users just to user storage. Don't federate
         UserModel user = session.userLocalStorage().addUser(newRealm, userRep.getId(), userRep.getUsername(), false, false);
@@ -1751,6 +1752,7 @@ public class RepresentationToModel {
     }
 
     public static void createCredentials(UserRepresentation userRep, KeycloakSession session, RealmModel realm, UserModel user, boolean adminRequest) {
+        convertDeprecatedCredentialsFormat(userRep);
         if (userRep.getCredentials() != null) {
             for (CredentialRepresentation cred : userRep.getCredentials()) {
                 if (cred.getId() != null && session.userCredentialManager().getStoredCredentialById(realm, user, cred.getId()) != null) {
