@@ -43,8 +43,6 @@ import java.net.URI;
  */
 public class SecretQuestionAuthenticator implements Authenticator, CredentialValidator<SecretQuestionCredentialProvider> {
 
-    public static final String CREDENTIAL_TYPE = "secret_question";
-
     protected boolean hasCookie(AuthenticationFlowContext context) {
         Cookie cookie = context.getHttpRequest().getHttpHeaders().getCookies().get("SECRET_QUESTION_ANSWERED");
         boolean result = cookie != null;
@@ -67,8 +65,6 @@ public class SecretQuestionAuthenticator implements Authenticator, CredentialVal
 
     @Override
     public void action(AuthenticationFlowContext context) {
-        MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
-
         boolean validated = validateAnswer(context);
         if (!validated) {
             Response challenge =  context.form()
@@ -141,6 +137,6 @@ public class SecretQuestionAuthenticator implements Authenticator, CredentialVal
 
     @Override
     public SecretQuestionCredentialProvider getCredentialProvider(KeycloakSession session) {
-        return (SecretQuestionCredentialProvider)session.getProvider(CredentialProvider.class, "secret-question");
+        return (SecretQuestionCredentialProvider)session.getProvider(CredentialProvider.class, SecretQuestionCredentialProviderFactory.PROVIDER_ID);
     }
 }
