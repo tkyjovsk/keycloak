@@ -18,6 +18,8 @@
 
 package org.keycloak.testsuite.forms;
 
+import java.util.List;
+
 import javax.mail.internet.MimeMessage;
 
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -30,10 +32,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.models.AuthenticationFlowModel;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.utils.DefaultAuthenticationFlows;
+import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.AbstractTestRealmKeycloakTest;
 import org.keycloak.testsuite.admin.ApiUtil;
+import org.keycloak.testsuite.admin.authentication.AbstractAuthenticationTest;
 import org.keycloak.testsuite.model.ClientModelTest;
 import org.keycloak.testsuite.pages.AppPage;
 import org.keycloak.testsuite.pages.ErrorPage;
@@ -139,7 +146,7 @@ public class ResetPasswordAlternativeFlowsTest extends AbstractTestRealmKeycloak
             passwordPage.clickBackButton();
             loginUsernameOnlyPage.assertCurrent();
         } finally {
-            testingClient.server("test").run(BrowserFlowTest.setBrowserFlowToRealm());
+            revertFlows();
         }
     }
 
@@ -166,7 +173,7 @@ public class ResetPasswordAlternativeFlowsTest extends AbstractTestRealmKeycloak
             assertEquals(0, greenMail.getReceivedMessages().length);
 
         } finally {
-            testingClient.server("test").run(BrowserFlowTest.setBrowserFlowToRealm());
+            revertFlows();
         }
     }
 
@@ -192,7 +199,7 @@ public class ResetPasswordAlternativeFlowsTest extends AbstractTestRealmKeycloak
             // Assert no email was sent
             assertEquals(0, greenMail.getReceivedMessages().length);
         } finally {
-            testingClient.server("test").run(BrowserFlowTest.setBrowserFlowToRealm());
+            revertFlows();
         }
     }
 
@@ -218,7 +225,7 @@ public class ResetPasswordAlternativeFlowsTest extends AbstractTestRealmKeycloak
             // Assert email was sent
             assertEquals(1, greenMail.getReceivedMessages().length);
         } finally {
-            testingClient.server("test").run(BrowserFlowTest.setBrowserFlowToRealm());
+            revertFlows();
         }
     }
 
@@ -264,7 +271,7 @@ public class ResetPasswordAlternativeFlowsTest extends AbstractTestRealmKeycloak
             Assert.assertEquals(AppPage.RequestType.AUTH_RESPONSE, appPage.getRequestType());
             Assert.assertNotNull(oauth.getCurrentQuery().get(OAuth2Constants.CODE));
         } finally {
-            testingClient.server("test").run(BrowserFlowTest.setBrowserFlowToRealm());
+            revertFlows();
         }
     }
 
@@ -296,5 +303,27 @@ public class ResetPasswordAlternativeFlowsTest extends AbstractTestRealmKeycloak
                 .removeExecution(0)
                 .defineAsResetCredentialsFlow()
         );
+    }
+
+
+    private void revertFlows() {
+        List<AuthenticationFlowRepresentation> flows = testRealm().flows().getFlows();
+
+        // Set default flows
+        RealmRepresentation realm = testRealm().toRepresentation();
+        realm.setBrowserFlow(DefaultAuthenticationFlows.BROWSER_FLOW);
+        realm.setResetCredentialsFlow(DefaultAuthenticationFlows.RESET_CREDENTIALS_FLOW);
+        testRealm().update(realm);
+
+        // Delete created flows
+        AuthenticationFlowRepresentation newBrowserFlow = AbstractAuthenticationTest.findFlowByAlias("browser - alternative", flows);
+        if (newBrowserFlow != null) {
+            testRealm().flows().deleteFlow(newBrowserFlow.getId());
+        }
+
+        AuthenticationFlowRepresentation newResetCredFlow = AbstractAuthenticationTest.findFlowByAlias("resetcred - alternative", flows);
+        if (newResetCredFlow != null) {
+            testRealm().flows().deleteFlow(newResetCredFlow.getId());
+        }
     }
 }
