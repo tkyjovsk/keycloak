@@ -198,9 +198,6 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
             attributes.put("isAppInitiatedAction", true);
         }
 
-        attributes.put("auth", new AuthenticationContextBean(context, actionUri));
-        attributes.put(Constants.EXECUTION, execution);
-
         switch (page) {
             case LOGIN_CONFIG_TOTP:
                 attributes.put("totp", new TotpBean(session, realm, user, uriInfo.getRequestUriBuilder()));
@@ -408,7 +405,8 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
 
             attributes.put("url", new UrlBean(realm, theme, baseUri, this.actionUri));
             attributes.put("requiredActionUrl", new RequiredActionUrlFormatterMethod(realm, baseUri));
-
+            attributes.put("auth", new AuthenticationContextBean(context, actionUri));
+            attributes.put(Constants.EXECUTION, execution);
 
             if (realm.isInternationalizationEnabled()) {
                 UriBuilder b;

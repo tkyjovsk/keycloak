@@ -14,27 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.examples.authenticator;
 
-import org.keycloak.credential.CredentialProvider;
-import org.keycloak.credential.CredentialProviderFactory;
-import org.keycloak.models.KeycloakSession;
+package org.keycloak.examples.authenticator.credential.dto;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @author <a href="mailto:alistair.doswald@elca.ch">Alistair Doswald</a>
  * @version $Revision: 1 $
  */
-public class SecretQuestionCredentialProviderFactory implements CredentialProviderFactory<SecretQuestionCredentialProvider> {
+public class SecretQuestionCredentialData {
 
-    public static final String PROVIDER_ID =  "secret-question";
+    private final String question;
 
-    @Override
-    public String getId() {
-        return PROVIDER_ID;
+    @JsonCreator
+    public SecretQuestionCredentialData(@JsonProperty("question") String question) {
+        this.question = question;
     }
 
-    @Override
-    public CredentialProvider create(KeycloakSession session) {
-        return new SecretQuestionCredentialProvider(session);
+    public String getQuestion() {
+        return question;
     }
 }
