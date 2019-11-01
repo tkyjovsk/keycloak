@@ -5,17 +5,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.authentication.authenticators.broker.IdpAutoLinkAuthenticatorFactory;
-import org.keycloak.authentication.authenticators.browser.OTPFormAuthenticatorFactory;
-import org.keycloak.authentication.authenticators.browser.PasswordFormFactory;
-import org.keycloak.models.AuthenticationExecutionModel.Requirement;
-import org.keycloak.models.AuthenticationFlowModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.Assert;
 import org.keycloak.testsuite.admin.ApiUtil;
 import org.keycloak.testsuite.pages.PasswordPage;
-import org.keycloak.testsuite.util.FlowUtil;
 import org.keycloak.testsuite.util.UserBuilder;
 
 import static org.junit.Assert.assertEquals;
@@ -271,46 +265,12 @@ public class KcOidcFirstBrokerLoginNewAuthTest extends AbstractInitializedBaseBr
     // Configure the variant of firstBrokerLogin flow, which will use PasswordForm instead of IdpUsernamePasswordForm.
     // In other words, the form with password-only instead of username/password.
     private void configureBrokerFlowToReAuthenticationWithPasswordForm(String idpAlias, String newFlowAlias) {
-        testingClient.server(bc.consumerRealmName()).run(session -> FlowUtil.inCurrentRealm(session).copyFirstBrokerLoginFlow(newFlowAlias));
-        testingClient.server(bc.consumerRealmName()).run(session -> FlowUtil.inCurrentRealm(session)
-                .selectFlow(newFlowAlias)
-                .inVerifyExistingAccountByReAuthentication(subFlow -> subFlow
-                        // Remove first execution (IdpUsernamePasswordForm)
-                        .removeExecution(0)
-                        // Edit new first execution (Conditional OTP Subflow)
-                        .updateExecution(0, exec -> exec.setPriority(30))
-                        // Add AutoLink Authenticator as first (It will automatically setup user to authentication context)
-                        .addAuthenticatorExecution(Requirement.REQUIRED, IdpAutoLinkAuthenticatorFactory.PROVIDER_ID, 10)
-                        // Add PasswordForm execution
-                        .addAuthenticatorExecution(Requirement.REQUIRED, PasswordFormFactory.PROVIDER_ID, 20)
-                )
-                .usesInIdentityProvider(idpAlias)
-        );
+        BrokerRunOnServerUtil.configureBrokerFlowToReAuthenticationWithPasswordForm(testingClient, bc.consumerRealmName(), idpAlias, newFlowAlias);
     }
 
     // Configure the variant of firstBrokerLogin flow, which will allow to reauthenticate user with password OR totp
     // TOTP will be available just if configured for the user
     private void configureBrokerFlowToReAuthenticationWithPasswordOrTotp(String idpAlias, String newFlowAlias) {
-        testingClient.server(bc.consumerRealmName()).run(session -> FlowUtil.inCurrentRealm(session).copyFirstBrokerLoginFlow(newFlowAlias));
-        testingClient.server(bc.consumerRealmName()).run(session -> {
-            AuthenticationFlowModel flowModel = FlowUtil.createFlowModel("password or otp", "basic-flow", "Flow to authenticate user with password or otp", false, true);
-            FlowUtil.inCurrentRealm(session)
-                    // Select new flow
-                    .selectFlow(newFlowAlias)
-                    .inVerifyExistingAccountByReAuthentication(flowUtil -> flowUtil
-                            .clear()
-                            // Add AutoLink Authenticator as first (It will automatically setup user to authentication context)
-                            .addAuthenticatorExecution(Requirement.REQUIRED, IdpAutoLinkAuthenticatorFactory.PROVIDER_ID)
-                            // Add "Password-or-OTP" subflow
-                            .addSubFlowExecution(flowModel, Requirement.REQUIRED, subFlow -> subFlow
-                                    // Add PasswordForm ALTERNATIVE execution
-                                    .addAuthenticatorExecution(Requirement.ALTERNATIVE, PasswordFormFactory.PROVIDER_ID)
-                                    // Add OTPForm ALTERNATIVE execution
-                                    .addAuthenticatorExecution(Requirement.ALTERNATIVE, OTPFormAuthenticatorFactory.PROVIDER_ID)
-                            )
-                    )
-                    // Setup new FirstBrokerLogin to identity provider
-                    .usesInIdentityProvider(idpAlias);
-        });
+        BrokerRunOnServerUtil.configureBrokerFlowToReAuthenticationWithPasswordOrTotp(testingClient, bc.consumerRealmName(), idpAlias, newFlowAlias);
     }
 }
