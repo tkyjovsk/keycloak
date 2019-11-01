@@ -24,7 +24,6 @@ import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.CredentialValidator;
 import org.keycloak.common.util.ServerCookie;
 import org.keycloak.credential.CredentialProvider;
-import org.keycloak.forms.login.freemarker.model.AuthenticationContextBean;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;

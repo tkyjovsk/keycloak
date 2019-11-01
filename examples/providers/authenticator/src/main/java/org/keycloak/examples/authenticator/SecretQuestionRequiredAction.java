@@ -22,7 +22,6 @@ import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.credential.CredentialProvider;
 import org.keycloak.examples.authenticator.credential.SecretQuestionCredentialModel;
-import org.keycloak.models.UserCredentialModel;
 
 import javax.ws.rs.core.Response;
 
