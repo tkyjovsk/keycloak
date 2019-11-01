@@ -147,8 +147,6 @@ public abstract class AbstractKeycloakTest {
     @Page
     protected WelcomePage welcomePage;
 
-    protected UserRepresentation adminUser;
-
     private PropertiesConfiguration constantsProperties;
 
     private boolean resetTimeOffset;
@@ -162,8 +160,6 @@ public abstract class AbstractKeycloakTest {
         }
 
         getTestingClient();
-
-        adminUser = createAdminUserRepresentation();
 
         setDefaultPageUriParameters();
 
@@ -432,13 +428,6 @@ public abstract class AbstractKeycloakTest {
         assertThat(adminClient.realms().findAll().size(), is(equalTo(1)));
     }
 
-
-    private UserRepresentation createAdminUserRepresentation() {
-        UserRepresentation adminUserRep = new UserRepresentation();
-        adminUserRep.setUsername(ADMIN);
-        setPasswordFor(adminUserRep, ADMIN);
-        return adminUserRep;
-    }
 
     public void importRealm(RealmRepresentation realm) {
         log.debug("--importing realm: " + realm.getRealm());
