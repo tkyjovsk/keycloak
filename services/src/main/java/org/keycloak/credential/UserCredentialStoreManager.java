@@ -70,7 +70,9 @@ public class UserCredentialStoreManager implements UserCredentialManager, OnUser
 
     @Override
     public boolean removeStoredCredential(RealmModel realm, UserModel user, String id) {
-        return getStoreForUser(user).removeStoredCredential(realm, user, id);
+        boolean removalResult = getStoreForUser(user).removeStoredCredential(realm, user, id);
+        session.userCache().evict(realm, user);
+        return removalResult;
     }
 
     @Override
