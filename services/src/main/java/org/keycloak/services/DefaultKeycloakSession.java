@@ -195,25 +195,35 @@ public class DefaultKeycloakSession implements KeycloakSession {
     @SuppressWarnings("unchecked")
     public <T extends Provider> T getProvider(Class<T> clazz) {
         Integer hash = clazz.hashCode();
-        return (T) providers.computeIfAbsent(hash, k -> {
+        T provider = (T) providers.get(hash);
+        // KEYCLOAK-11890 - Avoid using HashMap.computeIfAbsent() to implement logic in outer if() block below,
+        // since per JDK-8071667 the remapping function should not modify the map during computation. While
+        // allowed on JDK 1.8, attempt of such a modification throws ConcurrentModificationException with JDK 9+
+        if (provider == null) {
             ProviderFactory<T> providerFactory = factory.getProviderFactory(clazz);
             if (providerFactory != null) {
-                return providerFactory.create(DefaultKeycloakSession.this);
+                provider = providerFactory.create(DefaultKeycloakSession.this);
+                providers.put(hash, provider);
             }
-            return null;
-        });
+        }
+        return provider;
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Provider> T getProvider(Class<T> clazz, String id) {
         Integer hash = clazz.hashCode() + id.hashCode();
-        return (T) providers.computeIfAbsent(hash, k -> {
+        T provider = (T) providers.get(hash);
+        // KEYCLOAK-11890 - Avoid using HashMap.computeIfAbsent() to implement logic in outer if() block below,
+        // since per JDK-8071667 the remapping function should not modify the map during computation. While
+        // allowed on JDK 1.8, attempt of such a modification throws ConcurrentModificationException with JDK 9+
+        if (provider == null) {
             ProviderFactory<T> providerFactory = factory.getProviderFactory(clazz, id);
             if (providerFactory != null) {
-                return providerFactory.create(DefaultKeycloakSession.this);
+                provider = providerFactory.create(DefaultKeycloakSession.this);
+                providers.put(hash, provider);
             }
-            return null;
-        });
+        }
+        return provider;
     }
 
     @Override
