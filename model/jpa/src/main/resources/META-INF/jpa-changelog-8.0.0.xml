@@ -18,7 +18,7 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
     <!--modifies the credentials to the new format, while copying the data as json in the new fields-->
-    <changeSet author="keycloak" id="8.0.0">
+    <changeSet author="keycloak" id="8.0.0-adding-credential-columns">
 
         <addColumn tableName="CREDENTIAL">
             <column name="USER_LABEL" type="VARCHAR(255)">
@@ -49,8 +49,15 @@
                 <constraints nullable="true"/>
             </column>
         </addColumn>
+    </changeSet>
 
-        <!--Update format of credential to fill secret_data and credential_data-->
+    <!--Update format of credential to fill secret_data and credential_data - used on all databases beside Oracle DB -->
+    <changeSet author="keycloak" id="8.0.0-updating-credential-data-not-oracle">
+        <preConditions onSqlOutput="TEST" onFail="MARK_RAN">
+            <not>
+                <dbms type="oracle" />
+            </not>
+        </preConditions>
 
         <!-- SALT was saved in tinyblob in previous version. -->
         <!-- Can't be automatically updated for all users to new format in single UPDATE statement, so existing users will be updated on-the-fly -->
@@ -101,6 +108,66 @@
             <where>TYPE = 'hotp'</where>
         </update>
 
+    </changeSet>
+
+    <!--Update format of credential to fill secret_data and credential_data - used on Oracle DB. Oracle doesn't support CONCAT with more than 2 arguments -->
+    <changeSet author="keycloak" id="8.0.0-updating-credential-data-oracle">
+        <preConditions onSqlOutput="TEST" onFail="MARK_RAN">
+            <dbms type="oracle" />
+        </preConditions>
+
+        <!-- SALT was saved in tinyblob in previous version. -->
+        <!-- Can't be automatically updated for all users to new format in single UPDATE statement, so existing users will be updated on-the-fly -->
+        <update tableName="CREDENTIAL">
+            <column name="PRIORITY" value="10" />
+            <column name="SECRET_DATA" valueComputed="'{&quot;value&quot;:&quot;' || VALUE || '&quot;,&quot;salt&quot;:&quot;__SALT__&quot;}'"/>
+            <column name="CREDENTIAL_DATA" valueComputed="'{&quot;hashIterations&quot;:' || HASH_ITERATIONS || ',&quot;algorithm&quot;:&quot;' || ALGORITHM || '&quot;}'"/>
+            <where>TYPE = 'password' OR TYPE = 'password-history'</where>
+        </update>
+
+        <update tableName="CREDENTIAL">
+            <column name="PRIORITY" value="20" />
+            <column name="TYPE" value="otp" />
+            <column name="SECRET_DATA" valueComputed="'{&quot;value&quot;:&quot;' || VALUE || '&quot;}'"/>
+            <column name="CREDENTIAL_DATA" valueComputed="'{&quot;subType&quot;:&quot;totp&quot;,&quot;digits&quot;:' || DIGITS || ',&quot;period&quot;:' || PERIOD || ',&quot;algorithm&quot;:&quot;' || ALGORITHM || '&quot;}'"/>
+            <where>TYPE = 'totp'</where>
+        </update>
+
+        <update tableName="CREDENTIAL">
+            <column name="PRIORITY" value="20" />
+            <column name="TYPE" value="otp" />
+            <column name="SECRET_DATA" valueComputed="'{&quot;value&quot;:&quot;' || VALUE || '&quot;}'"/>
+            <column name="CREDENTIAL_DATA" valueComputed="'{&quot;subType&quot;:&quot;hotp&quot;,&quot;digits&quot;:' || DIGITS || ',&quot;counter&quot;:' || COUNTER || ',&quot;algorithm&quot;:&quot;' || ALGORITHM || '&quot;}'"/>
+            <where>TYPE = 'hotp'</where>
+        </update>
+
+        <!--Update format of fed_user_credential to fill secret_data and credential_data-->
+        <update tableName="FED_USER_CREDENTIAL">
+            <column name="PRIORITY" value="10" />
+            <column name="SECRET_DATA" valueComputed="'{&quot;value&quot;:&quot;' || VALUE || '&quot;,&quot;salt&quot;:&quot;__SALT__&quot;}'"/>
+            <column name="CREDENTIAL_DATA" valueComputed="'{&quot;hashIterations&quot;:' || HASH_ITERATIONS || ',&quot;algorithm&quot;:&quot;' || ALGORITHM || '&quot;}'"/>
+            <where>TYPE = 'password' OR TYPE = 'password-history'</where>
+        </update>
+
+        <update tableName="FED_USER_CREDENTIAL">
+            <column name="PRIORITY" value="20" />
+            <column name="TYPE" value="otp" />
+            <column name="SECRET_DATA" valueComputed="'{&quot;value&quot;:&quot;' || VALUE || '&quot;}'"/>
+            <column name="CREDENTIAL_DATA" valueComputed="'{&quot;subType&quot;:&quot;totp&quot;,&quot;digits&quot;:' || DIGITS || ',&quot;period&quot;:' || PERIOD || ',&quot;algorithm&quot;:&quot;' || ALGORITHM || '&quot;}'"/>
+            <where>TYPE = 'totp'</where>
+        </update>
+
+        <update tableName="FED_USER_CREDENTIAL">
+            <column name="PRIORITY" value="20" />
+            <column name="TYPE" value="otp" />
+            <column name="SECRET_DATA" valueComputed="'{&quot;value&quot;:&quot;' || VALUE || '&quot;}'"/>
+            <column name="CREDENTIAL_DATA" valueComputed="'{&quot;subType&quot;:&quot;hotp&quot;,&quot;digits&quot;:' || DIGITS || ',&quot;counter&quot;:' || COUNTER || ',&quot;algorithm&quot;:&quot;' || ALGORITHM || '&quot;}'"/>
+            <where>TYPE = 'hotp'</where>
+        </update>
+
+    </changeSet>
+
+    <changeSet author="keycloak" id="8.0.0-credential-cleanup">
         <dropDefaultValue tableName="CREDENTIAL" columnName="COUNTER" />
         <dropDefaultValue tableName="CREDENTIAL" columnName="DIGITS" />
         <dropDefaultValue tableName="CREDENTIAL" columnName="PERIOD" />
