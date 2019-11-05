@@ -101,6 +101,10 @@
             <where>TYPE = 'hotp'</where>
         </update>
 
+        <dropDefaultValue tableName="CREDENTIAL" columnName="COUNTER" />
+        <dropDefaultValue tableName="CREDENTIAL" columnName="DIGITS" />
+        <dropDefaultValue tableName="CREDENTIAL" columnName="PERIOD" />
+        <dropDefaultValue tableName="CREDENTIAL" columnName="ALGORITHM" />
 
         <dropColumn tableName="CREDENTIAL" columnName="DEVICE"/>
         <dropColumn tableName="CREDENTIAL" columnName="HASH_ITERATIONS"/>
@@ -112,6 +116,11 @@
 
         <!--credential attributes are now held within the json of secret_data and credential_data (not this it was used in any case)-->
         <dropTable tableName="CREDENTIAL_ATTRIBUTE"/>
+
+        <dropDefaultValue tableName="FED_USER_CREDENTIAL" columnName="COUNTER" />
+        <dropDefaultValue tableName="FED_USER_CREDENTIAL" columnName="DIGITS" />
+        <dropDefaultValue tableName="FED_USER_CREDENTIAL" columnName="PERIOD" />
+        <dropDefaultValue tableName="FED_USER_CREDENTIAL" columnName="ALGORITHM" />
 
         <dropColumn tableName="FED_USER_CREDENTIAL" columnName="DEVICE"/>
         <dropColumn tableName="FED_USER_CREDENTIAL" columnName="HASH_ITERATIONS"/>

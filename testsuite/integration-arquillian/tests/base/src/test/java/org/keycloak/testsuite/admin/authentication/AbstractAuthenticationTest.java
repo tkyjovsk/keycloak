@@ -83,7 +83,7 @@ public abstract class AbstractAuthenticationTest extends AbstractKeycloakTest {
     }
 
 
-    AuthenticationFlowRepresentation findFlowByAlias(String alias, List<AuthenticationFlowRepresentation> flows) {
+    public static AuthenticationFlowRepresentation findFlowByAlias(String alias, List<AuthenticationFlowRepresentation> flows) {
         for (AuthenticationFlowRepresentation flow : flows) {
             if (alias.equals(flow.getAlias())) {
                 return flow;
