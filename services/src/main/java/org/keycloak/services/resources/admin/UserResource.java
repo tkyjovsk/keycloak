@@ -634,8 +634,8 @@ public class UserResource {
      */
     @PUT
     @Consumes(javax.ws.rs.core.MediaType.TEXT_PLAIN)
-    @Path("credentials/{credentialId}/label")
-    public void setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
+    @Path("credentials/{credentialId}/userLabel")
+    public void setCredentialUserLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
         auth.users().requireManage(user);
         CredentialModel credential = session.userCredentialManager().getStoredCredentialById(realm, user, credentialId);
         if (credential == null) {
@@ -652,7 +652,7 @@ public class UserResource {
      */
     @Path("credentials/{credentialId}/moveToFirst")
     @POST
-    public void moveToFirst(final @PathParam("credentialId") String credentialId){
+    public void moveCredentialToFirst(final @PathParam("credentialId") String credentialId){
         moveCredentialAfter(credentialId, null);
     }
 

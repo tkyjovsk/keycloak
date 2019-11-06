@@ -653,7 +653,7 @@ module.factory('UserCredentials', function($resource) {
         credentialId : '@credentialId'
     }).delete;
 
-    credentials.updateCredentialLabel = $resource(authUrl + '/admin/realms/:realm/users/:userId/credentials/:credentialId/label', {
+    credentials.updateCredentialLabel = $resource(authUrl + '/admin/realms/:realm/users/:userId/credentials/:credentialId/userLabel', {
         realm : '@realm',
         userId : '@userId',
         credentialId : '@credentialId'

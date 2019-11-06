@@ -103,8 +103,8 @@ public interface UserResource {
      */
     @PUT
     @Consumes(javax.ws.rs.core.MediaType.TEXT_PLAIN)
-    @Path("credentials/{credentialId}/label")
-    void setLabel(final @PathParam("credentialId") String credentialId, String userLabel);
+    @Path("credentials/{credentialId}/userLabel")
+    void setCredentialUserLabel(final @PathParam("credentialId") String credentialId, String userLabel);
 
     /**
      * Move a credential to a first position in the credentials list of the user
@@ -112,7 +112,7 @@ public interface UserResource {
      */
     @Path("credentials/{credentialId}/moveToFirst")
     @POST
-    void moveToFirst(final @PathParam("credentialId") String credentialId);
+    void moveCredentialToFirst(final @PathParam("credentialId") String credentialId);
 
     /**
      * Move a credential to a position behind another credential
