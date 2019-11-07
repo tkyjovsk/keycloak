@@ -5,15 +5,23 @@
     <#if totp.enabled>
         <table class="table table-bordered table-striped">
             <thead>
-            <tr>
-                <th colspan="4">${msg("configureAuthenticators")}</th>
-            </tr>
+            <#if totp.otpCredentials?size gt 1>
+                <tr>
+                    <th colspan="4">${msg("configureAuthenticators")}</th>
+                </tr>
+            <#else>
+                <tr>
+                    <th colspan="3">${msg("configureAuthenticators")}</th>
+                </tr>
+            </#if>
             </thead>
             <tbody>
             <#list totp.otpCredentials as credential>
                 <tr>
                     <td class="provider">${msg("mobile")}</td>
-                    <td class="provider">${credential.id}</td>
+                    <#if totp.otpCredentials?size gt 1>
+                        <td class="provider">${credential.id}</td>
+                    </#if>
                     <td class="provider">${credential.userLabel!}</td>
                     <td class="action">
                         <form action="${url.totpUrl}" method="post" class="form-inline">
@@ -29,7 +37,7 @@
             </#list>
             </tbody>
         </table>
-    </#if>
+        <#else>
 
     <hr/>
 
@@ -115,5 +123,6 @@
             </div>
         </div>
     </form>
+    </#if>
 
 </@layout.mainLayout>
