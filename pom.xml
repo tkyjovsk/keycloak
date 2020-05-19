@@ -71,6 +71,7 @@
         <!-- Will be used in the product. Upstream versions are overridden in the community profile -->
         <jackson.version>2.10.0</jackson.version>
         <jackson.databind.version>${jackson.version}</jackson.databind.version>
+        <jackson.annotations.version>${jackson.databind.version}</jackson.annotations.version>
         <jakarta.mail.version>1.6.4</jakarta.mail.version>
         <jboss.logging.version>3.4.1.Final</jboss.logging.version>
         <jboss.logging.tools.version>2.2.1.Final</jboss.logging.tools.version>
