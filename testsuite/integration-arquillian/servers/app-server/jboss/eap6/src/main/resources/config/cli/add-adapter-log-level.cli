@@ -1,2 +1,11 @@
 /subsystem=logging/logger=org.keycloak.adapters:add(level=DEBUG)
-/subsystem=logging/console-handler=CONSOLE:change-log-level(level=DEBUG)
+/subsystem=logging/console-handler=CONSOLE:change-log-level(level=TRACE)
+
+# KEYCLOAK-10162 logging
+
+# JDK7: trying to debug NPE in org.keycloak.common.util.DelegatingSerializationFilter
+/subsystem=logging/logger=org.keycloak.common:add(level=ALL)
+
+# JDK8: trying to debug stuff around `java.io.InvalidClassException: filter status: REJECTED`
+/subsystem=logging/logger=java.io:add(level=ALL)
+
