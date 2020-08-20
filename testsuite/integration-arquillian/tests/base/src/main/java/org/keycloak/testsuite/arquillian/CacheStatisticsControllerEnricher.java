@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import javax.management.Attribute;
 import javax.management.AttributeNotFoundException;
@@ -41,6 +42,7 @@ import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.common.util.Retry;
 import org.keycloak.testsuite.arquillian.annotation.JmxInfinispanCacheStatistics;
 import org.keycloak.testsuite.arquillian.annotation.JmxInfinispanChannelStatistics;
+import org.keycloak.testsuite.arquillian.containers.InfinispanServerDeployableContainer;
 import org.keycloak.testsuite.arquillian.jmx.JmxConnectorRegistry;
 import org.keycloak.testsuite.arquillian.undertow.KeycloakOnUndertow;
 import org.keycloak.testsuite.crossdc.DC;
@@ -200,6 +202,18 @@ public class CacheStatisticsControllerEnricher implements TestEnricher {
               ? Integer.valueOf(container.getContainerConfiguration().getContainerProperties().get("managementPort"))
               : 9990;
         } else {
+            Container container = suiteContext.get().getCacheServersInfo().get(0).getArquillianContainer();
+            if (container.getDeployableContainer() instanceof InfinispanServerDeployableContainer) {
+                return () -> {
+                    try {
+                        return jmxConnectorRegistry.get().getConnection(
+                                ((InfinispanServerDeployableContainer) container.getDeployableContainer()).getJMXServiceURL()
+                        ).getMBeanServerConnection();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                };
+            }
             host = annotation.host().isEmpty()
               ? System.getProperty((annotation.hostProperty().isEmpty()
                 ? "keycloak.connectionsInfinispan.remoteStoreServer"
@@ -239,6 +253,18 @@ public class CacheStatisticsControllerEnricher implements TestEnricher {
               ? Integer.valueOf(container.getContainerConfiguration().getContainerProperties().get("managementPort"))
               : 9990;
         } else {
+            Container container = suiteContext.get().getCacheServersInfo().get(0).getArquillianContainer();
+            if (container.getDeployableContainer() instanceof InfinispanServerDeployableContainer) {
+                return () -> {
+                    try {
+                        return jmxConnectorRegistry.get().getConnection(
+                                ((InfinispanServerDeployableContainer) container.getDeployableContainer()).getJMXServiceURL()
+                        ).getMBeanServerConnection();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                };
+            }
             host = annotation.host().isEmpty()
               ? System.getProperty((annotation.hostProperty().isEmpty()
                 ? "keycloak.connectionsInfinispan.remoteStoreServer"

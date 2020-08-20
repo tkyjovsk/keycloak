@@ -25,12 +25,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>integration-arquillian-servers-cache-server-jdg</artifactId>
+    <artifactId>integration-arquillian-servers-cache-server-jboss-jdg</artifactId>
     <packaging>pom</packaging>
-    <name>Cache Server - JDG</name>
+    <name>Keycloak Arquillian Integration TestSuite - Cache Server - JBoss JDG</name>
     
     <properties>
-        <cache.server>jdg</cache.server>
+        <cache.server>jboss-jdg</cache.server>
         <cache.server.container>cache-server-${cache.server}</cache.server.container>
         <cache.server.home>${containers.home}/${cache.server.container}</cache.server.home>
         

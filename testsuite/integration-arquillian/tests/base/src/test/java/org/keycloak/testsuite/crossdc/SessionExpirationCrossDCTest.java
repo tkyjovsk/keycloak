@@ -117,8 +117,8 @@ public class SessionExpirationCrossDCTest extends AbstractAdminCrossDCTest {
             @JmxInfinispanChannelStatistics() InfinispanStatistics channelStatisticsCrossDc) throws Exception {
         createInitialSessions(InfinispanConnectionProvider.USER_SESSION_CACHE_NAME, InfinispanConnectionProvider.CLIENT_SESSION_CACHE_NAME,false, cacheDc1Statistics, cacheDc2Statistics, true);
 
-//        log.infof("Sleeping!");
-//        Thread.sleep(10000000);
+        log.infof("Sleeping!");
+        Thread.sleep(10000000);
 
         channelStatisticsCrossDc.reset();
 

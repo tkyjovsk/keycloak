@@ -302,9 +302,9 @@
 
     <!-- Cross DC. Node numbering is [centre #].[node #] -->
     <group qualifier="auth-server-jboss-cross-dc">
-        <container qualifier="cache-server-cross-dc-1" mode="manual" >
+        <container qualifier="cache-server-jboss-cross-dc-1" mode="manual" >
             <configuration>
-                <property name="enabled">${auth.server.crossdc} &amp;&amp; ! ${cache.server.lifecycle.skip}</property>
+                <property name="enabled">${auth.server.crossdc} &amp;&amp; ! ${cache.server.lifecycle.skip} &amp;&amp; ${cache.server.jboss}</property>
                 <property name="adapterImplClass">org.jboss.as.arquillian.container.managed.ManagedDeployableContainer</property>
                 <property name="jbossHome">${cache.server.home}</property>
                 <property name="serverConfig">clustered-1.xml</property>
@@ -331,9 +331,9 @@
             </configuration>
         </container>
 
-        <container qualifier="cache-server-cross-dc-2" mode="manual" >
+        <container qualifier="cache-server-jboss-cross-dc-2" mode="manual" >
             <configuration>
-                <property name="enabled">${auth.server.crossdc} &amp;&amp; ! ${cache.server.lifecycle.skip}</property>
+                <property name="enabled">${auth.server.crossdc} &amp;&amp; ! ${cache.server.lifecycle.skip} &amp;&amp; ${cache.server.jboss}</property>
                 <property name="adapterImplClass">org.jboss.as.arquillian.container.managed.ManagedDeployableContainer</property>
                 <property name="jbossHome">${cache.server.home}</property>
                 <property name="setupCleanServerBaseDir">true</property>
@@ -359,6 +359,31 @@
                 <property name="outputToConsole">${cache.server.console.output}</property>
                 <property name="managementPort">${cache.server.2.management.port}</property>
                 <property name="startupTimeoutInSeconds">${auth.server.jboss.startup.timeout}</property>
+            </configuration>
+        </container>
+
+        <container qualifier="cache-server-standalone-cross-dc-1" mode="manual" >
+            <configuration>
+                <!--FIXME-->
+                <!--<property name="enabled">${auth.server.crossdc} &amp;&amp; ! ${cache.server.lifecycle.skip} &amp;&amp; ${cache.server.standalone}</property>-->
+                <property name="enabled">true</property>
+                <property name="adapterImplClass">org.keycloak.testsuite.arquillian.containers.InfinispanServerDeployableContainer</property>
+                <property name="infinispanHome">${cache.server.home}-dc1</property>
+                <property name="serverConfig">infinispan-xsite.xml</property>
+                <property name="site">dc-1</property>
+                <property name="portOffset">${cache.server.1.port.offset}</property>
+            </configuration>
+        </container>
+        <container qualifier="cache-server-standalone-cross-dc-2" mode="manual" >
+            <configuration>
+                <!--FIXME-->
+                <!--<property name="enabled">${auth.server.crossdc} &amp;&amp; ! ${cache.server.lifecycle.skip} &amp;&amp; ${cache.server.standalone}</property>-->
+                <property name="enabled">true</property>
+                <property name="adapterImplClass">org.keycloak.testsuite.arquillian.containers.InfinispanServerDeployableContainer</property>
+                <property name="infinispanHome">${cache.server.home}-dc2</property>
+                <property name="serverConfig">infinispan-xsite.xml</property>
+                <property name="site">dc-2</property>
+                <property name="portOffset">${cache.server.2.port.offset}</property>
             </configuration>
         </container>
 

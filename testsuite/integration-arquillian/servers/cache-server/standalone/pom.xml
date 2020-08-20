@@ -25,9 +25,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>integration-arquillian-servers-cache-server-jboss</artifactId>
+    <artifactId>integration-arquillian-servers-cache-server-standalone</artifactId>
     <packaging>pom</packaging>
-    <name>Keycloak Arquillian Integration TestSuite - Cache Server - JBoss</name>
+    <name>Keycloak Arquillian Integration TestSuite - Cache Server - Standalone</name>
+    <description>Standalone Infinispan (10+)</description>
 
     <properties>
         <common.resources>${project.parent.basedir}/common</common.resources>
@@ -35,9 +36,19 @@
         <cache.server.jboss.home>${containers.home}/${cache.server.jboss.unpacked.folder.name}</cache.server.jboss.home>
         <cache.server.jboss.cache-authorization-disabled>true</cache.server.jboss.cache-authorization-disabled>
         <cache.server.jboss.jdg-transactions-enabled>true</cache.server.jboss.jdg-transactions-enabled>
+        <cache.server.jboss.config.dir>${cache.server.jboss.home}/server/conf</cache.server.jboss.config.dir>
+        
+        <cache.server.authorization.xsl>cache-authorization.xsl</cache.server.authorization.xsl>
     </properties>
 
     <profiles>
+        
+        <profile>
+            <id>cache-authorization-disabled</id>
+            <properties>
+                <cache.server.authorization.xsl>cache-authorization-disable.xsl</cache.server.authorization.xsl>
+            </properties>
+        </profile>
 
         <profile>
             <id>cache-server-jboss-submodules</id>
@@ -87,9 +98,9 @@
 
                                         <!-- Configure dc-0 site in file clustered-1.xml -->
                                         <transformationSet>
-                                            <dir>${cache.server.jboss.home}/standalone/configuration</dir>
+                                            <dir>${cache.server.jboss.config.dir}</dir>
                                             <includes>
-                                                <include>clustered.xml</include>
+                                                <include>infinispan-xsite.xml</include>
                                             </includes>
                                             <stylesheet>${common.resources}/add-keycloak-caches.xsl</stylesheet>
                                             <parameters>
@@ -106,7 +117,7 @@
                                                     <value>${cache.server.jboss.jdg-transactions-enabled}</value>
                                                 </parameter>
                                             </parameters>
-                                            <outputDir>${cache.server.jboss.home}/standalone/configuration</outputDir>
+                                            <outputDir>${cache.server.jboss.config.dir}</outputDir>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
                                                     <pattern>^(.*)\.xml$</pattern>
@@ -117,9 +128,9 @@
 
                                         <!-- Configure dc-1 site in file clustered-2.xml -->
                                         <transformationSet>
-                                            <dir>${cache.server.jboss.home}/standalone/configuration</dir>
+                                            <dir>${cache.server.jboss.config.dir}</dir>
                                             <includes>
-                                                <include>clustered.xml</include>
+                                                <include>infinispan-xsite.xml</include>
                                             </includes>
                                             <stylesheet>${common.resources}/add-keycloak-caches.xsl</stylesheet>
                                             <parameters>
@@ -136,7 +147,7 @@
                                                     <value>${cache.server.jboss.jdg-transactions-enabled}</value>
                                                 </parameter>
                                             </parameters>
-                                            <outputDir>${cache.server.jboss.home}/standalone/configuration</outputDir>
+                                            <outputDir>${cache.server.jboss.config.dir}</outputDir>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.RegExpFileMapper">
                                                     <pattern>^(.*)\.xml$</pattern>
@@ -156,50 +167,40 @@
                                     <goal>transform</goal>
                                 </goals>
                                 <configuration>
-                                    <skip>${cache.server.jboss.cache-authorization-disabled}</skip>
+                                    <!--<skip>${cache.server.jboss.cache-authorization-disabled}</skip>-->
                                     <transformationSets>
                                         <!-- Configure authorization in files clustered-__dc__.xml -->
                                         <transformationSet>
-                                            <dir>${cache.server.jboss.home}/standalone/configuration</dir>
+                                            <dir>${cache.server.jboss.config.dir}</dir>
                                             <includes>
-                                                <include>clustered-1.xml</include>
-                                                <include>clustered-2.xml</include>
+                                                <include>infinispan-xsite-1.xml</include>
+                                                <include>infinispan-xsite-2.xml</include>
                                             </includes>
-                                            <stylesheet>${common.resources}/cache-authorization.xsl</stylesheet>
-                                            <outputDir>${cache.server.jboss.home}/standalone/configuration</outputDir>
+                                            <stylesheet>${common.resources}/${cache.server.authorization.xsl}</stylesheet>
+                                            <outputDir>${cache.server.jboss.config.dir}</outputDir>
                                         </transformationSet>
                                     </transformationSets>
                                 </configuration>
                             </execution>
-
+                            
+                        </executions>
+                    </plugin>
+                    
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
                             <execution>
-                                <id>io-worker-threads</id>
-                                <phase>process-resources</phase>
+                                <phase>process-test-resources</phase>
                                 <goals>
-                                    <goal>transform</goal>
+                                    <goal>run</goal>
                                 </goals>
                                 <configuration>
-                                    <transformationSets>
-                                        <transformationSet>
-                                            <dir>${cache.server.jboss.home}/standalone/configuration</dir>
-                                            <includes>
-                                                <include>standalone.xml</include>
-                                                <include>standalone-ha.xml</include>
-                                            </includes>
-                                            <stylesheet>${common.resources}/io.xsl</stylesheet>
-                                            <outputDir>${cache.server.jboss.home}/standalone/configuration</outputDir>
-                                            <parameters>
-                                                <parameter>
-                                                    <name>worker.io-threads</name>
-                                                    <value>${cache.server.worker.io-threads}</value>
-                                                </parameter>
-                                                <parameter>
-                                                    <name>worker.task-max-threads</name>
-                                                    <value>${cache.server.worker.task-max-threads}</value>
-                                                </parameter>
-                                            </parameters>
-                                        </transformationSet>
-                                    </transformationSets>
+                                    <target>
+                                        <echo file="${cache.server.jboss.config.dir}/users.properties" append="true">
+                                            keycloak=keycloak
+                                        </echo>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
@@ -209,13 +210,35 @@
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
+                                <id>copy-jgroups-config</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${cache.server.jboss.config.dir}</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${common.resources}</directory>
+                                            <includes>
+                                                <include>jgroups-tcp-with-tcpping.xml</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                    <overwrite>true</overwrite>
+                                </configuration>
+                            </execution>
+                
+                            <!--    TODO Check if this is still valid.-->
+                            <!--
+                            <execution>
                                 <id>enable-jboss-mgmt-admin</id>
                                 <phase>process-resources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${cache.server.jboss.home}/standalone/configuration</outputDirectory>
+                                    <outputDirectory>${cache.server.jboss.config.dir}</outputDirectory>
                                     <resources>
                                         <resource>
                                             <directory>${common.resources}</directory>
@@ -227,6 +250,10 @@
                                     <overwrite>true</overwrite>
                                 </configuration>
                             </execution>
+                            -->
+
+                            <!--    TODO Check if this is still valid.-->
+                            <!--
                             <execution>
                                 <id>copy-cache-server-configuration-for-dc-2</id>
                                 <phase>process-resources</phase>
@@ -244,6 +271,7 @@
                                     <overwrite>true</overwrite>
                                 </configuration>
                             </execution>
+                            -->
                         </executions>
                     </plugin>
 

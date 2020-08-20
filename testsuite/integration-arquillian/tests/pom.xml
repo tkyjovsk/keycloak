@@ -988,11 +988,11 @@
                                 </goals>
                                 <configuration>
                                     <rules>
-                                        <requireProperty>
+<!--    TODO                                    <requireProperty>
                                             <property>cache.server.jboss</property>
                                             <message>Profile "auth-servers-crossdc-jboss" requires activation of another profile: either "cache-server-infinispan" or "cache-server-jdg".</message>
                                             <regex>true</regex>
-                                        </requireProperty>
+                                        </requireProperty>-->
                                         <requireProperty>
                                             <property>auth.server.jboss</property>
                                             <message>Profile "auth-servers-crossdc-jboss" requires activation of another profile: either "auth-server-wildfly" or "auth-server-eap".</message>
@@ -1064,9 +1064,9 @@
         </profile>
 
         <profile>
-            <id>cache-server-infinispan</id>
+            <id>cache-server-jboss-infinispan</id>
             <properties>
-                <cache.server>infinispan</cache.server>
+                <cache.server>jboss-infinispan</cache.server>
                 <auth.server.crossdc>true</auth.server.crossdc>
                 <cache.server.jboss>true</cache.server.jboss>
                 <cache.server.config.dir>${cache.server.home}/standalone/configuration</cache.server.config.dir>
@@ -1135,9 +1135,9 @@
         </profile>
 
         <profile>
-            <id>cache-server-jdg</id>
+            <id>cache-server-jboss-jdg</id>
             <properties>
-                <cache.server>jdg</cache.server>
+                <cache.server>jboss-jdg</cache.server>
                 <auth.server.crossdc>true</auth.server.crossdc>
                 <cache.server.jboss>true</cache.server.jboss>
                 <cache.server.config.dir>${cache.server.home}/standalone/configuration</cache.server.config.dir>
@@ -1204,6 +1204,109 @@
                 </pluginManagement>
             </build>
         </profile>
+
+
+
+        <profile>
+            <id>cache-server-standalone-infinispan</id>
+            <properties>
+                <cache.server>standalone-infinispan</cache.server>
+                <auth.server.crossdc>true</auth.server.crossdc>
+                <cache.server.standalone>true</cache.server.standalone>
+                <keycloak.testsuite.logging.pattern>%d{HH:mm:ss,SSS} [%t] %-5p [%c{1.}] %m%n</keycloak.testsuite.logging.pattern>
+                <keycloak.connectionsInfinispan.default.remoteStoreSecurityEnabled>false</keycloak.connectionsInfinispan.default.remoteStoreSecurityEnabled>
+                <keycloak.connectionsInfinispan.hotrodProtocolVersion>2.9</keycloak.connectionsInfinispan.hotrodProtocolVersion>
+                <skip.clean.second.cache>true</skip.clean.second.cache>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-profile-activation</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireProperty>
+                                            <property>auth.servers.crossdc</property>
+                                            <message>Profile "cache-server-standalone-infinispan" requires activation of another profile: either "auth-servers-crossdc-undertow" or "auth-servers-crossdc-jboss".</message>
+                                        </requireProperty>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-dependency-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>unpack-cache-server-standalone-infinispan</id>
+                                    <phase>generate-resources</phase>
+                                    <goals>
+                                        <goal>unpack</goal>
+                                    </goals>
+                                    <configuration>
+                                        <artifactItems>
+                                            <artifactItem>
+                                                <groupId>org.keycloak.testsuite</groupId>
+                                                <artifactId>integration-arquillian-servers-cache-server-standalone-infinispan</artifactId>
+                                                <version>${project.version}</version>
+                                                <type>zip</type>
+                                                <outputDirectory>${containers.home}</outputDirectory>
+                                            </artifactItem>
+                                        </artifactItems>
+                                        <overWriteIfNewer>true</overWriteIfNewer>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-antrun-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>copy-cache-server-standalone-infinispan-nodes</id>
+                                    <phase>process-resources</phase>
+                                    <goals>
+                                        <goal>run</goal>
+                                    </goals>
+                                    <configuration>
+                                        <skip>${skip.copy.cache.crossdc.nodes}</skip>
+                                        <target>
+                                            <move todir="${cache.server.home}-dc1">
+                                                <fileset dir="${cache.server.home}"/>
+                                            </move>
+                                            <copy todir="${cache.server.home}-dc2">
+                                                <fileset dir="${cache.server.home}-dc1"/>
+                                            </copy>
+                                            
+                                            <chmod dir="${cache.server.home}-dc1/bin" perm="ugo+rx" includes="**/*.sh"/>
+                                            <chmod dir="${cache.server.home}-dc2/bin" perm="ugo+rx" includes="**/*.sh"/>
+                                            
+                                            <move file="${cache.server.home}-dc1/server/conf/infinispan-xsite-1.xml" 
+                                                  tofile="${cache.server.home}-dc1/server/conf/infinispan-xsite.xml" />
+                                            <delete file="${cache.server.home}-dc1/server/conf/infinispan-xsite-2.xml"/>
+                                            
+                                            <move file="${cache.server.home}-dc2/server/conf/infinispan-xsite-2.xml" 
+                                                  tofile="${cache.server.home}-dc2/server/conf/infinispan-xsite.xml" />
+                                            <delete file="${cache.server.home}-dc1/server/conf/infinispan-xsite-1.xml"/>
+                                        </target>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+
+
+
 
         <profile>
             <id>auth-server-profile</id>

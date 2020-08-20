@@ -27,15 +27,38 @@
 
     <artifactId>integration-arquillian-servers-cache-server</artifactId>
     <packaging>pom</packaging>
-    <name>Cache Server</name>
+    <name>Keycloak Arquillian Integration TestSuite - Cache Server</name>
 
     <properties>
         <auth.server.worker.io-threads>${jboss.default.worker.io-threads}</auth.server.worker.io-threads>
         <auth.server.worker.task-max-threads>${jboss.default.worker.task-max-threads}</auth.server.worker.task-max-threads>
     </properties>
 
-    <modules>
-        <module>jboss</module>
-    </modules>
+    <profiles>
+        <profile>
+            <id>cache-server-standalone-infinispan</id>
+            <modules>
+                <module>standalone/infinispan</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>cache-server-standalone-jdg</id>
+            <modules>
+                <module>standalone/jdg</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>cache-server-jboss-infinispan</id>
+            <modules>
+                <module>jboss/infinispan</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>cache-server-jboss-jdg</id>
+            <modules>
+                <module>jboss/jdg</module>
+            </modules>
+        </profile>
+    </profiles>
 
 </project>
