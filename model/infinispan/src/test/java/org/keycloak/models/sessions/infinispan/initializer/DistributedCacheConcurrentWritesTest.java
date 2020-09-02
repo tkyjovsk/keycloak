@@ -189,21 +189,18 @@ public class DistributedCacheConcurrentWritesTest {
     public static EmbeddedCacheManager createManager(String nodeName) {
         System.setProperty("java.net.preferIPv4Stack", "true");
         System.setProperty("jgroups.tcp.port", "53715");
-        GlobalConfigurationBuilder gcb = new GlobalConfigurationBuilder();
 
-        boolean clustered = true;
         boolean async = false;
-        boolean allowDuplicateJMXDomains = true;
+        boolean clustered = true;
 
+        GlobalConfigurationBuilder gcb = new GlobalConfigurationBuilder();
         if (clustered) {
             gcb = gcb.clusteredDefault();
             gcb.transport().clusterName("test-clustering");
             gcb.transport().nodeName(nodeName);
         }
-        gcb.globalJmxStatistics().allowDuplicateDomains(allowDuplicateJMXDomains);
-
+        gcb.jmx().domain(InfinispanConnectionProvider.JMX_DOMAIN).enable();
         EmbeddedCacheManager cacheManager = new DefaultCacheManager(gcb.build());
-
 
         ConfigurationBuilder distConfigBuilder = new ConfigurationBuilder();
         if (clustered) {
@@ -214,10 +211,9 @@ public class DistributedCacheConcurrentWritesTest {
             distConfigBuilder.clustering().hash().l1().enabled(false);
         }
         Configuration distConfig = distConfigBuilder.build();
-
         cacheManager.defineConfiguration(InfinispanConnectionProvider.USER_SESSION_CACHE_NAME, distConfig);
-        return cacheManager;
 
+        return cacheManager;
     }
 
 

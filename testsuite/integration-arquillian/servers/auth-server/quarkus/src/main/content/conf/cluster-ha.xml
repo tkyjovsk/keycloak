@@ -26,12 +26,12 @@
         <transport lock-timeout="60000" node-name="${jboss.node.name}" />
         <local-cache name="realms">
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <local-cache name="users">
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <distributed-cache name="sessions" owners="${session.cache.owners}"/>
@@ -42,20 +42,20 @@
         <distributed-cache name="loginFailures" owners="${login.failure.cache.owners}"/>
         <local-cache name="authorization">
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <replicated-cache name="work"/>
         <local-cache name="keys">
             <expiration max-idle="3600000"/>
             <memory>
-                <object size="1000"/>
+                <heap size="1000"/>
             </memory>
         </local-cache>
         <distributed-cache name="actionTokens" owners="2">
             <expiration max-idle="-1" interval="300000"/>
             <memory>
-                <object size="-1"/>
+                <heap size="-1"/>
             </memory>
         </distributed-cache>
     </cache-container>

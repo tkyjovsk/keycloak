@@ -38,31 +38,26 @@ class TestCacheManagerFactory {
     <T extends StoreConfigurationBuilder<?, T> & RemoteStoreConfigurationChildBuilder<T>> EmbeddedCacheManager createManager(int threadId, String cacheName, Class<T> builderClass) {
         System.setProperty("java.net.preferIPv4Stack", "true");
         System.setProperty("jgroups.tcp.port", "53715");
-        GlobalConfigurationBuilder gcb = new GlobalConfigurationBuilder();
 
+        boolean async = false;
+        boolean clustered = true;
+
+        GlobalConfigurationBuilder gcb = new GlobalConfigurationBuilder();
         // For Infinispan 10, we go with the JBoss marshalling.
         // TODO: This should be replaced later with the marshalling recommended by infinispan. Probably protostream.
         // See https://infinispan.org/docs/stable/titles/developing/developing.html#marshalling for the details
         gcb.serialization().marshaller(new JBossUserMarshaller());
-
-        boolean clustered = true;
-        boolean async = false;
-        boolean allowDuplicateJMXDomains = true;
-
         if (clustered) {
             gcb = gcb.clusteredDefault();
             gcb.transport().clusterName("test-clustering-" + threadId);
         }
-
-        gcb.jmx()
-                .domain(InfinispanConnectionProvider.JMX_DOMAIN + "-" + threadId).enable();
-
+        gcb.jmx().domain(InfinispanConnectionProvider.JMX_DOMAIN + "-" + threadId).enable();
         EmbeddedCacheManager cacheManager = new DefaultCacheManager(gcb.build());
 
         Configuration invalidationCacheConfiguration = getCacheBackedByRemoteStore(threadId, cacheName, builderClass);
-
         cacheManager.defineConfiguration(cacheName, invalidationCacheConfiguration);
         cacheManager.defineConfiguration("local", new ConfigurationBuilder().build());
+
         return cacheManager;
 
     }
