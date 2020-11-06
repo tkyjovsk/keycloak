@@ -28,12 +28,12 @@
         </local-cache>
         <local-cache name="realms">
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <local-cache name="users">
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <local-cache name="sessions"/>
@@ -45,19 +45,19 @@
         <local-cache name="work"/>
         <local-cache name="authorization">
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <local-cache name="keys">
             <expiration max-idle="3600000"/>
             <memory>
-                <object size="10000"/>
+                <heap size="10000"/>
             </memory>
         </local-cache>
         <local-cache name="actionTokens">
             <expiration max-idle="-1" interval="300000"/>
             <memory>
-                <object size="-1"/>
+                <heap size="-1"/>
             </memory>
         </local-cache>
     </cache-container>
