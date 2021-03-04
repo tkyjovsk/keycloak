@@ -36,8 +36,8 @@
         <jackson.version>2.12.1</jackson.version>
         <jackson.databind.version>${jackson.version}</jackson.databind.version>
         <hibernate.version>5.4.29.Final</hibernate.version>
-        <mysql-connector-java.version>8.0.24</mysql-connector-java.version>
-        <postgresql.version>42.2.20</postgresql.version>
+        <mysql-connector-java.version>8.0.23</mysql-connector-java.version>
+        <postgresql.driver.version>42.2.19</postgresql.driver.version>
         <picocli.version>4.6.1</picocli.version>
         <snakeyaml.version>1.28</snakeyaml.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
@@ -103,7 +103,7 @@
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>${postgresql.version}</version>
+                <version>${postgresql.driver.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.checkerframework</groupId>
