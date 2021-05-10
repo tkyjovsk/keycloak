@@ -52,12 +52,19 @@
     </changeSet>
 
     <!--Update format of credential to fill secret_data and credential_data - used on all databases beside Oracle DB -->
-    <changeSet author="keycloak" id="8.0.0-updating-credential-data-not-oracle">
+    <changeSet author="keycloak" id="8.0.0-updating-credential-data-not-oracle-fixed">
         <preConditions onSqlOutput="TEST" onFail="MARK_RAN">
-            <not>
-                <dbms type="oracle" />
-            </not>
+            <and>
+                <not>
+                    <dbms type="oracle" />
+                </not>
+                <not>
+                    <changeSetExecuted id="8.0.0-updating-credential-data-not-oracle" author="keycloak" changeLogFile="META-INF/jpa-changelog-8.0.0.xml"/>
+                </not>
+            </and>
         </preConditions>
+
+        <sql>UPDATE CREDENTIAL SET VALUE = REPLACE(VALUE, '"', '\\"') WHERE VALUE LIKE '%"%'</sql>
 
         <!-- SALT was saved in tinyblob in previous version. -->
         <!-- Can't be automatically updated for all users to new format in single UPDATE statement, so existing users will be updated on-the-fly -->
@@ -111,10 +118,17 @@
     </changeSet>
 
     <!--Update format of credential to fill secret_data and credential_data - used on Oracle DB. Oracle doesn't support CONCAT with more than 2 arguments -->
-    <changeSet author="keycloak" id="8.0.0-updating-credential-data-oracle">
+    <changeSet author="keycloak" id="8.0.0-updating-credential-data-oracle-fixed">
         <preConditions onSqlOutput="TEST" onFail="MARK_RAN">
-            <dbms type="oracle" />
+            <and>
+                <dbms type="oracle" />
+                <not>
+                    <changeSetExecuted id="8.0.0-updating-credential-data-not-oracle" author="keycloak" changeLogFile="META-INF/jpa-changelog-8.0.0.xml"/>
+                </not>
+            </and>
         </preConditions>
+
+        <sql>UPDATE CREDENTIAL SET VALUE = REPLACE(VALUE, '"', '\\"') WHERE VALUE LIKE '%"%'</sql>
 
         <!-- SALT was saved in tinyblob in previous version. -->
         <!-- Can't be automatically updated for all users to new format in single UPDATE statement, so existing users will be updated on-the-fly -->
