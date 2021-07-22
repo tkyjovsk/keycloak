@@ -51,7 +51,8 @@ public class DatasetLoader implements Loggable {
         Validate.notNull(dataset);
         this.dataset = dataset;
         this.delete = delete;
-        logger().info(String.format("Opening %s admin clients.", TestConfig.numOfWorkers));
+        logger().infof("Opening %s admin clients.", TestConfig.numOfWorkers);
+        logger().infof("Target servers: %s", TestConfig.serverUris);
         for (int i = 0; i < TestConfig.numOfWorkers; i++) {
             adminClients.add(Keycloak.getInstance(
                     TestConfig.serverUrisIterator.next(),
