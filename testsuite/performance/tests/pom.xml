@@ -33,7 +33,7 @@
         <provisioner>docker-compose</provisioner>
         <deployment>singlenode</deployment>
 
-        <provisioning.properties>${provisioner}/4cpus/${deployment}</provisioning.properties>
+        <provisioning.properties>${provisioner}/8cpus/${deployment}</provisioning.properties>
         <dataset>default</dataset>
         <test.properties>oidc-login-logout</test.properties>
         
@@ -60,6 +60,8 @@
 
         <trustStoreArg/>
         <trustStorePasswordArg/>
+        
+        <force.clean>false</force.clean>
     </properties>
 
     <dependencies>
@@ -180,6 +182,7 @@
                         </goals>
                         <phase>pre-clean</phase>
                         <configuration>
+                            <skip>${force.clean}</skip>
                             <rules>
                                 <requireFilesDontExist>
                                     <message><![CDATA[
@@ -848,7 +851,12 @@
                 <jstat>true</jstat>
             </properties>
         </profile>
-
+        <profile>
+            <id>force-clean</id>
+            <properties>
+                <force.clean>true</force.clean>
+            </properties>
+        </profile>
     </profiles>
 
 </project>
