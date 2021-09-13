@@ -49,7 +49,6 @@ object OIDCScenarioBuilder {
   val httpDefault = http
     .acceptHeader("application/json")
     .disableFollowRedirect
-    .inferHtmlResources
 
   val loginAndLogoutScenario = new OIDCScenarioBuilder()
       .browserOpensLoginPage()
