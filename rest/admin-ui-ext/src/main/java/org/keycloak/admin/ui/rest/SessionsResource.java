@@ -112,7 +112,8 @@ public class SessionsResource {
 
     private Stream<SessionRepresentation> applySearch(String search, Stream<SessionRepresentation> result) {
         result = result.filter(sessionRep ->
-            auth.users().canView(session.users().getUserById(realm, sessionRep.getUserId()))
+            !sessionRep.getClients().isEmpty()
+            && auth.users().canView(session.users().getUserById(realm, sessionRep.getUserId()))
         );
         if (!StringUtil.isBlank(search)) {
             String searchTrimmed = search.trim();

@@ -464,7 +464,8 @@ public class UserResource {
     public Stream<UserSessionRepresentation> getSessions() {
         auth.users().requireView(user);
         return session.sessions().getUserSessionsStream(realm, user)
-                .map(userSession -> ModelToRepresentation.toRepresentation(userSession, this::canViewClient));
+                .map(userSession -> ModelToRepresentation.toRepresentation(userSession, this::canViewClient))
+                .filter(rep -> !rep.getClients().isEmpty());
     }
 
     /**
