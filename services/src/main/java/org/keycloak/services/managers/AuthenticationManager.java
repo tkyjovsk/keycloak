@@ -954,7 +954,9 @@ public class AuthenticationManager {
 
         AuthResult authResult = verifyIdentityToken(session, realm, session.getContext().getUri(), session.getContext().getConnection(), checkActive, false, null, true, tokenString,
                 session.getContext().getRequestHeaders(), verifier -> verifier.withChecks(VALIDATE_IDENTITY_COOKIE));
-        if (authResult == null || authResult.session() == null) {
+        if (authResult == null || authResult.session() == null
+                || (checkActive && authResult.session().getState() != null
+                    && authResult.session().getState() != UserSessionModel.State.LOGGED_IN)) {
             expireIdentityCookie(session);
             return null;
         }

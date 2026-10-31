@@ -107,11 +107,14 @@ public class KcOidcBrokerLogoutTest extends AbstractKcOidcBrokerTest {
                 assertTrue(upstreamLogout.startsWith(providerRealm.getBaseUrl() + "/protocol/openid-connect/logout?"));
             }
 
+            assertPendingLogoutCannotAuthenticate(noRedirects, tokens, consumerCookies);
+
             // The upstream request sends the backchannel notification synchronously. Do not follow
             // its redirect to the consumer callback, simulating the browser closing at this point.
+            String callback;
             try (SimpleHttpResponse response = noRedirects.doGet(upstreamLogout).header("Cookie", providerCookies).asResponse()) {
                 assertEquals(302, response.getStatus());
-                String callback = response.getFirstHeader("Location");
+                callback = response.getFirstHeader("Location");
                 assertNotNull(callback);
                 assertTrue(callback.startsWith(consumerRealm.getBaseUrl() + "/broker/" + getIdpAlias() + "/endpoint/logout_response?"));
             }
@@ -120,6 +123,7 @@ public class KcOidcBrokerLogoutTest extends AbstractKcOidcBrokerTest {
             // Capture this before attempting refresh: refresh rejection must not be what triggers
             // the downstream notification.
             String notificationBeforeRefresh = logoutNotification.get();
+            assertPendingLogoutCannotAuthenticate(noRedirects, tokens, consumerCookies);
             AccessTokenResponse refresh = oauth.doRefreshTokenRequest(tokens.getRefreshToken());
             assertAll("Logout must take effect without the browser callback",
                     () -> assertEquals(400, refresh.getStatusCode(), "Refresh must be rejected"),
@@ -128,9 +132,33 @@ public class KcOidcBrokerLogoutTest extends AbstractKcOidcBrokerTest {
                         assertNotNull(notificationBeforeRefresh, "Downstream backchannel client must be notified");
                         assertTrue(notificationBeforeRefresh.contains("logout_token="));
                     });
+
+            // Rejecting normal authentication must preserve the delayed logout callback.
+            try (SimpleHttpResponse response = noRedirects.doGet(callback).header("Cookie", consumerCookies).asResponse()) {
+                assertEquals(302, response.getStatus());
+                assertEquals(oauth.getRedirectUri(), response.getFirstHeader("Location"));
+            }
         } finally {
             httpServer.removeContext(logoutPath);
         }
+    }
+
+    private void assertPendingLogoutCannotAuthenticate(SimpleHttp noRedirects, AccessTokenResponse tokens,
+                                                       String consumerCookies) throws Exception {
+        try (SimpleHttpResponse userInfo = noRedirects
+                .doGet(consumerRealm.getBaseUrl() + "/protocol/openid-connect/userinfo")
+                .auth(tokens.getAccessToken()).asResponse()) {
+            assertEquals(401, userInfo.getStatus(), "A pending logout must reject UserInfo access");
+        }
+        try (SimpleHttpResponse silentLogin = noRedirects.doGet(oauth.loginForm().prompt("none").build())
+                .header("Cookie", consumerCookies).asResponse()) {
+            assertEquals(302, silentLogin.getStatus());
+            assertNotNull(silentLogin.getFirstHeader("Location"));
+            assertTrue(silentLogin.getFirstHeader("Location").contains("error=login_required"),
+                    "The old cookie must not silently authenticate during logout");
+        }
+        assertEquals(400, oauth.doRefreshTokenRequest(tokens.getRefreshToken()).getStatusCode(),
+                "Attempted cookie reuse must not restore refresh capability");
     }
 
     private String browserCookies(String realmBaseUrl) {

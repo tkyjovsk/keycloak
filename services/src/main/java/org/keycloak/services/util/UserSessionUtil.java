@@ -112,6 +112,13 @@ public class UserSessionUtil {
                 }
             }
 
+            // Retain pending browser logout state, but do not accept its online tokens.
+            // Identity-cookie lookup is also used by logout itself; its active check is
+            // performed separately by AuthenticationManager.authenticateIdentityCookie.
+            if (!skipCheckClient && userSession != null && userSession.getState() != null
+                    && userSession.getState() != UserSessionModel.State.LOGGED_IN) {
+                return UserSessionValidationResult.error(Errors.USER_SESSION_NOT_FOUND);
+            }
             if (AuthenticationManager.isSessionValid(realm, userSession)) {
                 if (!checkTokenIssuedAt(token, userSession)) {
                     return UserSessionValidationResult.error(Errors.INVALID_TOKEN, userSession, invalidSessionCallback);
