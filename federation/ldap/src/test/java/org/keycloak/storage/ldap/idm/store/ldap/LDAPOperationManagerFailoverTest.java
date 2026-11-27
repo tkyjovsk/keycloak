@@ -125,7 +125,7 @@ public class LDAPOperationManagerFailoverTest {
         protected final List<Socket> sockets = new CopyOnWriteArrayList<>();
 
         AbstractServer() throws IOException {
-            serverSocket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
+            serverSocket = new ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"));
             Thread thread = new Thread(this, getClass().getSimpleName());
             thread.setDaemon(true);
             thread.start();
